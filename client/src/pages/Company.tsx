@@ -1,0 +1,130 @@
+/*
+ * SPAZEHAUS COMPANY MANAGEMENT HUB
+ * Design: White/light corporate hub with warm gold accents
+ */
+import { motion } from "framer-motion";
+import { useLocation } from "wouter";
+import { Users, CalendarCheck, UserSearch, BarChart3, Megaphone, ChevronRight } from "lucide-react";
+import AppHeader from "@/components/AppHeader";
+import { staffMembers, leaveRequests } from "@/lib/mockData";
+
+const HERO_BG = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296470877/DEoUZCqpbvuNBJsc.jpg";
+
+const modules = [
+  { id: "staff",         title: "Staff Directory",    subtitle: "Team profiles & roles",         icon: Users,        color: "oklch(0.42 0.09 68)",  bg: "oklch(0.62 0.09 68 / 10%)",  path: "/company/staff",         stat: `${staffMembers.length} members` },
+  { id: "leave",         title: "Leave Management",   subtitle: "Applications & approvals",      icon: CalendarCheck, color: "oklch(0.38 0.09 240)", bg: "oklch(0.55 0.09 240 / 10%)", path: "/company/leave",         stat: `${leaveRequests.filter((l) => l.status === "pending").length} pending` },
+  { id: "recruitment",   title: "Recruitment",        subtitle: "Talent pipeline & candidates",  icon: UserSearch,   color: "oklch(0.45 0.10 55)",  bg: "oklch(0.65 0.10 55 / 10%)",  path: "/company/recruitment",   stat: "5 candidates" },
+  { id: "kpi",           title: "KPI & Performance",  subtitle: "Monthly scores & reviews",      icon: BarChart3,    color: "oklch(0.38 0.09 145)", bg: "oklch(0.55 0.09 145 / 10%)", path: "/company/kpi",           stat: "Feb 2026" },
+  { id: "announcements", title: "Announcements",      subtitle: "Company news & updates",        icon: Megaphone,    color: "oklch(0.45 0.10 25)",  bg: "oklch(0.60 0.10 25 / 10%)",  path: "/company/announcements", stat: "3 posts" },
+];
+
+const deptColors: Record<string, { color: string; bg: string }> = {
+  Design:     { color: "oklch(0.42 0.09 68)",  bg: "oklch(0.62 0.09 68 / 10%)" },
+  Operations: { color: "oklch(0.38 0.09 240)", bg: "oklch(0.55 0.09 240 / 10%)" },
+  Sales:      { color: "oklch(0.38 0.09 145)", bg: "oklch(0.55 0.09 145 / 10%)" },
+  Admin:      { color: "oklch(0.45 0.10 55)",  bg: "oklch(0.65 0.10 55 / 10%)" },
+};
+
+export default function Company() {
+  const [, navigate] = useLocation();
+
+  const byDept = staffMembers.reduce((acc, s) => {
+    acc[s.dept] = (acc[s.dept] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+
+  return (
+    <div className="mobile-container" style={{ background: "oklch(0.985 0.004 80)" }}>
+      <AppHeader title="Company" subtitle="MANAGEMENT" bgImage={HERO_BG} showNotification />
+
+      <div className="px-4 py-4 space-y-5 pb-24">
+        {/* Department summary */}
+        <div>
+          <p className="sz-label mb-3">TEAM OVERVIEW</p>
+          <div className="grid grid-cols-4 gap-2">
+            {Object.entries(byDept).map(([dept, count]) => {
+              const dc = deptColors[dept] || { color: "oklch(0.42 0.09 68)", bg: "oklch(0.62 0.09 68 / 10%)" };
+              return (
+                <div
+                  key={dept}
+                  className="rounded-xl p-3 text-center"
+                  style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 6px oklch(0 0 0 / 0.03)" }}
+                >
+                  <p className="text-xl font-display font-semibold" style={{ color: dc.color }}>{count}</p>
+                  <p className="text-[9px] font-label mt-0.5" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.04em" }}>{dept}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Module cards */}
+        <div>
+          <p className="sz-label mb-3">MODULES</p>
+          <div className="space-y-3">
+            {modules.map((mod, i) => {
+              const Icon = mod.icon;
+              return (
+                <motion.button
+                  key={mod.id}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.07 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => navigate(mod.path)}
+                  className="w-full rounded-2xl p-4 flex items-center gap-4 text-left"
+                  style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
+                >
+                  {/* Gold left accent bar */}
+                  <div className="absolute left-0 top-4 bottom-4 w-0.5 rounded-full" style={{ background: mod.color, opacity: 0.4 }} />
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0" style={{ background: mod.bg }}>
+                    <Icon size={22} style={{ color: mod.color }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold" style={{ color: "oklch(0.14 0.008 65)" }}>{mod.title}</p>
+                    <p className="text-xs mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>{mod.subtitle}</p>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <span className="text-xs font-label" style={{ color: mod.color, letterSpacing: "0.02em" }}>{mod.stat}</span>
+                    <ChevronRight size={14} style={{ color: "oklch(0.65 0.008 68)" }} />
+                  </div>
+                </motion.button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Staff on leave today */}
+        <div>
+          <p className="sz-label mb-3">ON LEAVE TODAY</p>
+          <div className="rounded-2xl overflow-hidden" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}>
+            {staffMembers.filter((s) => s.status === "on-leave").map((s, i, arr) => (
+              <div
+                key={s.id}
+                className="flex items-center gap-3 px-4 py-3"
+                style={{ borderBottom: i < arr.length - 1 ? "1px solid oklch(0.93 0.008 75)" : "none" }}
+              >
+                <div
+                  className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+                  style={{ background: "oklch(0.60 0.10 25 / 12%)", color: "oklch(0.45 0.10 25)", border: "1.5px solid oklch(0.60 0.10 25 / 25%)" }}
+                >
+                  {s.avatar}
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium" style={{ color: "oklch(0.14 0.008 65)" }}>{s.name}</p>
+                  <p className="text-xs" style={{ color: "oklch(0.52 0.010 68)" }}>{s.role}</p>
+                </div>
+                <span className="status-pill" style={{ background: "oklch(0.60 0.10 25 / 12%)", color: "oklch(0.45 0.10 25)" }}>On Leave</span>
+              </div>
+            ))}
+            {staffMembers.filter((s) => s.status === "on-leave").length === 0 && (
+              <div className="px-4 py-6 text-center">
+                <p className="text-sm" style={{ color: "oklch(0.52 0.010 68)" }}>No staff on leave today</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

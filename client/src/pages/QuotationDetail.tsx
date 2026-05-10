@@ -1,0 +1,339 @@
+/*
+ * SPAZEHAUS QUOTATION DETAIL PAGE
+ * Full quotation/invoice view with status management and PDF export
+ * Design: Dark premium document viewer
+ */
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useRoute, useLocation } from "wouter";
+import {
+  Download, Send, CheckCircle2, XCircle, FileText, Receipt,
+  ChevronDown, ChevronUp, Building2, Phone, Mail, MapPin
+} from "lucide-react";
+import AppHeader from "@/components/AppHeader";
+import { quotations, statusConfig, computeTotals, formatRM, categoryColors } from "@/lib/quotationData";
+import { generateQuotationPDF } from "@/lib/generatePDF";
+import { toast } from "sonner";
+
+const statusFlow: Record<string, { next: string; label: string; icon: typeof Send }[]> = {
+  draft: [{ next: "sent", label: "Mark as Sent", icon: Send }],
+  sent: [
+    { next: "accepted", label: "Mark Accepted", icon: CheckCircle2 },
+    { next: "rejected", label: "Mark Rejected", icon: XCircle },
+  ],
+  accepted: [{ next: "invoiced", label: "Convert to Invoice", icon: Receipt }],
+  invoiced: [{ next: "paid", label: "Mark as Paid", icon: CheckCircle2 }],
+  rejected: [],
+  paid: [],
+};
+
+export default function QuotationDetail() {
+  const [, params] = useRoute("/quotations/:id");
+  const [, navigate] = useLocation();
+  const id = params?.id || "";
+
+  const [quotation, setQuotation] = useState(() =>
+    quotations.find((q) => q.id === id) || quotations[0]
+  );
+  const [expandedAreas, setExpandedAreas] = useState<Record<string, boolean>>({});
+  const [exporting, setExporting] = useState(false);
+
+  if (!quotation) {
+    return (
+      <div className="mobile-container flex items-center justify-center min-h-screen">
+        <p style={{ color: "oklch(0.52 0.010 68)" }}>Quotation not found</p>
+      </div>
+    );
+  }
+
+  const sc = statusConfig[quotation.status];
+  const { subtotal, taxAmount, total } = computeTotals(quotation.items, quotation.taxRate);
+  const isInvoice = quotation.type === "Invoice" || quotation.type === "Proforma Invoice";
+
+  // Group items by area
+  const areaMap: Record<string, typeof quotation.items> = {};
+  quotation.items.forEach((item) => {
+    const area = item.area || "General";
+    if (!areaMap[area]) areaMap[area] = [];
+    areaMap[area].push(item);
+  });
+
+  const toggleArea = (area: string) => {
+    setExpandedAreas((prev) => ({ ...prev, [area]: !prev[area] }));
+  };
+
+  const advanceStatus = (nextStatus: string) => {
+    setQuotation((q) => ({ ...q, status: nextStatus as typeof q.status }));
+    toast.success(`Status updated to ${statusConfig[nextStatus]?.label || nextStatus}`);
+  };
+
+  const handleExportPDF = async () => {
+    setExporting(true);
+    toast.info("Generating PDF…");
+    try {
+      await generateQuotationPDF(quotation);
+      toast.success("PDF downloaded successfully!");
+    } catch (e) {
+      toast.error("PDF export failed. Please try again.");
+      console.error(e);
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const actions = statusFlow[quotation.status] || [];
+
+  return (
+    <div className="mobile-container">
+      <AppHeader title={quotation.id} subtitle={quotation.type.toUpperCase()} showBack compact />
+
+      <div className="px-4 py-4 pb-32 space-y-4">
+        {/* Document header card */}
+        <div
+          className="rounded-2xl overflow-hidden"
+          style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}
+        >
+          {/* Gold top bar */}
+          <div className="h-1" style={{ background: "linear-gradient(90deg, oklch(0.72 0.09 68), oklch(0.55 0.08 65))" }} />
+
+          <div className="p-4">
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center gap-2.5">
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center"
+                  style={{ background: isInvoice ? "oklch(0.70 0.09 240 / 15%)" : "oklch(0.62 0.09 68 / 12%)" }}
+                >
+                  {isInvoice
+                    ? <Receipt size={18} style={{ color: "oklch(0.70 0.09 240)" }} />
+                    : <FileText size={18} style={{ color: "oklch(0.52 0.09 68)" }} />
+                  }
+                </div>
+                <div>
+                  <p className="text-base font-display font-semibold text-neutral-900">{quotation.id}</p>
+                  <p className="text-xs" style={{ color: "oklch(0.52 0.010 68)" }}>Rev {quotation.revision} · {quotation.issueDate}</p>
+                </div>
+              </div>
+              <span
+                className="status-pill"
+                style={{ background: sc.bg, color: sc.color, border: `1px solid ${sc.border}` }}
+              >
+                {sc.label}
+              </span>
+            </div>
+
+            {/* Project & Client */}
+            <div className="space-y-1.5">
+              {[
+                { icon: Building2, label: quotation.projectName },
+                { icon: Phone, label: quotation.clientContact },
+                { icon: Mail, label: quotation.clientEmail },
+                { icon: MapPin, label: quotation.clientAddress },
+              ].map(({ icon: Icon, label }) => label && (
+                <div key={label} className="flex items-start gap-2">
+                  <Icon size={12} className="shrink-0 mt-0.5" style={{ color: "oklch(0.52 0.09 68)" }} />
+                  <p className="text-xs leading-relaxed" style={{ color: "oklch(0.45 0.008 65)" }}>{label}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Dates */}
+            <div className="mt-3 pt-3 flex gap-4" style={{ borderTop: "1px solid oklch(0.90 0.010 75)" }}>
+              <div>
+                <p className="text-[10px] font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.04em" }}>ISSUED</p>
+                <p className="text-xs text-neutral-900">{quotation.issueDate}</p>
+              </div>
+              {quotation.validUntil && (
+                <div>
+                  <p className="text-[10px] font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.04em" }}>VALID UNTIL</p>
+                  <p className="text-xs text-neutral-900">{quotation.validUntil}</p>
+                </div>
+              )}
+              {quotation.dueDate && (
+                <div>
+                  <p className="text-[10px] font-label" style={{ color: "oklch(0.68 0.12 25)", letterSpacing: "0.04em" }}>DUE DATE</p>
+                  <p className="text-xs" style={{ color: "oklch(0.68 0.12 25)" }}>{quotation.dueDate}</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Line items by area */}
+        <div>
+          <p className="text-xs font-label mb-2" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.08em" }}>
+            SCOPE OF WORKS — {quotation.items.length} ITEMS
+          </p>
+          <div className="space-y-2">
+            {Object.entries(areaMap).map(([area, areaItems]) => {
+              const areaTotal = areaItems.reduce((s, i) => s + i.qty * i.unitPrice * (1 - i.discount / 100), 0);
+              const isOpen = expandedAreas[area] !== false; // default open
+
+              return (
+                <div
+                  key={area}
+                  className="rounded-2xl overflow-hidden"
+                  style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}
+                >
+                  {/* Area header */}
+                  <button
+                    className="w-full flex items-center justify-between px-4 py-3"
+                    style={{ background: "oklch(0.97 0.004 80)" }}
+                    onClick={() => toggleArea(area)}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-label font-semibold" style={{ color: "oklch(0.52 0.09 68)", letterSpacing: "0.06em" }}>
+                        {area.toUpperCase()}
+                      </span>
+                      <span className="text-[10px]" style={{ color: "oklch(0.52 0.010 68)" }}>
+                        {areaItems.length} item{areaItems.length > 1 ? "s" : ""}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold" style={{ color: "oklch(0.52 0.09 68)" }}>{formatRM(areaTotal)}</span>
+                      {isOpen ? <ChevronUp size={13} style={{ color: "oklch(0.52 0.010 68)" }} /> : <ChevronDown size={13} style={{ color: "oklch(0.52 0.010 68)" }} />}
+                    </div>
+                  </button>
+
+                  {/* Items */}
+                  <AnimatePresence initial={false}>
+                    {isOpen && (
+                      <motion.div
+                        initial={{ height: 0 }}
+                        animate={{ height: "auto" }}
+                        exit={{ height: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden"
+                      >
+                        {areaItems.map((item, i) => {
+                          const lineTotal = item.qty * item.unitPrice * (1 - item.discount / 100);
+                          return (
+                            <div
+                              key={item.id}
+                              className="px-4 py-3 flex items-start gap-3"
+                              style={{ borderTop: "1px solid oklch(0.93 0.008 75)" }}
+                            >
+                              <span
+                                className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold shrink-0 mt-0.5"
+                                style={{ background: `${categoryColors[item.category] || "oklch(0.72 0.09 68)"} / 15%`, color: categoryColors[item.category] || "oklch(0.72 0.09 68)" }}
+                              >
+                                {i + 1}
+                              </span>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs text-neutral-900 leading-snug">{item.description}</p>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <span
+                                    className="text-[9px] font-label px-1.5 py-0.5 rounded"
+                                    style={{
+                                      background: `${categoryColors[item.category] || "oklch(0.72 0.09 68)"} / 12%`,
+                                      color: categoryColors[item.category] || "oklch(0.72 0.09 68)",
+                                      letterSpacing: "0.03em",
+                                    }}
+                                  >
+                                    {item.category}
+                                  </span>
+                                  <span className="text-[10px]" style={{ color: "oklch(0.52 0.010 68)" }}>
+                                    {item.qty} {item.unit} × RM {item.unitPrice.toLocaleString()}
+                                    {item.discount > 0 && <span style={{ color: "oklch(0.70 0.09 145)" }}> (−{item.discount}%)</span>}
+                                  </span>
+                                </div>
+                              </div>
+                              <p className="text-xs font-semibold shrink-0" style={{ color: "oklch(0.52 0.09 68)" }}>
+                                {formatRM(lineTotal)}
+                              </p>
+                            </div>
+                          );
+                        })}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Totals */}
+        <div className="rounded-2xl p-4 space-y-2.5" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
+          <div className="flex justify-between">
+            <span className="text-sm" style={{ color: "oklch(0.52 0.010 68)" }}>Subtotal</span>
+            <span className="text-sm text-neutral-900">{formatRM(subtotal)}</span>
+          </div>
+          {quotation.taxRate > 0 && (
+            <div className="flex justify-between">
+              <span className="text-sm" style={{ color: "oklch(0.52 0.010 68)" }}>Tax / SST ({quotation.taxRate}%)</span>
+              <span className="text-sm text-neutral-900">{formatRM(taxAmount)}</span>
+            </div>
+          )}
+          <div className="flex justify-between pt-2.5" style={{ borderTop: "1px solid oklch(0.90 0.010 75)" }}>
+            <span className="text-base font-semibold text-neutral-900">Total</span>
+            <span className="text-xl font-display font-bold" style={{ color: "oklch(0.52 0.09 68)" }}>{formatRM(total)}</span>
+          </div>
+        </div>
+
+        {/* Notes & Terms */}
+        {(quotation.notes || quotation.terms) && (
+          <div className="grid grid-cols-1 gap-3">
+            {quotation.notes && (
+              <div className="rounded-xl p-3" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
+                <p className="text-[10px] font-label mb-1.5" style={{ color: "oklch(0.52 0.09 68)", letterSpacing: "0.06em" }}>NOTES</p>
+                <p className="text-xs leading-relaxed" style={{ color: "oklch(0.52 0.010 68)" }}>{quotation.notes}</p>
+              </div>
+            )}
+            {quotation.terms && (
+              <div className="rounded-xl p-3" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
+                <p className="text-[10px] font-label mb-1.5" style={{ color: "oklch(0.52 0.09 68)", letterSpacing: "0.06em" }}>PAYMENT TERMS</p>
+                <p className="text-xs leading-relaxed" style={{ color: "oklch(0.52 0.010 68)" }}>{quotation.terms}</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Action bar */}
+      <div
+        className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] px-4 py-4 space-y-2"
+        style={{ background: "oklch(0.985 0.004 80)", borderTop: "1px solid oklch(0.90 0.010 75)", backdropFilter: "blur(16px)" }}
+      >
+        {/* Status actions */}
+        {actions.length > 0 && (
+          <div className="flex gap-2">
+            {actions.map(({ next, label, icon: Icon }) => (
+              <motion.button
+                key={next}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => advanceStatus(next)}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-label"
+                style={{
+                  background: next === "rejected" ? "oklch(0.68 0.12 25 / 15%)" : "oklch(0.62 0.09 68 / 12%)",
+                  color: next === "rejected" ? "oklch(0.45 0.10 25)" : "oklch(0.42 0.09 68)",
+                  border: `1px solid ${next === "rejected" ? "oklch(0.68 0.12 25 / 25%)" : "oklch(0.62 0.09 68 / 20%)"}`,
+                  letterSpacing: "0.04em",
+                }}
+              >
+                <Icon size={13} />
+                {label}
+              </motion.button>
+            ))}
+          </div>
+        )}
+
+        {/* Export PDF */}
+        <motion.button
+          whileTap={{ scale: 0.97 }}
+          onClick={handleExportPDF}
+          disabled={exporting}
+          className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl text-sm font-label font-semibold"
+          style={{
+            background: exporting ? "oklch(0.93 0.008 75)" : "linear-gradient(135deg, oklch(0.62 0.09 68), oklch(0.52 0.08 65))",
+            color: exporting ? "oklch(0.52 0.010 68)" : "oklch(1 0 0)",
+            boxShadow: exporting ? "none" : "0 4px 16px oklch(0.62 0.09 68 / 35%)",
+            letterSpacing: "0.04em",
+          }}
+        >
+          <Download size={16} />
+          {exporting ? "Generating PDF…" : "Export PDF"}
+        </motion.button>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,237 @@
+/*
+ * SPAZEHAUS PROJECTS LIST PAGE
+ * Design: White/light corporate theme with warm gold accents
+ * Shows project cards with progress, team, deadline
+ */
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useLocation } from "wouter";
+import { Plus, Search, MapPin, Calendar, FileText, Receipt } from "lucide-react";
+import { quotations, computeTotals } from "@/lib/quotationData";
+import AppHeader from "@/components/AppHeader";
+import { projects, statusConfig, priorityConfig } from "@/lib/mockData";
+
+const HERO_BG = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296470877/izBqEFfzzpfKonJn.jpg";
+
+const statusFilters = [
+  { key: "all", label: "All" },
+  { key: "active", label: "Active" },
+  { key: "assigned", label: "Assigned" },
+  { key: "under-review", label: "Review" },
+  { key: "completed", label: "Done" },
+];
+
+// Light-theme status config
+const lightStatus: Record<string, { bg: string; color: string }> = {
+  active:       { bg: "oklch(0.62 0.09 68 / 12%)",  color: "oklch(0.42 0.09 68)" },
+  assigned:     { bg: "oklch(0.55 0.09 240 / 12%)", color: "oklch(0.38 0.09 240)" },
+  "under-review": { bg: "oklch(0.65 0.10 55 / 12%)", color: "oklch(0.45 0.10 55)" },
+  completed:    { bg: "oklch(0.55 0.09 145 / 12%)", color: "oklch(0.38 0.09 145)" },
+  "on-hold":    { bg: "oklch(0.55 0.006 68 / 12%)", color: "oklch(0.40 0.006 68)" },
+};
+
+export default function Projects() {
+  const [, navigate] = useLocation();
+  const [activeFilter, setActiveFilter] = useState("all");
+  const [search, setSearch] = useState("");
+
+  const filtered = projects.filter((p) => {
+    const matchStatus = activeFilter === "all" || p.status === activeFilter;
+    const matchSearch = p.name.toLowerCase().includes(search.toLowerCase()) || p.client.toLowerCase().includes(search.toLowerCase());
+    return matchStatus && matchSearch;
+  });
+
+  const stats = [
+    { label: "Total", value: projects.length },
+    { label: "Active", value: projects.filter((p) => p.status === "active").length },
+    { label: "Review", value: projects.filter((p) => p.status === "under-review").length },
+    { label: "Done", value: projects.filter((p) => p.status === "completed").length },
+  ];
+
+  return (
+    <div className="mobile-container" style={{ background: "oklch(0.985 0.004 80)" }}>
+      <AppHeader title="Projects" subtitle="DESIGN PORTFOLIO" bgImage={HERO_BG} showNotification />
+
+      <div className="px-4 py-4 space-y-4 pb-24">
+        {/* Quotations shortcut */}
+        <motion.div
+          whileTap={{ scale: 0.98 }}
+          onClick={() => navigate("/quotations")}
+          className="rounded-2xl p-4 flex items-center gap-3"
+          style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.62 0.09 68 / 25%)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
+        >
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "oklch(0.62 0.09 68 / 12%)" }}>
+            <FileText size={18} style={{ color: "oklch(0.52 0.09 68)" }} />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-semibold" style={{ color: "oklch(0.14 0.008 65)" }}>Quotations & Invoices</p>
+            <p className="text-xs mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>
+              {quotations.length} documents · RM {quotations.reduce((s, q) => s + computeTotals(q.items, q.taxRate).total, 0).toLocaleString("en-MY", { minimumFractionDigits: 0 })} pipeline
+            </p>
+          </div>
+          <Receipt size={16} style={{ color: "oklch(0.65 0.008 68)" }} />
+        </motion.div>
+
+        {/* Stats row */}
+        <div className="grid grid-cols-4 gap-2">
+          {stats.map((s) => (
+            <div key={s.label} className="rounded-xl p-3 text-center" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 6px oklch(0 0 0 / 0.03)" }}>
+              <p className="text-xl font-display font-semibold" style={{ color: "oklch(0.14 0.008 65)" }}>{s.value}</p>
+              <p className="text-[10px] font-label mt-0.5" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.04em" }}>{s.label}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Search */}
+        <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
+          <Search size={14} style={{ color: "oklch(0.65 0.008 68)" }} />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search projects or clients..."
+            className="flex-1 bg-transparent text-sm outline-none"
+            style={{ color: "oklch(0.14 0.008 65)" }}
+          />
+        </div>
+
+        {/* Status filters */}
+        <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide">
+          {statusFilters.map((f) => (
+            <motion.button
+              key={f.key}
+              whileTap={{ scale: 0.92 }}
+              onClick={() => setActiveFilter(f.key)}
+              className="shrink-0 px-4 py-1.5 rounded-full text-xs font-label"
+              style={{
+                background: activeFilter === f.key ? "oklch(0.62 0.09 68)" : "oklch(1 0 0)",
+                color: activeFilter === f.key ? "oklch(1 0 0)" : "oklch(0.45 0.008 65)",
+                border: activeFilter === f.key ? "none" : "1px solid oklch(0.90 0.010 75)",
+                letterSpacing: "0.04em",
+                fontWeight: activeFilter === f.key ? 600 : 400,
+              }}
+            >
+              {f.label}
+            </motion.button>
+          ))}
+        </div>
+
+        {/* Project cards */}
+        <AnimatePresence mode="popLayout">
+          <div className="space-y-3">
+            {filtered.map((project, i) => {
+              const ls = lightStatus[project.status] || lightStatus["on-hold"];
+              const pc = priorityConfig[project.priority as keyof typeof priorityConfig];
+              return (
+                <motion.div
+                  key={project.id}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.96 }}
+                  transition={{ delay: i * 0.05 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => navigate(`/projects/${project.id}`)}
+                  className="rounded-2xl overflow-hidden"
+                  style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 2px 12px oklch(0 0 0 / 0.05)" }}
+                >
+                  {/* Gold top accent */}
+                  <div className="h-0.5" style={{ background: "linear-gradient(90deg, oklch(0.62 0.09 68), oklch(0.72 0.09 68 / 40%), transparent)" }} />
+
+                  {/* Card header */}
+                  <div className="px-4 pt-3.5 pb-3">
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-sm font-semibold leading-snug" style={{ color: "oklch(0.14 0.008 65)" }}>{project.name}</h3>
+                        <p className="text-xs mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>{project.client}</p>
+                      </div>
+                      <div className="flex flex-col items-end gap-1.5 shrink-0">
+                        <span className="status-pill" style={{ background: ls.bg, color: ls.color }}>
+                          {project.status === "active" ? "Active" : project.status === "completed" ? "Done" : project.status === "under-review" ? "Review" : project.status === "assigned" ? "Assigned" : "On Hold"}
+                        </span>
+                        <span className="text-[10px] font-label" style={{ color: pc.color }}>
+                          ● {pc.label} Priority
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 mt-2">
+                      <div className="flex items-center gap-1">
+                        <MapPin size={10} style={{ color: "oklch(0.65 0.008 68)" }} />
+                        <span className="text-[11px]" style={{ color: "oklch(0.52 0.010 68)" }}>{project.location}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Calendar size={10} style={{ color: "oklch(0.65 0.008 68)" }} />
+                        <span className="text-[11px]" style={{ color: "oklch(0.52 0.010 68)" }}>{project.targetDate}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Progress bar */}
+                  <div className="px-4 pb-3">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[11px]" style={{ color: "oklch(0.52 0.010 68)" }}>
+                        {project.tasksCompleted}/{project.taskCount} tasks
+                      </span>
+                      <span className="text-xs font-semibold" style={{ color: "oklch(0.52 0.09 68)" }}>{project.progress}%</span>
+                    </div>
+                    <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "oklch(0.92 0.008 75)" }}>
+                      <div
+                        className="h-full rounded-full transition-all duration-700"
+                        style={{
+                          width: `${project.progress}%`,
+                          background: "linear-gradient(90deg, oklch(0.62 0.09 68), oklch(0.72 0.09 68))",
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Footer */}
+                  <div
+                    className="px-4 py-2.5 flex items-center justify-between"
+                    style={{ borderTop: "1px solid oklch(0.93 0.008 75)", background: "oklch(0.985 0.004 80)" }}
+                  >
+                    <div className="flex -space-x-1">
+                      {project.team.map((avatar) => (
+                        <div
+                          key={avatar}
+                          className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold border-2"
+                          style={{
+                            background: "linear-gradient(135deg, oklch(0.62 0.09 68 / 20%), oklch(0.52 0.08 65 / 20%))",
+                            borderColor: "oklch(1 0 0)",
+                            color: "oklch(0.42 0.09 68)",
+                          }}
+                        >
+                          {avatar}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-[11px]" style={{ color: "oklch(0.52 0.010 68)" }}>
+                        📷 {project.photoCount}
+                      </span>
+                      <span className="text-[11px] font-semibold" style={{ color: "oklch(0.42 0.09 68)" }}>
+                        RM {(project.budget / 1000).toFixed(0)}k
+                      </span>
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </AnimatePresence>
+      </div>
+
+      {/* FAB */}
+      <motion.button
+        whileTap={{ scale: 0.9 }}
+        onClick={() => navigate("/projects/new")}
+        className="fixed bottom-20 right-4 w-14 h-14 rounded-full flex items-center justify-center z-40"
+        style={{
+          background: "linear-gradient(135deg, oklch(0.62 0.09 68), oklch(0.52 0.08 65))",
+          boxShadow: "0 4px 20px oklch(0.62 0.09 68 / 40%)",
+        }}
+      >
+        <Plus size={22} style={{ color: "oklch(1 0 0)" }} />
+      </motion.button>
+    </div>
+  );
+}
