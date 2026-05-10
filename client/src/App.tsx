@@ -38,6 +38,10 @@ import CreateQuotation from "./pages/CreateQuotation";
 // Checkpoints (Phase 2 — cross-project Payment + Document Sign SOP)
 import Checkpoints from "./pages/Checkpoints";
 
+// Customer Database (Phase 3 — Inquiry vs Awarded funnel + categories)
+import CustomerDatabase from "./pages/CustomerDatabase";
+import CustomerDetail from "./pages/CustomerDetail";
+
 // Pages that show bottom nav
 const BOTTOM_NAV_PATHS = ["/", "/projects", "/company", "/calendar", "/profile"];
 
@@ -81,6 +85,10 @@ function AppLayout() {
 
           {/* Important Checkpoints — Payment Collection + Document Sign SOP */}
           <Route path="/checkpoints" component={Checkpoints} />
+
+          {/* Customer Database — Inquiry → Awarded funnel + categories */}
+          <Route path="/customers" component={CustomerDatabase} />
+          <Route path="/customers/:id" component={CustomerDetail} />
 
           {/* Fallback */}
           <Route path="/404" component={NotFound} />

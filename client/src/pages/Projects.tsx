@@ -6,11 +6,12 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
-import { Plus, Search, MapPin, Calendar, FileText, Receipt, AlertCircle } from "lucide-react";
-import { quotations, computeTotals } from "@/lib/quotationData";
+import { Plus, Search, MapPin, Calendar, FileText, Receipt, AlertCircle, Users, ChevronRight } from "lucide-react";
+import { quotations, computeTotals, formatRM } from "@/lib/quotationData";
 import AppHeader from "@/components/AppHeader";
 import { projects, statusConfig, priorityConfig } from "@/lib/mockData";
 import { checkpointSummary } from "@/lib/lifecycleData";
+import { customerSummary } from "@/lib/customerData";
 
 const HERO_BG = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296470877/izBqEFfzzpfKonJn.jpg";
 
@@ -51,6 +52,9 @@ export default function Projects() {
 
   // Phase 2 — quick checkpoint summary for the banner
   const ckpt = checkpointSummary(projects.map((p) => ({ id: p.id, name: p.name, client: p.client })));
+
+  // Phase 3 — customer/inquiry summary for the banner
+  const cust = customerSummary();
 
   return (
     <div className="mobile-container" style={{ background: "oklch(0.985 0.004 80)" }}>
@@ -118,6 +122,58 @@ export default function Projects() {
             </p>
           </motion.button>
         </div>
+
+        {/* Customer Database banner — Phase 3 (full-width with mini funnel) */}
+        <motion.button
+          whileTap={{ scale: 0.98 }}
+          onClick={() => navigate("/customers")}
+          className="w-full rounded-2xl p-4 text-left"
+          style={{
+            background: "linear-gradient(135deg, oklch(0.55 0.09 240 / 5%), oklch(1 0 0))",
+            border: "1px solid oklch(0.55 0.09 240 / 25%)",
+            boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)",
+          }}
+        >
+          <div className="flex items-center gap-3 mb-3">
+            <div
+              className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+              style={{ background: "oklch(0.55 0.09 240 / 12%)" }}
+            >
+              <Users size={18} style={{ color: "oklch(0.38 0.09 240)" }} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold" style={{ color: "oklch(0.14 0.008 65)" }}>
+                Customer Database
+              </p>
+              <p className="text-[11px] mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>
+                Inquiry → Awarded · {cust.total} total · {(cust.winRate * 100).toFixed(0)}% win rate
+              </p>
+            </div>
+            <ChevronRightIcon />
+          </div>
+
+          <div className="grid grid-cols-3 gap-2">
+            <MiniStat
+              label="ACTIVE"
+              value={cust.active}
+              color="oklch(0.45 0.10 55)"
+              bg="oklch(0.65 0.10 55 / 8%)"
+            />
+            <MiniStat
+              label="AWARDED"
+              value={cust.awarded}
+              color="oklch(0.38 0.09 145)"
+              bg="oklch(0.55 0.09 145 / 8%)"
+            />
+            <MiniStat
+              label="PIPELINE"
+              value={formatRM(cust.pipelineRM)}
+              color="oklch(0.38 0.09 240)"
+              bg="oklch(0.55 0.09 240 / 8%)"
+              isCurrency
+            />
+          </div>
+        </motion.button>
 
         {/* Stats row */}
         <div className="grid grid-cols-4 gap-2">
@@ -279,6 +335,43 @@ export default function Projects() {
       >
         <Plus size={22} style={{ color: "oklch(1 0 0)" }} />
       </motion.button>
+    </div>
+  );
+}
+
+// ─── helpers ─────────────────────────────────────────────────────────────────
+
+function ChevronRightIcon() {
+  return <ChevronRight size={14} style={{ color: "oklch(0.65 0.008 68)" }} />;
+}
+
+function MiniStat({
+  label,
+  value,
+  color,
+  bg,
+  isCurrency,
+}: {
+  label: string;
+  value: number | string;
+  color: string;
+  bg: string;
+  isCurrency?: boolean;
+}) {
+  return (
+    <div className="rounded-xl p-2.5 text-center" style={{ background: bg }}>
+      <p
+        className={`font-display font-bold ${isCurrency ? "text-[11px]" : "text-lg"}`}
+        style={{ color }}
+      >
+        {value}
+      </p>
+      <p
+        className="text-[9px] font-label mt-0.5"
+        style={{ color, letterSpacing: "0.04em", opacity: 0.85 }}
+      >
+        {label}
+      </p>
     </div>
   );
 }

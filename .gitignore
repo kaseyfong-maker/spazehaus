@@ -24,6 +24,10 @@ build/
 # Claude Code local tooling state
 .claude/
 
+# Bun lockfile (project uses pnpm; bun is a local fallback only)
+bun.lock
+bun.lockb
+
 # OS generated files
 .DS_Store
 .DS_Store?
