@@ -9,6 +9,9 @@
  * Awarded inquiries link 1:1 to projects (PRJ001..PRJ005).
  */
 
+import { projects, type Project } from "./mockData";
+import { projectLifecycles, type ProjectLifecycle } from "./lifecycleData";
+
 export type InquiryStage = "new-inquiry" | "showroom-meet" | "awarded" | "rejected";
 
 export type CustomerCategory = "Residential" | "Commercial" | "F&B" | "Office" | "Investor";
@@ -469,4 +472,149 @@ export function countsBySource(): Record<string, number> {
   const out: Record<string, number> = {};
   for (const i of inquiries) out[i.source] = (out[i.source] ?? 0) + 1;
   return out;
+}
+
+// —————————————————————————————————————————————————————————————
+// CONVERT INQUIRY → PROJECT
+// Mutates in-memory state so the new project shows up in /projects,
+// the lifecycle engine, and the inquiry flips to "awarded".
+// In a real backend this would be a transactional API call.
+// —————————————————————————————————————————————————————————————
+
+export type ConvertInquiryInput = {
+  projectName: string;
+  designerName: string;           // resolved staff name (matches existing Project.designer)
+  pmName: string;                 // resolved staff name
+  team: string[];                 // staff avatar codes (e.g. ["WL", "WH"])
+  startDate: string;              // DD/MM/YYYY
+  targetDate: string;             // DD/MM/YYYY
+  budget: number;                 // RM (final, may differ from estimatedBudget)
+  priority: "high" | "medium" | "low";
+  areas: string[];
+  proposalDeposit: number;        // RM (gate ① collected today)
+};
+
+export type ConvertInquiryResult = {
+  ok: true;
+  newProjectId: string;
+} | {
+  ok: false;
+  reason: string;
+};
+
+/** Today as DD/MM/YYYY. */
+function todayStr(): string {
+  const d = new Date();
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
+}
+
+/** Map customer category → project "type" field. Anything non-residential is grouped as Commercial. */
+function categoryToType(category: CustomerCategory): string {
+  return category === "Residential" ? "Residential" : "Commercial";
+}
+
+/** Generate the next sequential PRJ ID (PRJ001, PRJ002, …). */
+export function nextProjectId(): string {
+  const max = projects.reduce((m, p) => {
+    const num = parseInt(p.id.replace(/^PRJ/, ""), 10);
+    return Number.isFinite(num) ? Math.max(m, num) : m;
+  }, 0);
+  return `PRJ${String(max + 1).padStart(3, "0")}`;
+}
+
+/**
+ * Convert an inquiry into a real project.
+ * - Pushes a new Project to `projects`
+ * - Pushes a new ProjectLifecycle to `projectLifecycles` at stage 4 (design-prop-signed),
+ *   with gate ① Proposal Deposit immediately marked as collected
+ * - Mutates the inquiry: stage → "awarded", awardedProjectId set, contact log entry appended
+ *
+ * Returns { ok: true, newProjectId } or { ok: false, reason }.
+ */
+export function convertInquiryToProject(
+  inquiryId: string,
+  input: ConvertInquiryInput
+): ConvertInquiryResult {
+  const inq = inquiries.find((i) => i.id === inquiryId);
+  if (!inq) return { ok: false, reason: "Inquiry not found." };
+  if (inq.stage === "awarded") return { ok: false, reason: "Inquiry is already awarded." };
+  if (inq.stage === "rejected") return { ok: false, reason: "Cannot convert a rejected inquiry. Reopen it first." };
+
+  const today = todayStr();
+  const newId = nextProjectId();
+
+  const newProject: Project = {
+    id: newId,
+    name: input.projectName,
+    client: inq.client,
+    clientContact: inq.contact,
+    type: categoryToType(inq.category),
+    propertyType: inq.propertyType,
+    location: inq.location,
+    size: inq.estimatedSize ?? 1000,
+    budget: input.budget,
+    startDate: input.startDate,
+    targetDate: input.targetDate,
+    status: "assigned",
+    priority: input.priority,
+    progress: 0,
+    designer: input.designerName,
+    pm: input.pmName,
+    team: input.team,
+    photoCount: 0,
+    taskCount: 0,
+    tasksCompleted: 0,
+    areas: input.areas,
+    description: `Converted from inquiry ${inq.id} on ${today}.`,
+  };
+  projects.push(newProject);
+
+  // —— Payment allocation ——
+  // Budget = total package. Carve out deposit + design fee, then split the
+  // remaining renovation portion 50% / 30% / 20% across gates 3-5.
+  // Gate 5 is computed by subtraction so the four gates always sum to renoTotal exactly.
+  const designFee = Math.round(input.budget * 0.07);
+  const renoTotal = Math.max(0, input.budget - input.proposalDeposit - designFee);
+  const renoDeposit = Math.round(renoTotal * 0.5);
+  const progressive = Math.round(renoTotal * 0.3);
+  const finalPay = renoTotal - renoDeposit - progressive; // closes the rounding gap
+
+  // Initialise the project lifecycle at stage 4 (design-prop-signed) with gate ① collected.
+  const newLifecycle: ProjectLifecycle = {
+    projectId: newId,
+    currentStageId: "design-prop-signed",
+    startedAt: today,
+    payments: [
+      { gate: 1, label: "Proposal Deposit",         amount: input.proposalDeposit, status: "completed", collectedDate: today, reference: `PD-${today.slice(6)}-NEW` },
+      { gate: 2, label: "Design Contract Fee",      amount: designFee,             status: "pending" },
+      { gate: 3, label: "Renovation Deposit (50%)", amount: renoDeposit,           status: "pending" },
+      { gate: 4, label: "Progressive Payment",      amount: progressive,           status: "pending", notes: "To be split into instalments" },
+      { gate: 5, label: "Final Payment",            amount: finalPay,              status: "pending" },
+    ],
+    signatures: [
+      { key: "design-contract",     label: "Design Contract",          group: "contract", status: "pending" },
+      { key: "revised-3d",          label: "Revised 3D Drawing",       group: "drawing",  status: "pending" },
+      { key: "renovation-contract", label: "Renovation Contract",      group: "contract", status: "pending" },
+      { key: "material-selection",  label: "Material Selection",       group: "drawing",  status: "pending" },
+      { key: "2d-shopping",         label: "2D Drawing / Shopping List",group: "drawing", status: "pending" },
+      { key: "handover",            label: "Handover Acceptance",      group: "contract", status: "pending" },
+    ],
+  };
+  projectLifecycles.push(newLifecycle);
+
+  // Flip the inquiry to awarded
+  inq.stage = "awarded";
+  inq.awardedProjectId = newId;
+  inq.awardedDate = today;
+  inq.lastUpdated = today;
+  if (!inq.contactLog) inq.contactLog = [];
+  inq.contactLog.push({
+    date: today,
+    type: "meet",
+    note: `Design proposal signed · converted to project ${newId} (RM ${input.budget.toLocaleString("en-MY")})`,
+    by: inq.assignedTo ?? "GT",
+  });
+
+  return { ok: true, newProjectId: newId };
 }

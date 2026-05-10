@@ -3,13 +3,15 @@
  * Single inquiry view — shows pipeline stage timeline, contact log,
  * estimated commercials, and links to the awarded project (if any).
  */
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { useParams, useLocation } from "wouter";
 import {
   Phone, Mail, MapPin, Building2, Ruler, Coins, FolderOpen,
-  Check, Clock, X, MessageSquare, Calendar, Briefcase, Map
+  Check, Clock, X, MessageSquare, Calendar, Briefcase, Map, Sparkles
 } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
+import ConvertInquiryDialog from "@/components/ConvertInquiryDialog";
 import { toast } from "sonner";
 import {
   getInquiry,
@@ -41,6 +43,7 @@ const contactIconConfig: Record<ContactLogEntry["type"], { icon: typeof Phone; c
 export default function CustomerDetail() {
   const { id } = useParams<{ id: string }>();
   const [, navigate] = useLocation();
+  const [convertOpen, setConvertOpen] = useState(false);
   const inq = id ? getInquiry(id) : undefined;
 
   if (!inq) {
@@ -369,7 +372,26 @@ export default function CustomerDetail() {
             </SectionCard>
           )}
 
-          {/* Action buttons */}
+          {/* Convert to Project — primary CTA when inquiry is in pipeline */}
+          {(inq.stage === "new-inquiry" || inq.stage === "showroom-meet") && (
+            <motion.button
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setConvertOpen(true)}
+              className="w-full rounded-2xl py-3.5 flex items-center justify-center gap-2"
+              style={{
+                background: "linear-gradient(135deg, oklch(0.62 0.09 68), oklch(0.52 0.08 65))",
+                color: "white",
+                boxShadow: "0 4px 16px oklch(0.62 0.09 68 / 0.30)",
+              }}
+            >
+              <Sparkles size={15} />
+              <span className="text-sm font-label" style={{ letterSpacing: "0.06em", fontWeight: 700 }}>
+                CONVERT TO PROJECT
+              </span>
+            </motion.button>
+          )}
+
+          {/* Secondary action buttons */}
           {inq.stage !== "rejected" && (
             <div className="grid grid-cols-2 gap-2">
               <ActionButton icon={Phone} label="Call" onClick={() => toast.info(`Calling ${inq.client}…`)} />
@@ -378,6 +400,9 @@ export default function CustomerDetail() {
           )}
         </div>
       </div>
+
+      {/* Conversion modal */}
+      <ConvertInquiryDialog inquiry={inq} open={convertOpen} onClose={() => setConvertOpen(false)} />
     </div>
   );
 }

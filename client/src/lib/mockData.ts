@@ -26,7 +26,33 @@ export const staffMembers = [
   { id: "SH010", name: "Chiou Ying", role: "Sales Consultant", dept: "Sales", avatar: "CY", status: "active", joinDate: "17/05/2023", leaveBalance: { annual: 4, medical: 14 }, kpi: "B" },
 ];
 
-export const projects = [
+/** Project record shape — kept open so the conversion flow can push new entries. */
+export type Project = {
+  id: string;
+  name: string;
+  client: string;
+  clientContact: string;
+  type: string;             // "Residential" | "Commercial"
+  propertyType: string;
+  location: string;
+  size: number;
+  budget: number;
+  startDate: string;        // DD/MM/YYYY
+  targetDate: string;
+  status: string;           // "active" | "assigned" | "under-review" | "completed" | "on-hold"
+  priority: string;         // "high" | "medium" | "low"
+  progress: number;
+  designer: string;
+  pm: string;
+  team: string[];
+  photoCount: number;
+  taskCount: number;
+  tasksCompleted: number;
+  areas: string[];
+  description: string;
+};
+
+export const projects: Project[] = [
   {
     id: "PRJ001",
     name: "The Paragon Residence",
