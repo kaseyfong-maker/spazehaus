@@ -42,6 +42,9 @@ import Checkpoints from "./pages/Checkpoints";
 import CustomerDatabase from "./pages/CustomerDatabase";
 import CustomerDetail from "./pages/CustomerDetail";
 
+// Reminders (Phase 4 — Daily site photo + Weekly cadence SOP)
+import RemindersPage from "./pages/Reminders";
+
 // Pages that show bottom nav
 const BOTTOM_NAV_PATHS = ["/", "/projects", "/company", "/calendar", "/profile"];
 
@@ -89,6 +92,9 @@ function AppLayout() {
           {/* Customer Database — Inquiry → Awarded funnel + categories */}
           <Route path="/customers" component={CustomerDatabase} />
           <Route path="/customers/:id" component={CustomerDetail} />
+
+          {/* Reminders — Daily site photo + Weekly cadence SOP */}
+          <Route path="/reminders" component={RemindersPage} />
 
           {/* Fallback */}
           <Route path="/404" component={NotFound} />

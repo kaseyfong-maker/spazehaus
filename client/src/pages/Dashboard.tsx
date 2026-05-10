@@ -8,12 +8,13 @@ import { motion } from "framer-motion";
 import { useLocation } from "wouter";
 import {
   FolderOpen, Users, ClipboardCheck, TrendingUp,
-  Plus, CalendarCheck, Upload, FileText,
+  Plus, CalendarCheck, FileText, Camera,
   ChevronRight, Bell, Search, AlertCircle, Coins, PenSquare
 } from "lucide-react";
 import { currentUser, projects, staffMembers, announcements } from "@/lib/mockData";
 import { checkpointSummary } from "@/lib/lifecycleData";
 import { formatRM } from "@/lib/quotationData";
+import { reminderSummary } from "@/lib/reminderData";
 
 const HERO_BG = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296470877/AuQSChINbJLLhITo.jpg";
 
@@ -38,6 +39,9 @@ export default function Dashboard() {
   const ckpt = checkpointSummary(projects.map((p) => ({ id: p.id, name: p.name, client: p.client })));
   const hasUrgent = ckpt.overdueCount > 0 || ckpt.thisWeekCount > 0 || ckpt.pendingSignsCount > 0;
 
+  // Daily/weekly reminder summary (Phase 4)
+  const rem = reminderSummary();
+
   const stats = [
     { label: "Active Projects", value: activeProjects, icon: FolderOpen, color: "oklch(0.52 0.09 68)", bg: "oklch(0.62 0.09 68 / 10%)" },
     { label: "Team Members", value: totalStaff, icon: Users, color: "oklch(0.45 0.09 240)", bg: "oklch(0.55 0.09 240 / 10%)" },
@@ -48,10 +52,10 @@ export default function Dashboard() {
   const quickActions = [
     { label: "New Project", icon: Plus, color: "oklch(0.52 0.09 68)", bg: "oklch(0.62 0.09 68 / 10%)", path: "/projects/new" },
     { label: "Checkpoints", icon: AlertCircle, color: "oklch(0.50 0.12 25)", bg: "oklch(0.60 0.12 25 / 10%)", path: "/checkpoints" },
-    { label: "Leave Approval", icon: CalendarCheck, color: "oklch(0.55 0.10 55)", bg: "oklch(0.65 0.10 55 / 10%)", path: "/company/leave" },
-    { label: "Upload Photos", icon: Upload, color: "oklch(0.45 0.09 145)", bg: "oklch(0.55 0.09 145 / 10%)", path: "/projects" },
-    { label: "New Quote", icon: FileText, color: "oklch(0.50 0.10 25)", bg: "oklch(0.60 0.10 25 / 10%)", path: "/quotations/new" },
-    { label: "All Quotes", icon: FileText, color: "oklch(0.45 0.006 68)", bg: "oklch(0.55 0.006 68 / 10%)", path: "/quotations" },
+    { label: "Reminders", icon: Camera, color: "oklch(0.45 0.09 145)", bg: "oklch(0.55 0.09 145 / 10%)", path: "/reminders" },
+    { label: "Customers", icon: Users, color: "oklch(0.45 0.09 240)", bg: "oklch(0.55 0.09 240 / 10%)", path: "/customers" },
+    { label: "Leave", icon: CalendarCheck, color: "oklch(0.55 0.10 55)", bg: "oklch(0.65 0.10 55 / 10%)", path: "/company/leave" },
+    { label: "Quotes", icon: FileText, color: "oklch(0.50 0.10 25)", bg: "oklch(0.60 0.10 25 / 10%)", path: "/quotations" },
   ];
 
   const recentActivity = [
