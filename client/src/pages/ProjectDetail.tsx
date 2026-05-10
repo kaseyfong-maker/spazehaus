@@ -55,10 +55,21 @@ const taskStatusConfig: Record<string, { label: string; bg: string; color: strin
   "pending":     { label: "Pending",     bg: "oklch(0.62 0.09 68 / 12%)",  color: "oklch(0.42 0.09 68)" },
 };
 
+/** Read `?tab=` from the URL once on mount so deep-links from Checkpoints land on the right tab. */
+function getInitialTab(): string {
+  if (typeof window === "undefined") return "Overview";
+  const params = new URLSearchParams(window.location.search);
+  const t = params.get("tab");
+  if (!t) return "Overview";
+  // Normalise — accept any casing
+  const lower = t.toLowerCase();
+  return tabs.find((x) => x.toLowerCase() === lower) || "Overview";
+}
+
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>();
   const [, navigate] = useLocation();
-  const [activeTab, setActiveTab] = useState("Overview");
+  const [activeTab, setActiveTab] = useState(() => getInitialTab());
 
   const project = projects.find((p) => p.id === id) || projects[0];
   const sc = statusConfig[project.status as keyof typeof statusConfig];

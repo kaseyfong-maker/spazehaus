@@ -1,0 +1,440 @@
+/*
+ * SPAZEHAUS IMPORTANT CHECKPOINTS DASHBOARD
+ * Cross-project view of every pending Payment Collection (① ② ③ ④ ⑤)
+ * and Document Sign (3 contracts + 3 drawing sign-offs).
+ *
+ * Source SOP: 2026 Annual Meeting PDF — "Important Checkpoint" pillar.
+ */
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { useLocation } from "wouter";
+import { Coins, PenSquare, AlertCircle, Clock, ChevronRight, FileText, Receipt, CalendarDays } from "lucide-react";
+import AppHeader from "@/components/AppHeader";
+import { projects } from "@/lib/mockData";
+import {
+  getOpenPayments,
+  getOpenSignatures,
+  checkpointSummary,
+  bucketLabel,
+  bucketTone,
+  checkpointStatusConfig,
+  type DueBucket,
+  type PaymentRow,
+  type SignatureRow,
+} from "@/lib/lifecycleData";
+import { formatRM } from "@/lib/quotationData";
+
+const HERO_BG = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296470877/izBqEFfzzpfKonJn.jpg";
+
+type FilterTab = "All" | "Payments" | "Documents";
+const filterTabs: FilterTab[] = ["All", "Payments", "Documents"];
+
+export default function Checkpoints() {
+  const [, navigate] = useLocation();
+  const [filter, setFilter] = useState<FilterTab>("All");
+
+  const projectMeta = projects.map((p) => ({ id: p.id, name: p.name, client: p.client }));
+  const summary = checkpointSummary(projectMeta);
+  const payments = getOpenPayments(projectMeta);
+  const signatures = getOpenSignatures(projectMeta);
+
+  // Group payments by bucket
+  const buckets: DueBucket[] = ["overdue", "this-week", "this-month", "later", "no-date"];
+  const paymentsByBucket = buckets
+    .map((b) => ({ bucket: b, rows: payments.filter((r) => r.bucket === b) }))
+    .filter((g) => g.rows.length > 0);
+
+  // Group signatures by group (contract / drawing)
+  const contracts = signatures.filter((s) => s.signature.group === "contract");
+  const drawings = signatures.filter((s) => s.signature.group === "drawing");
+
+  return (
+    <div className="mobile-container" style={{ background: "oklch(0.985 0.004 80)" }}>
+      <AppHeader title="Checkpoints" subtitle="IMPORTANT · SOP" bgImage={HERO_BG} showBack showNotification />
+
+      <div className="px-4 py-4 space-y-5 pb-24">
+        {/* KPI strip */}
+        <div className="grid grid-cols-2 gap-3">
+          <KpiCard
+            icon={Coins}
+            label="Outstanding"
+            primary={formatRM(summary.outstandingRM)}
+            secondary={`${summary.paymentsCount} open payments`}
+            tint="oklch(0.42 0.09 68)"
+            tintBg="oklch(0.62 0.09 68 / 10%)"
+          />
+          <KpiCard
+            icon={AlertCircle}
+            label="Overdue"
+            primary={String(summary.overdueCount)}
+            secondary={summary.overdueRM > 0 ? formatRM(summary.overdueRM) : "All on track"}
+            tint="oklch(0.50 0.12 25)"
+            tintBg="oklch(0.60 0.12 25 / 10%)"
+            urgent={summary.overdueCount > 0}
+          />
+          <KpiCard
+            icon={CalendarDays}
+            label="Due This Week"
+            primary={String(summary.thisWeekCount)}
+            secondary={summary.thisWeekCount === 1 ? "1 payment" : `${summary.thisWeekCount} payments`}
+            tint="oklch(0.45 0.10 55)"
+            tintBg="oklch(0.65 0.10 55 / 10%)"
+          />
+          <KpiCard
+            icon={PenSquare}
+            label="Pending Signs"
+            primary={String(summary.pendingSignsCount)}
+            secondary={`${summary.pendingContractsCount} contract · ${summary.pendingDrawingsCount} drawing`}
+            tint="oklch(0.38 0.09 240)"
+            tintBg="oklch(0.55 0.09 240 / 10%)"
+          />
+        </div>
+
+        {/* Filter tabs */}
+        <div
+          className="flex rounded-xl p-1"
+          style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}
+        >
+          {filterTabs.map((t) => {
+            const active = filter === t;
+            return (
+              <button
+                key={t}
+                onClick={() => setFilter(t)}
+                className="flex-1 py-2 text-xs font-label rounded-lg transition-colors relative"
+                style={{
+                  background: active ? "oklch(0.62 0.09 68 / 10%)" : "transparent",
+                  color: active ? "oklch(0.42 0.09 68)" : "oklch(0.52 0.010 68)",
+                  letterSpacing: "0.04em",
+                  fontWeight: active ? 700 : 400,
+                }}
+              >
+                {t.toUpperCase()}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Payment Collection sections */}
+        {(filter === "All" || filter === "Payments") && (
+          <div className="space-y-4">
+            <SectionHeader icon={Coins} title="PAYMENT COLLECTION" subtitle="5-gate SOP across all projects" />
+
+            {paymentsByBucket.length === 0 ? (
+              <EmptyCard icon={Coins} title="All payments collected" subtitle="No open invoices across any project" />
+            ) : (
+              paymentsByBucket.map((group) => {
+                const tone = bucketTone[group.bucket];
+                return (
+                  <div key={group.bucket}>
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="h-0.5 w-5 rounded-full" style={{ background: tone.color, opacity: 0.6 }} />
+                      <p className="font-label text-[10px]" style={{ color: tone.color, letterSpacing: "0.12em" }}>
+                        {bucketLabel[group.bucket]} ({group.rows.length})
+                      </p>
+                      <div className="flex-1 h-px" style={{ background: "oklch(0.92 0.008 75)" }} />
+                    </div>
+                    <div
+                      className="rounded-2xl overflow-hidden"
+                      style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
+                    >
+                      {group.rows.map((row, i) => (
+                        <PaymentItem
+                          key={`${row.projectId}-${row.payment.gate}-${i}`}
+                          row={row}
+                          isLast={i === group.rows.length - 1}
+                          onClick={() => navigate(`/projects/${row.projectId}?tab=Lifecycle`)}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
+
+        {/* Document Sign sections */}
+        {(filter === "All" || filter === "Documents") && (
+          <div className="space-y-4">
+            <SectionHeader icon={PenSquare} title="DOCUMENT SIGN" subtitle="6-checkpoint SOP — 3 contracts + 3 drawings" />
+
+            <SignatureGroup
+              title="CONTRACT SIGNS"
+              icon={FileText}
+              tint="oklch(0.50 0.10 25)"
+              tintBg="oklch(0.60 0.10 25 / 12%)"
+              rows={contracts}
+              onRowClick={(r) => navigate(`/projects/${r.projectId}?tab=Lifecycle`)}
+            />
+
+            <SignatureGroup
+              title="DRAWING SIGN-OFFS"
+              icon={Receipt}
+              tint="oklch(0.38 0.09 240)"
+              tintBg="oklch(0.55 0.09 240 / 12%)"
+              rows={drawings}
+              onRowClick={(r) => navigate(`/projects/${r.projectId}?tab=Lifecycle`)}
+            />
+          </div>
+        )}
+
+        <p className="text-[10px] text-center font-label pt-2" style={{ color: "oklch(0.65 0.008 68)", letterSpacing: "0.06em" }}>
+          SPAZEHAUS · IMPORTANT CHECKPOINT SOP · 2026 ANNUAL MEETING
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// KPI cards
+// ─────────────────────────────────────────────────────────────────────────────
+
+function KpiCard({
+  icon: Icon,
+  label,
+  primary,
+  secondary,
+  tint,
+  tintBg,
+  urgent,
+}: {
+  icon: typeof Coins;
+  label: string;
+  primary: string;
+  secondary: string;
+  tint: string;
+  tintBg: string;
+  urgent?: boolean;
+}) {
+  return (
+    <motion.div
+      animate={urgent ? { scale: [1, 1.015, 1] } : undefined}
+      transition={urgent ? { repeat: Infinity, duration: 2.4 } : undefined}
+      className="rounded-2xl p-3"
+      style={{
+        background: "oklch(1 0 0)",
+        border: urgent ? `1px solid ${tint}` : "1px solid oklch(0.90 0.010 75)",
+        boxShadow: urgent ? `0 1px 12px ${tintBg}` : "0 1px 8px oklch(0 0 0 / 0.04)",
+      }}
+    >
+      <div className="flex items-center gap-2 mb-1.5">
+        <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: tintBg }}>
+          <Icon size={14} style={{ color: tint }} />
+        </div>
+        <p className="text-[10px] font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.06em" }}>
+          {label.toUpperCase()}
+        </p>
+      </div>
+      <p className="font-display text-lg font-semibold leading-none truncate" style={{ color: urgent ? tint : "oklch(0.14 0.008 65)" }}>
+        {primary}
+      </p>
+      <p className="text-[10px] mt-1 truncate" style={{ color: "oklch(0.52 0.010 68)" }}>
+        {secondary}
+      </p>
+    </motion.div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Section header
+// ─────────────────────────────────────────────────────────────────────────────
+
+function SectionHeader({
+  icon: Icon,
+  title,
+  subtitle,
+}: {
+  icon: typeof Coins;
+  title: string;
+  subtitle: string;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: "oklch(0.62 0.09 68 / 10%)" }}>
+        <Icon size={16} style={{ color: "oklch(0.42 0.09 68)" }} />
+      </div>
+      <div>
+        <p className="font-label text-xs" style={{ color: "oklch(0.20 0.008 65)", letterSpacing: "0.10em", fontWeight: 700 }}>
+          {title}
+        </p>
+        <p className="text-[10px]" style={{ color: "oklch(0.52 0.010 68)" }}>{subtitle}</p>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Empty state
+// ─────────────────────────────────────────────────────────────────────────────
+
+function EmptyCard({ icon: Icon, title, subtitle }: { icon: typeof Coins; title: string; subtitle: string }) {
+  return (
+    <div
+      className="rounded-2xl p-6 flex flex-col items-center gap-2 text-center"
+      style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
+    >
+      <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "oklch(0.55 0.09 145 / 10%)" }}>
+        <Icon size={18} style={{ color: "oklch(0.38 0.09 145)" }} />
+      </div>
+      <p className="text-sm font-semibold" style={{ color: "oklch(0.14 0.008 65)" }}>{title}</p>
+      <p className="text-xs" style={{ color: "oklch(0.52 0.010 68)" }}>{subtitle}</p>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Payment row
+// ─────────────────────────────────────────────────────────────────────────────
+
+function PaymentItem({ row, isLast, onClick }: { row: PaymentRow; isLast: boolean; onClick: () => void }) {
+  const sc = checkpointStatusConfig[row.status];
+  const gateLabel = ["①", "②", "③", "④", "⑤"][row.payment.gate - 1];
+  const dueText =
+    row.daysFromToday === null
+      ? row.payment.dueDate || "TBD"
+      : row.daysFromToday < 0
+      ? `Due ${row.payment.dueDate} · ${Math.abs(row.daysFromToday)}d late`
+      : row.daysFromToday === 0
+      ? `Due today`
+      : row.daysFromToday <= 7
+      ? `Due ${row.payment.dueDate} · in ${row.daysFromToday}d`
+      : `Due ${row.payment.dueDate}`;
+
+  return (
+    <motion.button
+      whileTap={{ scale: 0.99 }}
+      onClick={onClick}
+      className="w-full px-3 py-3 flex items-center gap-3 text-left"
+      style={{ borderBottom: isLast ? "none" : "1px solid oklch(0.95 0.008 75)" }}
+    >
+      <div
+        className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 font-display text-sm font-semibold"
+        style={{
+          background: row.status === "overdue" ? "oklch(0.60 0.12 25 / 12%)" : "oklch(0.62 0.09 68 / 10%)",
+          color: row.status === "overdue" ? "oklch(0.50 0.12 25)" : "oklch(0.42 0.09 68)",
+        }}
+      >
+        {gateLabel}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <p className="text-sm font-semibold truncate" style={{ color: "oklch(0.14 0.008 65)" }}>
+            {row.payment.label}
+          </p>
+        </div>
+        <p className="text-[11px] truncate mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>
+          {row.projectName} · {row.client}
+        </p>
+        <div className="flex items-center gap-1.5 mt-1">
+          {row.status === "overdue" ? (
+            <AlertCircle size={10} style={{ color: sc.color }} />
+          ) : (
+            <Clock size={10} style={{ color: sc.color }} />
+          )}
+          <p className="text-[10px]" style={{ color: sc.color }}>{dueText}</p>
+        </div>
+      </div>
+      <div className="text-right shrink-0">
+        <p className="font-display text-sm font-semibold" style={{ color: row.status === "overdue" ? "oklch(0.50 0.12 25)" : "oklch(0.42 0.09 68)" }}>
+          {formatRM(row.payment.amount)}
+        </p>
+        <ChevronRight size={12} className="ml-auto mt-1" style={{ color: "oklch(0.65 0.008 68)" }} />
+      </div>
+    </motion.button>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Signature group
+// ─────────────────────────────────────────────────────────────────────────────
+
+function SignatureGroup({
+  title,
+  icon: Icon,
+  tint,
+  tintBg,
+  rows,
+  onRowClick,
+}: {
+  title: string;
+  icon: typeof Coins;
+  tint: string;
+  tintBg: string;
+  rows: SignatureRow[];
+  onRowClick: (row: SignatureRow) => void;
+}) {
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-2">
+        <div className="h-0.5 w-5 rounded-full" style={{ background: tint, opacity: 0.6 }} />
+        <p className="font-label text-[10px]" style={{ color: tint, letterSpacing: "0.12em" }}>
+          {title} ({rows.length})
+        </p>
+        <div className="flex-1 h-px" style={{ background: "oklch(0.92 0.008 75)" }} />
+      </div>
+
+      {rows.length === 0 ? (
+        <div
+          className="rounded-2xl p-4 text-center"
+          style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}
+        >
+          <p className="text-xs" style={{ color: "oklch(0.52 0.010 68)" }}>All signed off</p>
+        </div>
+      ) : (
+        <div
+          className="rounded-2xl overflow-hidden"
+          style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
+        >
+          {rows.map((row, i) => {
+            const sc = checkpointStatusConfig[row.signature.status];
+            return (
+              <motion.button
+                key={`${row.projectId}-${row.signature.key}`}
+                whileTap={{ scale: 0.99 }}
+                onClick={() => onRowClick(row)}
+                className="w-full px-3 py-3 flex items-center gap-3 text-left"
+                style={{ borderBottom: i === rows.length - 1 ? "none" : "1px solid oklch(0.95 0.008 75)" }}
+              >
+                <div
+                  className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                  style={{ background: tintBg }}
+                >
+                  <Icon size={15} style={{ color: tint }} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold truncate" style={{ color: "oklch(0.14 0.008 65)" }}>
+                    {row.signature.label}
+                  </p>
+                  <p className="text-[11px] truncate mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>
+                    {row.projectName} · {row.client}
+                  </p>
+                  {row.signature.notes && (
+                    <p className="text-[10px] truncate mt-0.5" style={{ color: "oklch(0.55 0.008 65)" }}>
+                      {row.signature.notes}
+                    </p>
+                  )}
+                </div>
+                <div className="text-right shrink-0 flex items-center gap-2">
+                  <span
+                    className="text-[9px] font-label px-2 py-0.5 rounded-full"
+                    style={{
+                      background: sc.bg,
+                      color: sc.color,
+                      border: `1px solid ${sc.border}`,
+                      letterSpacing: "0.04em",
+                    }}
+                  >
+                    {sc.label}
+                  </span>
+                  <ChevronRight size={12} style={{ color: "oklch(0.65 0.008 68)" }} />
+                </div>
+              </motion.button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}

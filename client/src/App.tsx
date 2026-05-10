@@ -35,6 +35,9 @@ import QuotationList from "./pages/QuotationList";
 import QuotationDetail from "./pages/QuotationDetail";
 import CreateQuotation from "./pages/CreateQuotation";
 
+// Checkpoints (Phase 2 — cross-project Payment + Document Sign SOP)
+import Checkpoints from "./pages/Checkpoints";
+
 // Pages that show bottom nav
 const BOTTOM_NAV_PATHS = ["/", "/projects", "/company", "/calendar", "/profile"];
 
@@ -75,6 +78,9 @@ function AppLayout() {
           <Route path="/quotations" component={QuotationList} />
           <Route path="/quotations/new" component={CreateQuotation} />
           <Route path="/quotations/:id" component={QuotationDetail} />
+
+          {/* Important Checkpoints — Payment Collection + Document Sign SOP */}
+          <Route path="/checkpoints" component={Checkpoints} />
 
           {/* Fallback */}
           <Route path="/404" component={NotFound} />

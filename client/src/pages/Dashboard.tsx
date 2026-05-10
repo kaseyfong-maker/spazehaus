@@ -8,10 +8,12 @@ import { motion } from "framer-motion";
 import { useLocation } from "wouter";
 import {
   FolderOpen, Users, ClipboardCheck, TrendingUp,
-  Plus, UserPlus, CalendarCheck, Upload, FileText,
-  ChevronRight, Bell, Search
+  Plus, CalendarCheck, Upload, FileText,
+  ChevronRight, Bell, Search, AlertCircle, Coins, PenSquare
 } from "lucide-react";
 import { currentUser, projects, staffMembers, announcements } from "@/lib/mockData";
+import { checkpointSummary } from "@/lib/lifecycleData";
+import { formatRM } from "@/lib/quotationData";
 
 const HERO_BG = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296470877/AuQSChINbJLLhITo.jpg";
 
@@ -32,6 +34,10 @@ export default function Dashboard() {
   const completedThisMonth = projects.filter((p) => p.status === "completed").length;
   const totalStaff = staffMembers.length;
 
+  // Cross-project SOP checkpoint summary (Phase 2)
+  const ckpt = checkpointSummary(projects.map((p) => ({ id: p.id, name: p.name, client: p.client })));
+  const hasUrgent = ckpt.overdueCount > 0 || ckpt.thisWeekCount > 0 || ckpt.pendingSignsCount > 0;
+
   const stats = [
     { label: "Active Projects", value: activeProjects, icon: FolderOpen, color: "oklch(0.52 0.09 68)", bg: "oklch(0.62 0.09 68 / 10%)" },
     { label: "Team Members", value: totalStaff, icon: Users, color: "oklch(0.45 0.09 240)", bg: "oklch(0.55 0.09 240 / 10%)" },
@@ -41,7 +47,7 @@ export default function Dashboard() {
 
   const quickActions = [
     { label: "New Project", icon: Plus, color: "oklch(0.52 0.09 68)", bg: "oklch(0.62 0.09 68 / 10%)", path: "/projects/new" },
-    { label: "Add Staff", icon: UserPlus, color: "oklch(0.45 0.09 240)", bg: "oklch(0.55 0.09 240 / 10%)", path: "/company/staff/new" },
+    { label: "Checkpoints", icon: AlertCircle, color: "oklch(0.50 0.12 25)", bg: "oklch(0.60 0.12 25 / 10%)", path: "/checkpoints" },
     { label: "Leave Approval", icon: CalendarCheck, color: "oklch(0.55 0.10 55)", bg: "oklch(0.65 0.10 55 / 10%)", path: "/company/leave" },
     { label: "Upload Photos", icon: Upload, color: "oklch(0.45 0.09 145)", bg: "oklch(0.55 0.09 145 / 10%)", path: "/projects" },
     { label: "New Quote", icon: FileText, color: "oklch(0.50 0.10 25)", bg: "oklch(0.60 0.10 25 / 10%)", path: "/quotations/new" },
@@ -155,6 +161,116 @@ export default function Dashboard() {
             })}
           </div>
         </motion.div>
+
+        {/* SOP Checkpoint Alerts — Phase 2 */}
+        {hasUrgent && (
+          <motion.div variants={itemVariants}>
+            <div className="flex items-center justify-between mb-3">
+              <p className="sz-label">URGENT CHECKPOINTS</p>
+              <button
+                onClick={() => navigate("/checkpoints")}
+                className="flex items-center gap-1 text-xs font-label"
+                style={{ color: "oklch(0.52 0.09 68)", letterSpacing: "0.04em" }}
+              >
+                View All <ChevronRight size={12} />
+              </button>
+            </div>
+
+            <motion.button
+              whileTap={{ scale: 0.98 }}
+              onClick={() => navigate("/checkpoints")}
+              className="w-full rounded-2xl p-4 text-left"
+              style={{
+                background: ckpt.overdueCount > 0
+                  ? "linear-gradient(135deg, oklch(0.60 0.12 25 / 6%), oklch(1 0 0))"
+                  : "oklch(1 0 0)",
+                border: ckpt.overdueCount > 0
+                  ? "1px solid oklch(0.60 0.12 25 / 30%)"
+                  : "1px solid oklch(0.90 0.010 75)",
+                boxShadow: ckpt.overdueCount > 0
+                  ? "0 1px 12px oklch(0.60 0.12 25 / 12%)"
+                  : "0 1px 8px oklch(0 0 0 / 0.04)",
+              }}
+            >
+              <div className="flex items-center gap-3 mb-3">
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                  style={{
+                    background: ckpt.overdueCount > 0
+                      ? "oklch(0.60 0.12 25 / 12%)"
+                      : "oklch(0.62 0.09 68 / 12%)",
+                  }}
+                >
+                  <AlertCircle
+                    size={18}
+                    style={{
+                      color: ckpt.overdueCount > 0 ? "oklch(0.50 0.12 25)" : "oklch(0.42 0.09 68)",
+                    }}
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold" style={{ color: "oklch(0.14 0.008 65)" }}>
+                    {ckpt.overdueCount > 0 ? "Action required" : "All on track"}
+                  </p>
+                  <p className="text-xs mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>
+                    Payment Collection · Document Sign SOP
+                  </p>
+                </div>
+                <ChevronRight size={14} style={{ color: "oklch(0.65 0.008 68)" }} />
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                <div
+                  className="rounded-xl p-2.5 text-center"
+                  style={{
+                    background: ckpt.overdueCount > 0 ? "oklch(0.60 0.12 25 / 8%)" : "oklch(0.985 0.004 80)",
+                  }}
+                >
+                  <div className="flex items-center justify-center gap-1 mb-0.5">
+                    <Coins size={10} style={{ color: ckpt.overdueCount > 0 ? "oklch(0.50 0.12 25)" : "oklch(0.55 0.008 65)" }} />
+                    <p className="text-[9px] font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.04em" }}>OVERDUE</p>
+                  </div>
+                  <p
+                    className="font-display text-lg font-bold"
+                    style={{ color: ckpt.overdueCount > 0 ? "oklch(0.50 0.12 25)" : "oklch(0.30 0.008 65)" }}
+                  >
+                    {ckpt.overdueCount}
+                  </p>
+                </div>
+                <div className="rounded-xl p-2.5 text-center" style={{ background: "oklch(0.985 0.004 80)" }}>
+                  <div className="flex items-center justify-center gap-1 mb-0.5">
+                    <CalendarCheck size={10} style={{ color: "oklch(0.55 0.008 65)" }} />
+                    <p className="text-[9px] font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.04em" }}>THIS WEEK</p>
+                  </div>
+                  <p className="font-display text-lg font-bold" style={{ color: "oklch(0.30 0.008 65)" }}>
+                    {ckpt.thisWeekCount}
+                  </p>
+                </div>
+                <div className="rounded-xl p-2.5 text-center" style={{ background: "oklch(0.985 0.004 80)" }}>
+                  <div className="flex items-center justify-center gap-1 mb-0.5">
+                    <PenSquare size={10} style={{ color: "oklch(0.55 0.008 65)" }} />
+                    <p className="text-[9px] font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.04em" }}>SIGNS</p>
+                  </div>
+                  <p className="font-display text-lg font-bold" style={{ color: "oklch(0.30 0.008 65)" }}>
+                    {ckpt.pendingSignsCount}
+                  </p>
+                </div>
+              </div>
+
+              <div
+                className="flex items-center justify-between mt-3 pt-3"
+                style={{ borderTop: "1px solid oklch(0.93 0.008 75)" }}
+              >
+                <span className="text-[10px] font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.06em" }}>
+                  TOTAL OUTSTANDING
+                </span>
+                <span className="font-display text-sm font-semibold" style={{ color: "oklch(0.42 0.09 68)" }}>
+                  {formatRM(ckpt.outstandingRM)}
+                </span>
+              </div>
+            </motion.button>
+          </motion.div>
+        )}
 
         {/* Quick Actions */}
         <motion.div variants={itemVariants}>

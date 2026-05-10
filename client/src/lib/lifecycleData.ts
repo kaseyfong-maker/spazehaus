@@ -303,3 +303,177 @@ export function stageStatus(stage: LifecycleStage, currentStageId: string): Chec
   if (stage.order === cur) return "in-progress";
   return "pending";
 }
+
+// —————————————————————————————————————————————————————————————
+// Cross-project aggregation — used by the Checkpoints dashboard
+// —————————————————————————————————————————————————————————————
+
+/**
+ * Mock "today" for the demo. The mock data was crafted around 2026-05-10
+ * (the date in the 2026 Annual Meeting context). Using a fixed date keeps
+ * the overdue/due-this-week buckets meaningful regardless of when the app runs.
+ *
+ * Replace with `new Date()` once the app is wired to a real backend.
+ */
+export const MOCK_TODAY = new Date(2026, 4, 10); // May = month index 4
+
+/** Parse a Spazehaus DD/MM/YYYY date string into a Date. Returns null for "TBD" / invalid. */
+export function parseDDMMYYYY(s: string | undefined): Date | null {
+  if (!s) return null;
+  const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if (!m) return null;
+  const [, dd, mm, yyyy] = m;
+  return new Date(parseInt(yyyy, 10), parseInt(mm, 10) - 1, parseInt(dd, 10));
+}
+
+/** Days from today to a date string. Negative = overdue. Null if undated. */
+export function daysFromToday(dateStr: string | undefined, today: Date = MOCK_TODAY): number | null {
+  const d = parseDDMMYYYY(dateStr);
+  if (!d) return null;
+  const ms = d.getTime() - today.getTime();
+  return Math.floor(ms / (1000 * 60 * 60 * 24));
+}
+
+export type DueBucket = "overdue" | "this-week" | "this-month" | "later" | "no-date";
+
+/** Bucket a due date relative to today. */
+export function bucketDate(dateStr: string | undefined, today: Date = MOCK_TODAY): DueBucket {
+  const days = daysFromToday(dateStr, today);
+  if (days === null) return "no-date";
+  if (days < 0) return "overdue";
+  if (days <= 7) return "this-week";
+  if (days <= 30) return "this-month";
+  return "later";
+}
+
+/** Compute the effective status — promotes "pending"/"in-progress" to "overdue" if the date has passed. */
+export function effectivePaymentStatus(p: PaymentRecord, today: Date = MOCK_TODAY): CheckpointStatus {
+  if (p.status === "completed" || p.status === "skipped" || p.status === "overdue") return p.status;
+  const days = daysFromToday(p.dueDate, today);
+  if (days !== null && days < 0) return "overdue";
+  return p.status;
+}
+
+// —————————————————————————————————————————————————————————————
+// Flattened cross-project rows
+// —————————————————————————————————————————————————————————————
+
+export type PaymentRow = {
+  projectId: string;
+  projectName: string;
+  client: string;
+  payment: PaymentRecord;
+  status: CheckpointStatus;   // effective (may be overdue)
+  bucket: DueBucket;
+  daysFromToday: number | null;
+};
+
+export type SignatureRow = {
+  projectId: string;
+  projectName: string;
+  client: string;
+  signature: DocumentSignRecord;
+};
+
+type ProjectMeta = { id: string; name: string; client: string };
+
+/** Returns every payment record across all projects that is not yet completed. */
+export function getOpenPayments(
+  projectMeta: ProjectMeta[],
+  today: Date = MOCK_TODAY
+): PaymentRow[] {
+  const rows: PaymentRow[] = [];
+  for (const lc of projectLifecycles) {
+    const meta = projectMeta.find((p) => p.id === lc.projectId);
+    if (!meta) continue;
+    for (const p of lc.payments) {
+      if (p.status === "completed" || p.status === "skipped") continue;
+      const status = effectivePaymentStatus(p, today);
+      rows.push({
+        projectId: lc.projectId,
+        projectName: meta.name,
+        client: meta.client,
+        payment: p,
+        status,
+        bucket: bucketDate(p.dueDate, today),
+        daysFromToday: daysFromToday(p.dueDate, today),
+      });
+    }
+  }
+  // Sort: overdue first (most overdue first), then by due date ascending
+  const order: Record<DueBucket, number> = { overdue: 0, "this-week": 1, "this-month": 2, later: 3, "no-date": 4 };
+  return rows.sort((a, b) => {
+    if (a.bucket !== b.bucket) return order[a.bucket] - order[b.bucket];
+    if (a.daysFromToday === null && b.daysFromToday === null) return 0;
+    if (a.daysFromToday === null) return 1;
+    if (b.daysFromToday === null) return -1;
+    return a.daysFromToday - b.daysFromToday;
+  });
+}
+
+/** Returns every signature record across all projects that is not yet signed. */
+export function getOpenSignatures(projectMeta: ProjectMeta[]): SignatureRow[] {
+  const rows: SignatureRow[] = [];
+  for (const lc of projectLifecycles) {
+    const meta = projectMeta.find((p) => p.id === lc.projectId);
+    if (!meta) continue;
+    for (const s of lc.signatures) {
+      if (s.status === "completed" || s.status === "skipped") continue;
+      rows.push({ projectId: lc.projectId, projectName: meta.name, client: meta.client, signature: s });
+    }
+  }
+  // Sort: in-progress first, then by group (contracts before drawings)
+  const groupOrder: Record<"contract" | "drawing", number> = { contract: 0, drawing: 1 };
+  return rows.sort((a, b) => {
+    const aActive = a.signature.status === "in-progress" ? 0 : 1;
+    const bActive = b.signature.status === "in-progress" ? 0 : 1;
+    if (aActive !== bActive) return aActive - bActive;
+    return groupOrder[a.signature.group] - groupOrder[b.signature.group];
+  });
+}
+
+/** Cross-project aggregate counts + RM totals for the dashboard KPI strip. */
+export function checkpointSummary(
+  projectMeta: ProjectMeta[],
+  today: Date = MOCK_TODAY
+) {
+  const payments = getOpenPayments(projectMeta, today);
+  const signatures = getOpenSignatures(projectMeta);
+
+  const outstandingRM = payments.reduce((s, r) => s + r.payment.amount, 0);
+  const overdueCount = payments.filter((r) => r.bucket === "overdue").length;
+  const overdueRM = payments
+    .filter((r) => r.bucket === "overdue")
+    .reduce((s, r) => s + r.payment.amount, 0);
+  const thisWeekCount = payments.filter((r) => r.bucket === "this-week").length;
+  const pendingSignsCount = signatures.length;
+  const pendingContractsCount = signatures.filter((r) => r.signature.group === "contract").length;
+  const pendingDrawingsCount = signatures.filter((r) => r.signature.group === "drawing").length;
+
+  return {
+    outstandingRM,
+    overdueCount,
+    overdueRM,
+    thisWeekCount,
+    pendingSignsCount,
+    pendingContractsCount,
+    pendingDrawingsCount,
+    paymentsCount: payments.length,
+  };
+}
+
+export const bucketLabel: Record<DueBucket, string> = {
+  overdue: "OVERDUE",
+  "this-week": "DUE THIS WEEK",
+  "this-month": "DUE THIS MONTH",
+  later: "LATER",
+  "no-date": "NO DATE SET",
+};
+
+export const bucketTone: Record<DueBucket, { color: string; bg: string }> = {
+  overdue:      { color: "oklch(0.50 0.12 25)",  bg: "oklch(0.60 0.12 25 / 8%)" },
+  "this-week":  { color: "oklch(0.45 0.10 55)",  bg: "oklch(0.65 0.10 55 / 8%)" },
+  "this-month": { color: "oklch(0.42 0.09 68)",  bg: "oklch(0.62 0.09 68 / 8%)" },
+  later:        { color: "oklch(0.38 0.09 240)", bg: "oklch(0.55 0.09 240 / 8%)" },
+  "no-date":    { color: "oklch(0.55 0.006 80)", bg: "oklch(0.55 0.006 80 / 8%)" },
+};

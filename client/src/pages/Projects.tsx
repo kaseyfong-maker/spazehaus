@@ -6,10 +6,11 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
-import { Plus, Search, MapPin, Calendar, FileText, Receipt } from "lucide-react";
+import { Plus, Search, MapPin, Calendar, FileText, Receipt, AlertCircle } from "lucide-react";
 import { quotations, computeTotals } from "@/lib/quotationData";
 import AppHeader from "@/components/AppHeader";
 import { projects, statusConfig, priorityConfig } from "@/lib/mockData";
+import { checkpointSummary } from "@/lib/lifecycleData";
 
 const HERO_BG = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296470877/izBqEFfzzpfKonJn.jpg";
 
@@ -48,29 +49,75 @@ export default function Projects() {
     { label: "Done", value: projects.filter((p) => p.status === "completed").length },
   ];
 
+  // Phase 2 — quick checkpoint summary for the banner
+  const ckpt = checkpointSummary(projects.map((p) => ({ id: p.id, name: p.name, client: p.client })));
+
   return (
     <div className="mobile-container" style={{ background: "oklch(0.985 0.004 80)" }}>
       <AppHeader title="Projects" subtitle="DESIGN PORTFOLIO" bgImage={HERO_BG} showNotification />
 
       <div className="px-4 py-4 space-y-4 pb-24">
-        {/* Quotations shortcut */}
-        <motion.div
-          whileTap={{ scale: 0.98 }}
-          onClick={() => navigate("/quotations")}
-          className="rounded-2xl p-4 flex items-center gap-3"
-          style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.62 0.09 68 / 25%)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
-        >
-          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "oklch(0.62 0.09 68 / 12%)" }}>
-            <FileText size={18} style={{ color: "oklch(0.52 0.09 68)" }} />
-          </div>
-          <div className="flex-1">
-            <p className="text-sm font-semibold" style={{ color: "oklch(0.14 0.008 65)" }}>Quotations & Invoices</p>
-            <p className="text-xs mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>
-              {quotations.length} documents · RM {quotations.reduce((s, q) => s + computeTotals(q.items, q.taxRate).total, 0).toLocaleString("en-MY", { minimumFractionDigits: 0 })} pipeline
+        {/* Quotations + Checkpoints shortcuts (Phase 2) */}
+        <div className="grid grid-cols-2 gap-2.5">
+          <motion.button
+            whileTap={{ scale: 0.97 }}
+            onClick={() => navigate("/quotations")}
+            className="rounded-2xl p-3 flex flex-col gap-1.5 text-left"
+            style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.62 0.09 68 / 25%)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
+          >
+            <div className="flex items-center justify-between">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "oklch(0.62 0.09 68 / 12%)" }}>
+                <FileText size={14} style={{ color: "oklch(0.52 0.09 68)" }} />
+              </div>
+              <Receipt size={12} style={{ color: "oklch(0.65 0.008 68)" }} />
+            </div>
+            <p className="text-xs font-semibold mt-1" style={{ color: "oklch(0.14 0.008 65)" }}>Quotations</p>
+            <p className="text-[10px]" style={{ color: "oklch(0.52 0.010 68)" }}>
+              {quotations.length} docs · RM {quotations.reduce((s, q) => s + computeTotals(q.items, q.taxRate).total, 0).toLocaleString("en-MY", { minimumFractionDigits: 0 })}
             </p>
-          </div>
-          <Receipt size={16} style={{ color: "oklch(0.65 0.008 68)" }} />
-        </motion.div>
+          </motion.button>
+
+          <motion.button
+            whileTap={{ scale: 0.97 }}
+            onClick={() => navigate("/checkpoints")}
+            className="rounded-2xl p-3 flex flex-col gap-1.5 text-left"
+            style={{
+              background: ckpt.overdueCount > 0
+                ? "linear-gradient(135deg, oklch(0.60 0.12 25 / 6%), oklch(1 0 0))"
+                : "oklch(1 0 0)",
+              border: ckpt.overdueCount > 0
+                ? "1px solid oklch(0.60 0.12 25 / 30%)"
+                : "1px solid oklch(0.62 0.09 68 / 25%)",
+              boxShadow: ckpt.overdueCount > 0
+                ? "0 1px 12px oklch(0.60 0.12 25 / 12%)"
+                : "0 1px 8px oklch(0 0 0 / 0.04)",
+            }}
+          >
+            <div className="flex items-center justify-between">
+              <div
+                className="w-8 h-8 rounded-lg flex items-center justify-center"
+                style={{ background: ckpt.overdueCount > 0 ? "oklch(0.60 0.12 25 / 12%)" : "oklch(0.62 0.09 68 / 12%)" }}
+              >
+                <AlertCircle
+                  size={14}
+                  style={{ color: ckpt.overdueCount > 0 ? "oklch(0.50 0.12 25)" : "oklch(0.52 0.09 68)" }}
+                />
+              </div>
+              {ckpt.overdueCount > 0 && (
+                <span
+                  className="text-[9px] font-label px-1.5 py-0.5 rounded-md"
+                  style={{ background: "oklch(0.60 0.12 25 / 12%)", color: "oklch(0.50 0.12 25)", letterSpacing: "0.04em", fontWeight: 700 }}
+                >
+                  {ckpt.overdueCount} OVERDUE
+                </span>
+              )}
+            </div>
+            <p className="text-xs font-semibold mt-1" style={{ color: "oklch(0.14 0.008 65)" }}>Checkpoints</p>
+            <p className="text-[10px]" style={{ color: "oklch(0.52 0.010 68)" }}>
+              {ckpt.paymentsCount} payments · {ckpt.pendingSignsCount} signs
+            </p>
+          </motion.button>
+        </div>
 
         {/* Stats row */}
         <div className="grid grid-cols-4 gap-2">
