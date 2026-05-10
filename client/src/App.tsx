@@ -45,6 +45,9 @@ import CustomerDetail from "./pages/CustomerDetail";
 // Reminders (Phase 4 — Daily site photo + Weekly cadence SOP)
 import RemindersPage from "./pages/Reminders";
 
+// Performance Report (Phase 5 — Sales/GP targets + project timeline)
+import PerformanceReport from "./pages/PerformanceReport";
+
 // Pages that show bottom nav
 const BOTTOM_NAV_PATHS = ["/", "/projects", "/company", "/calendar", "/profile"];
 
@@ -95,6 +98,9 @@ function AppLayout() {
 
           {/* Reminders — Daily site photo + Weekly cadence SOP */}
           <Route path="/reminders" component={RemindersPage} />
+
+          {/* Performance Report — Sales/GP targets + project timeline */}
+          <Route path="/performance" component={PerformanceReport} />
 
           {/* Fallback */}
           <Route path="/404" component={NotFound} />

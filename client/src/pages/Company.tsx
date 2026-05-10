@@ -4,18 +4,21 @@
  */
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
-import { Users, CalendarCheck, UserSearch, BarChart3, Megaphone, ChevronRight } from "lucide-react";
+import { Users, CalendarCheck, UserSearch, BarChart3, Megaphone, ChevronRight, TrendingUp } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import { staffMembers, leaveRequests } from "@/lib/mockData";
+import { companyPerformance, formatRMCompact } from "@/lib/performanceData";
 
 const HERO_BG = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296470877/DEoUZCqpbvuNBJsc.jpg";
 
+const company = companyPerformance();
 const modules = [
-  { id: "staff",         title: "Staff Directory",    subtitle: "Team profiles & roles",         icon: Users,        color: "oklch(0.42 0.09 68)",  bg: "oklch(0.62 0.09 68 / 10%)",  path: "/company/staff",         stat: `${staffMembers.length} members` },
-  { id: "leave",         title: "Leave Management",   subtitle: "Applications & approvals",      icon: CalendarCheck, color: "oklch(0.38 0.09 240)", bg: "oklch(0.55 0.09 240 / 10%)", path: "/company/leave",         stat: `${leaveRequests.filter((l) => l.status === "pending").length} pending` },
-  { id: "recruitment",   title: "Recruitment",        subtitle: "Talent pipeline & candidates",  icon: UserSearch,   color: "oklch(0.45 0.10 55)",  bg: "oklch(0.65 0.10 55 / 10%)",  path: "/company/recruitment",   stat: "5 candidates" },
-  { id: "kpi",           title: "KPI & Performance",  subtitle: "Monthly scores & reviews",      icon: BarChart3,    color: "oklch(0.38 0.09 145)", bg: "oklch(0.55 0.09 145 / 10%)", path: "/company/kpi",           stat: "Feb 2026" },
-  { id: "announcements", title: "Announcements",      subtitle: "Company news & updates",        icon: Megaphone,    color: "oklch(0.45 0.10 25)",  bg: "oklch(0.60 0.10 25 / 10%)",  path: "/company/announcements", stat: "3 posts" },
+  { id: "staff",         title: "Staff Directory",     subtitle: "Team profiles & roles",         icon: Users,        color: "oklch(0.42 0.09 68)",  bg: "oklch(0.62 0.09 68 / 10%)",  path: "/company/staff",         stat: `${staffMembers.length} members` },
+  { id: "performance",   title: "Performance Report",  subtitle: "Sales · GP · Project timeline", icon: TrendingUp,   color: "oklch(0.50 0.10 25)",  bg: "oklch(0.60 0.10 25 / 10%)",  path: "/performance",            stat: `${formatRMCompact(company.awardedYTD)} YTD` },
+  { id: "leave",         title: "Leave Management",    subtitle: "Applications & approvals",      icon: CalendarCheck, color: "oklch(0.38 0.09 240)", bg: "oklch(0.55 0.09 240 / 10%)", path: "/company/leave",         stat: `${leaveRequests.filter((l) => l.status === "pending").length} pending` },
+  { id: "recruitment",   title: "Recruitment",         subtitle: "Talent pipeline & candidates",  icon: UserSearch,   color: "oklch(0.45 0.10 55)",  bg: "oklch(0.65 0.10 55 / 10%)",  path: "/company/recruitment",   stat: "5 candidates" },
+  { id: "kpi",           title: "KPI & Performance",   subtitle: "Monthly scores & reviews",      icon: BarChart3,    color: "oklch(0.38 0.09 145)", bg: "oklch(0.55 0.09 145 / 10%)", path: "/company/kpi",           stat: "Feb 2026" },
+  { id: "announcements", title: "Announcements",       subtitle: "Company news & updates",        icon: Megaphone,    color: "oklch(0.45 0.10 25)",  bg: "oklch(0.60 0.10 25 / 10%)",  path: "/company/announcements", stat: "3 posts" },
 ];
 
 const deptColors: Record<string, { color: string; bg: string }> = {
