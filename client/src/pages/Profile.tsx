@@ -2,10 +2,11 @@
  * SPAZEHAUS PROFILE PAGE
  * Design: Dark premium user profile with settings
  */
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
-import AppHeader from "@/components/AppHeader";
-import { currentUser, kpiData } from "@/lib/mockData";
+import { kpiData } from "@/lib/mockData";
+import { useAuth } from "@/contexts/AuthContext";
 import { ChevronRight, Bell, Shield, HelpCircle, LogOut, Moon, Globe } from "lucide-react";
 import { toast } from "sonner";
 
@@ -19,6 +20,17 @@ const menuItems = [
 
 export default function Profile() {
   const [, navigate] = useLocation();
+  const { staff, signOut } = useAuth();
+  const [signingOut, setSigningOut] = useState(false);
+
+  // Auth gate guarantees staff is non-null in this view, but TS doesn't know
+  if (!staff) return null;
+
+  async function handleSignOut() {
+    setSigningOut(true);
+    await signOut();
+    navigate("/login", { replace: true });
+  }
 
   return (
     <div className="mobile-container">
@@ -40,11 +52,11 @@ export default function Profile() {
               border: "2px solid oklch(0.62 0.09 68 / 25%)",
             }}
           >
-            {currentUser.avatar}
+            {staff.avatar_code}
           </motion.div>
-          <h2 className="font-display text-2xl font-semibold text-neutral-900">{currentUser.name}</h2>
-          <p className="text-sm mt-1" style={{ color: "oklch(0.52 0.09 68)" }}>{currentUser.role}</p>
-          <p className="text-xs mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>{currentUser.department} Department · {currentUser.id}</p>
+          <h2 className="font-display text-2xl font-semibold text-neutral-900">{staff.name}</h2>
+          <p className="text-sm mt-1" style={{ color: "oklch(0.52 0.09 68)" }}>{staff.job_title}</p>
+          <p className="text-xs mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>{staff.dept} Department · {staff.id}</p>
 
           {/* KPI badge */}
           <div
@@ -61,8 +73,10 @@ export default function Profile() {
         {/* Contact info */}
         <div className="rounded-2xl p-4 space-y-2" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
           {[
-            { label: "Email", value: currentUser.email },
-            { label: "Phone", value: currentUser.phone },
+            { label: "Email", value: staff.email },
+            { label: "Phone", value: staff.phone ?? "—" },
+            { label: "Role", value: staff.role },
+            { label: "Status", value: staff.status },
           ].map((item) => (
             <div key={item.label} className="flex items-center justify-between py-1" style={{ borderBottom: "1px solid oklch(0.93 0.008 75)" }}>
               <span className="text-xs" style={{ color: "oklch(0.52 0.010 68)" }}>{item.label}</span>
@@ -112,13 +126,20 @@ export default function Profile() {
 
         {/* Logout */}
         <motion.button
-          whileTap={{ scale: 0.97 }}
-          onClick={() => toast.info("Sign out feature coming soon")}
+          whileTap={signingOut ? undefined : { scale: 0.97 }}
+          onClick={handleSignOut}
+          disabled={signingOut}
           className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl"
-          style={{ background: "oklch(0.68 0.12 25 / 10%)", border: "1px solid oklch(0.68 0.12 25 / 20%)" }}
+          style={{
+            background: "oklch(0.68 0.12 25 / 10%)",
+            border: "1px solid oklch(0.68 0.12 25 / 20%)",
+            opacity: signingOut ? 0.6 : 1,
+          }}
         >
           <LogOut size={15} style={{ color: "oklch(0.68 0.12 25)" }} />
-          <span className="text-sm font-label" style={{ color: "oklch(0.68 0.12 25)", letterSpacing: "0.04em" }}>Sign Out</span>
+          <span className="text-sm font-label" style={{ color: "oklch(0.68 0.12 25)", letterSpacing: "0.04em" }}>
+            {signingOut ? "Signing out…" : "Sign Out"}
+          </span>
         </motion.button>
 
         <p className="text-center text-[10px] font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.06em" }}>SPAZEHAUS MANAGEMENT APP v1.0.0</p>

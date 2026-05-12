@@ -11,7 +11,8 @@ import {
   Plus, CalendarCheck, FileText, Camera,
   ChevronRight, Bell, Search, AlertCircle, Coins, PenSquare
 } from "lucide-react";
-import { currentUser, projects, staffMembers, announcements } from "@/lib/mockData";
+import { projects, staffMembers, announcements } from "@/lib/mockData";
+import { useAuth } from "@/contexts/AuthContext";
 import { checkpointSummary } from "@/lib/lifecycleData";
 import { formatRM } from "@/lib/quotationData";
 import { reminderSummary } from "@/lib/reminderData";
@@ -29,6 +30,7 @@ const itemVariants = {
 
 export default function Dashboard() {
   const [, navigate] = useLocation();
+  const { staff } = useAuth();
 
   const activeProjects = projects.filter((p) => p.status === "active" || p.status === "assigned").length;
   const pendingReview = projects.filter((p) => p.status === "under-review").length;
@@ -110,7 +112,7 @@ export default function Dashboard() {
                 className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold"
                 style={{ background: "linear-gradient(135deg, oklch(0.62 0.09 68), oklch(0.52 0.08 65))", color: "white" }}
               >
-                {currentUser.avatar}
+                {staff?.avatar_code ?? "—"}
               </div>
             </div>
           </div>
@@ -118,8 +120,8 @@ export default function Dashboard() {
           {/* Greeting */}
           <div className="mb-5">
             <p className="text-sm text-white/70">Good morning,</p>
-            <p className="font-display text-xl font-semibold text-white">{currentUser.name}</p>
-            <p className="text-xs mt-0.5" style={{ color: "oklch(0.72 0.09 68)" }}>{currentUser.role}</p>
+            <p className="font-display text-xl font-semibold text-white">{staff?.name ?? ""}</p>
+            <p className="text-xs mt-0.5" style={{ color: "oklch(0.72 0.09 68)" }}>{staff?.job_title ?? ""}</p>
           </div>
 
           {/* Search bar */}

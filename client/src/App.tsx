@@ -3,13 +3,17 @@
  * Design: Dark premium mobile app with bottom navigation
  * Routes: Dashboard, Projects, Company, Calendar, Profile + sub-pages + Quotations
  */
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch, useLocation } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import BottomNav from "./components/BottomNav";
+import Login from "./pages/Login";
+import AuthCallback from "./pages/AuthCallback";
 
 // Main tabs
 import Dashboard from "./pages/Dashboard";
@@ -113,25 +117,80 @@ function AppLayout() {
   );
 }
 
+/**
+ * AuthGate — splits the route tree:
+ *   • /login + /auth/callback are public (anyone can reach them)
+ *   • Everything else requires an authenticated staff session.
+ *
+ * Unauthenticated visitors hitting a protected URL are bounced to /login.
+ * Authenticated visitors hitting /login are bounced to the dashboard.
+ */
+function AuthGate() {
+  const [location, navigate] = useLocation();
+  const { state } = useAuth();
+
+  const isPublic = location === "/login" || location.startsWith("/auth/callback");
+
+  // Redirect rules
+  useEffect(() => {
+    if (state.status === "loading") return;
+    if (state.status === "unauthenticated" && !isPublic) {
+      navigate("/login", { replace: true });
+    }
+    if (state.status === "authenticated" && location === "/login") {
+      navigate("/", { replace: true });
+    }
+  }, [state.status, location, isPublic, navigate]);
+
+  // While the session is resolving, show nothing (avoids a flash of /login)
+  if (state.status === "loading") {
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: "oklch(0.11 0.004 285)" }}
+      />
+    );
+  }
+
+  // Public routes
+  if (isPublic) {
+    return (
+      <Switch>
+        <Route path="/login" component={Login} />
+        <Route path="/auth/callback" component={AuthCallback} />
+      </Switch>
+    );
+  }
+
+  // Unauthenticated + private path → we're mid-redirect; render nothing briefly
+  if (state.status !== "authenticated") {
+    return null;
+  }
+
+  return <AppLayout />;
+}
+
 function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light">
-        <TooltipProvider>
-          <Toaster
-            position="top-center"
-            toastOptions={{
-              style: {
-                background: "oklch(1 0 0)",
-                border: "1px solid oklch(0.90 0.010 75)",
-                color: "oklch(0.14 0.008 65)",
-                fontFamily: "DM Sans, sans-serif",
-                boxShadow: "0 4px 24px oklch(0 0 0 / 0.08)",
-              },
-            }}
-          />
-          <AppLayout />
-        </TooltipProvider>
+        <AuthProvider>
+          <TooltipProvider>
+            <Toaster
+              position="top-center"
+              toastOptions={{
+                style: {
+                  background: "oklch(1 0 0)",
+                  border: "1px solid oklch(0.90 0.010 75)",
+                  color: "oklch(0.14 0.008 65)",
+                  fontFamily: "DM Sans, sans-serif",
+                  boxShadow: "0 4px 24px oklch(0 0 0 / 0.08)",
+                },
+              }}
+            />
+            <AuthGate />
+          </TooltipProvider>
+        </AuthProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );

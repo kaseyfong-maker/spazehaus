@@ -23,7 +23,7 @@ import {
   formatRMCompact,
   type StaffPerformance,
 } from "@/lib/performanceData";
-import { currentUser } from "@/lib/mockData";
+import { useAuth } from "@/contexts/AuthContext";
 import { formatRM } from "@/lib/quotationData";
 import { MOCK_TODAY } from "@/lib/lifecycleData";
 
@@ -33,10 +33,13 @@ type View = "Team" | "Personal";
 
 export default function PerformanceReport() {
   const [view, setView] = useState<View>("Team");
+  const { staff } = useAuth();
 
   const team = teamPerformance();
   const company = companyPerformance();
-  const me = staffPerformance(currentUser.id); // Grace Tan (SH001)
+  // Personal view uses the logged-in staff member; falls back to Grace (SH001)
+  // if the current user isn't a sales staff with a target (e.g. site supervisor).
+  const me = staffPerformance(staff?.id ?? "SH001");
 
   return (
     <div className="mobile-container" style={{ background: "oklch(0.985 0.004 80)" }}>
