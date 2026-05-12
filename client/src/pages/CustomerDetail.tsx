@@ -14,14 +14,13 @@ import AppHeader from "@/components/AppHeader";
 import ConvertInquiryDialog from "@/components/ConvertInquiryDialog";
 import { toast } from "sonner";
 import {
-  getInquiry,
   stageConfig,
   categoryConfig,
   tierConfig,
   type ContactLogEntry,
-  type InquiryStage,
 } from "@/lib/customerData";
-import { staffMembers } from "@/lib/mockData";
+import type { InquiryStage } from "@/lib/dbTypes";
+import { useInquiry, useAllStaff } from "@/lib/queries";
 import { formatRM } from "@/lib/quotationData";
 
 const HERO_BG = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296470877/DEoUZCqpbvuNBJsc.jpg";
@@ -44,8 +43,16 @@ export default function CustomerDetail() {
   const { id } = useParams<{ id: string }>();
   const [, navigate] = useLocation();
   const [convertOpen, setConvertOpen] = useState(false);
-  const inq = id ? getInquiry(id) : undefined;
+  const { data: inq, isLoading } = useInquiry(id);
+  const { data: allStaff = [] } = useAllStaff();
 
+  if (isLoading) {
+    return (
+      <div className="mobile-container" style={{ background: "oklch(0.985 0.004 80)" }}>
+        <AppHeader title="Loading…" subtitle="—" showBack compact />
+      </div>
+    );
+  }
   if (!inq) {
     return (
       <div className="mobile-container" style={{ background: "oklch(0.985 0.004 80)" }}>
@@ -62,7 +69,7 @@ export default function CustomerDetail() {
   const sc = stageConfig[inq.stage];
   const cc = categoryConfig[inq.category];
   const tc = tierConfig[inq.tier];
-  const assignedStaff = inq.assignedTo ? staffMembers.find((s) => s.avatar === inq.assignedTo) : undefined;
+  const assignedStaff = inq.assignedTo ? allStaff.find((s) => s.avatar_code === inq.assignedTo) : undefined;
   const initials = inq.client
     .split(/[\s.&-]+/)
     .filter(Boolean)
@@ -267,7 +274,7 @@ export default function CustomerDetail() {
 
           {/* Contact info */}
           <SectionCard title="CONTACT">
-            <ContactRow icon={Phone} label="Phone" value={inq.contact} onClick={() => toast.info(`Calling ${inq.client}…`)} />
+            <ContactRow icon={Phone} label="Phone" value={inq.contact ?? "—"} onClick={() => toast.info(`Calling ${inq.client}…`)} />
             {inq.email && <ContactRow icon={Mail} label="Email" value={inq.email} onClick={() => toast.info(`Opening email to ${inq.email}…`)} />}
             {assignedStaff && (
               <div
@@ -282,7 +289,7 @@ export default function CustomerDetail() {
                     border: "1.5px solid oklch(0.62 0.09 68 / 25%)",
                   }}
                 >
-                  {assignedStaff.avatar}
+                  {assignedStaff.avatar_code}
                 </div>
                 <div className="flex-1">
                   <p className="text-[10px] font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.06em" }}>
@@ -293,7 +300,7 @@ export default function CustomerDetail() {
                   </p>
                 </div>
                 <span className="text-[10px]" style={{ color: "oklch(0.52 0.010 68)" }}>
-                  {assignedStaff.role}
+                  {assignedStaff.job_title}
                 </span>
               </div>
             )}

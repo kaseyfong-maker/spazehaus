@@ -9,9 +9,8 @@ import { useLocation } from "wouter";
 import { Plus, Search, MapPin, Calendar, FileText, Receipt, AlertCircle, Users, ChevronRight } from "lucide-react";
 import { quotations, computeTotals, formatRM } from "@/lib/quotationData";
 import AppHeader from "@/components/AppHeader";
-import { projects, statusConfig, priorityConfig } from "@/lib/mockData";
-import { checkpointSummary } from "@/lib/lifecycleData";
-import { customerSummary } from "@/lib/customerData";
+import { statusConfig, priorityConfig } from "@/lib/mockData";
+import { useProjects, useOpenPayments, useOpenSignatures, useInquiries, computeCheckpointSummary, computeCustomerSummary } from "@/lib/queries";
 
 const HERO_BG = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296470877/izBqEFfzzpfKonJn.jpg";
 
@@ -37,6 +36,11 @@ export default function Projects() {
   const [activeFilter, setActiveFilter] = useState("all");
   const [search, setSearch] = useState("");
 
+  const { data: projects = [], isLoading } = useProjects();
+  const { data: openPayments = [] } = useOpenPayments();
+  const { data: openSignatures = [] } = useOpenSignatures();
+  const { data: inquiries = [] } = useInquiries();
+
   const filtered = projects.filter((p) => {
     const matchStatus = activeFilter === "all" || p.status === activeFilter;
     const matchSearch = p.name.toLowerCase().includes(search.toLowerCase()) || p.client.toLowerCase().includes(search.toLowerCase());
@@ -50,11 +54,11 @@ export default function Projects() {
     { label: "Done", value: projects.filter((p) => p.status === "completed").length },
   ];
 
-  // Phase 2 — quick checkpoint summary for the banner
-  const ckpt = checkpointSummary(projects.map((p) => ({ id: p.id, name: p.name, client: p.client })));
+  // Cross-project checkpoint summary for the banner
+  const ckpt = computeCheckpointSummary(openPayments, openSignatures);
 
-  // Phase 3 — customer/inquiry summary for the banner
-  const cust = customerSummary();
+  // Customer/inquiry summary for the banner
+  const cust = computeCustomerSummary(inquiries);
 
   return (
     <div className="mobile-container" style={{ background: "oklch(0.985 0.004 80)" }}>

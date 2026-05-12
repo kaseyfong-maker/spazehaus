@@ -15,8 +15,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
 import { X, Sparkles, Calendar, Coins, AlertCircle, Check } from "lucide-react";
 import { toast } from "sonner";
-import { type Inquiry, convertInquiryToProject } from "@/lib/customerData";
-import { staffMembers } from "@/lib/mockData";
+import { useAllStaff, useConvertInquiry, type Inquiry } from "@/lib/queries";
 import { formatRM } from "@/lib/quotationData";
 
 type Priority = "high" | "medium" | "low";
@@ -60,10 +59,12 @@ export default function ConvertInquiryDialog({
   onClose: () => void;
 }) {
   const [, navigate] = useLocation();
+  const { data: allStaff = [] } = useAllStaff();
+  const convertMutation = useConvertInquiry();
 
   // Sensible defaults pulled from the inquiry
-  const designStaff = useMemo(() => staffMembers.filter((s) => s.dept === "Design"), []);
-  const opsStaff = useMemo(() => staffMembers.filter((s) => s.dept === "Operations"), []);
+  const designStaff = useMemo(() => allStaff.filter((s) => s.dept === "Design"), [allStaff]);
+  const opsStaff = useMemo(() => allStaff.filter((s) => s.dept === "Operations"), [allStaff]);
 
   const defaultDesigner = designStaff[1] || designStaff[0]; // skip Grace if there's a senior designer
   const defaultPM = opsStaff[0];
@@ -96,43 +97,44 @@ export default function ConvertInquiryDialog({
   if (form.startDate >= form.targetDate) errors.push("Target date must be after start date.");
   const isValid = errors.length === 0;
 
-  function handleSubmit() {
+  async function handleSubmit() {
     if (!isValid || submitting) return;
     setSubmitting(true);
 
-    const designer = staffMembers.find((s) => s.id === form.designerStaffId);
-    const pm = staffMembers.find((s) => s.id === form.pmStaffId);
-    const team = [designer?.avatar, pm?.avatar].filter((a): a is string => Boolean(a));
+    const designer = allStaff.find((s) => s.id === form.designerStaffId);
+    const pm = allStaff.find((s) => s.id === form.pmStaffId);
 
-    const result = convertInquiryToProject(inquiry.id, {
-      projectName: form.projectName.trim(),
-      designerName: designer?.name ?? "",
-      pmName: pm?.name ?? "",
-      team,
-      startDate: isoToDDMMYYYY(form.startDate),
-      targetDate: isoToDDMMYYYY(form.targetDate),
-      budget: budgetNum,
-      priority: form.priority,
-      areas: form.areas
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean),
-      proposalDeposit: depositNum,
-    });
+    try {
+      const newId = await convertMutation.mutateAsync({
+        inquiryId: inquiry.id,
+        projectName: form.projectName.trim(),
+        designerName: designer?.name ?? "",
+        pmName: pm?.name ?? "",
+        designerAvatar: designer?.avatar_code ?? "",
+        pmAvatar: pm?.avatar_code ?? "",
+        startDate: isoToDDMMYYYY(form.startDate),
+        targetDate: isoToDDMMYYYY(form.targetDate),
+        budget: budgetNum,
+        priority: form.priority,
+        areas: form.areas
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean),
+        proposalDeposit: depositNum,
+        assignedToAvatar: inquiry.assignedTo,
+      });
 
-    if (!result.ok) {
-      toast.error(result.reason);
+      toast.success(`Converted to ${newId}`, {
+        description: `${form.projectName} is live in /projects · ${formatRM(budgetNum)} secured`,
+      });
+
+      onClose();
+      // Small timeout so the toast renders before route change
+      setTimeout(() => navigate(`/projects/${newId}?tab=Lifecycle`), 250);
+    } catch (err: any) {
+      toast.error(err?.message ?? "Could not convert inquiry");
       setSubmitting(false);
-      return;
     }
-
-    toast.success(`Converted to ${result.newProjectId}`, {
-      description: `${form.projectName} is live in /projects · ${formatRM(budgetNum)} secured`,
-    });
-
-    onClose();
-    // Small timeout so the toast renders before route change
-    setTimeout(() => navigate(`/projects/${result.newProjectId}?tab=Lifecycle`), 250);
   }
 
   return (

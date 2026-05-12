@@ -12,11 +12,10 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useParams, useLocation } from "wouter";
 import { Upload, UserPlus, CheckSquare, MapPin, Maximize2, Phone, FileText, Receipt, Coins, PenSquare, Check, Clock, AlertCircle } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
-import { projects, staffMembers, statusConfig, priorityConfig } from "@/lib/mockData";
-import { quotations, statusConfig as qStatusConfig, computeTotals, formatRM } from "@/lib/quotationData";
+import { statusConfig, priorityConfig } from "@/lib/mockData";
+import { statusConfig as qStatusConfig, computeTotals, formatRM } from "@/lib/quotationData";
 import {
   LIFECYCLE_STAGES,
-  getLifecycle,
   paymentSummary,
   signatureSummary,
   stageStatus,
@@ -24,9 +23,15 @@ import {
   checkpointStatusConfig,
   type StagePhase,
   type CheckpointStatus,
+} from "@/lib/lifecycleData";
+import {
+  useProject,
+  useAllStaff,
+  useQuotations,
+  useProjectLifecycle,
   type PaymentRecord,
   type DocumentSignRecord,
-} from "@/lib/lifecycleData";
+} from "@/lib/queries";
 import { toast } from "sonner";
 
 const CARD_BG1 = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296470877/VpBogREhxCtoLqGD.jpg";
@@ -71,10 +76,33 @@ export default function ProjectDetail() {
   const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState(() => getInitialTab());
 
-  const project = projects.find((p) => p.id === id) || projects[0];
+  const { data: project, isLoading } = useProject(id);
+  const { data: allStaff = [] } = useAllStaff();
+  const { data: allQuotations = [] } = useQuotations();
+
+  if (isLoading) {
+    return (
+      <div className="mobile-container" style={{ background: "oklch(0.985 0.004 80)" }}>
+        <AppHeader title="Loading…" subtitle="—" showBack compact />
+      </div>
+    );
+  }
+  if (!project) {
+    return (
+      <div className="mobile-container" style={{ background: "oklch(0.985 0.004 80)" }}>
+        <AppHeader title="Project not found" subtitle="—" showBack compact />
+        <div className="px-4 py-8 text-center">
+          <p className="text-sm" style={{ color: "oklch(0.52 0.010 68)" }}>
+            We couldn't find this project. It may have been deleted.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const sc = statusConfig[project.status as keyof typeof statusConfig];
   const pc = priorityConfig[project.priority as keyof typeof priorityConfig];
-  const teamMembers = staffMembers.filter((s) => project.team.includes(s.avatar));
+  const teamMembers = allStaff.filter((s) => project.team.includes(s.avatar_code));
 
   return (
     <div className="mobile-container" style={{ background: "oklch(0.985 0.004 80)" }}>
@@ -280,7 +308,7 @@ export default function ProjectDetail() {
           {activeTab === "Quotations" && (
             <div className="space-y-3">
               {(() => {
-                const projectQuotes = quotations.filter((q) => q.projectId === project.id);
+                const projectQuotes = allQuotations.filter((q) => q.project_id === project.id);
                 return (
                   <>
                     {projectQuotes.length === 0 ? (
@@ -292,7 +320,7 @@ export default function ProjectDetail() {
                     ) : (
                       projectQuotes.map((q, i) => {
                         const sc2 = qStatusConfig[q.status];
-                        const { total } = computeTotals(q.items, q.taxRate);
+                        const { total } = computeTotals(q.items, q.tax_rate);
                         return (
                           <motion.div
                             key={q.id}
@@ -309,7 +337,7 @@ export default function ProjectDetail() {
                             </div>
                             <div className="flex-1 min-w-0">
                               <p className="text-sm font-semibold" style={{ color: "oklch(0.14 0.008 65)" }}>{q.id}</p>
-                              <p className="text-xs mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>{q.type} · {q.issueDate}</p>
+                              <p className="text-xs mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>{q.doc_type} · {q.issue_date}</p>
                             </div>
                             <div className="text-right shrink-0">
                               <p className="text-sm font-display font-semibold" style={{ color: "oklch(0.52 0.09 68)" }}>{formatRM(total)}</p>
@@ -391,17 +419,17 @@ export default function ProjectDetail() {
                       border: "1.5px solid oklch(0.62 0.09 68 / 25%)",
                     }}
                   >
-                    {member.avatar}
+                    {member.avatar_code}
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-semibold" style={{ color: "oklch(0.14 0.008 65)" }}>{member.name}</p>
-                    <p className="text-xs mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>{member.role}</p>
+                    <p className="text-xs mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>{member.job_title}</p>
                   </div>
                   <span
                     className="text-xs font-label px-2 py-0.5 rounded-full"
                     style={{
-                      background: member.id === project.designer ? "oklch(0.62 0.09 68 / 12%)" : "oklch(0.96 0.006 75)",
-                      color: member.id === project.designer ? "oklch(0.42 0.09 68)" : "oklch(0.52 0.010 68)",
+                      background: member.name === project.designer ? "oklch(0.62 0.09 68 / 12%)" : "oklch(0.96 0.006 75)",
+                      color: member.name === project.designer ? "oklch(0.42 0.09 68)" : "oklch(0.52 0.010 68)",
                       letterSpacing: "0.04em",
                     }}
                   >
@@ -423,7 +451,14 @@ export default function ProjectDetail() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function LifecycleTab({ projectId }: { projectId: string }) {
-  const lc = getLifecycle(projectId);
+  const { data: lc, isLoading } = useProjectLifecycle(projectId);
+  if (isLoading) {
+    return (
+      <div className="rounded-2xl p-8 text-center" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
+        <p className="text-xs" style={{ color: "oklch(0.52 0.010 68)" }}>Loading lifecycle…</p>
+      </div>
+    );
+  }
   if (!lc) {
     return (
       <div className="rounded-2xl p-8 text-center" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>

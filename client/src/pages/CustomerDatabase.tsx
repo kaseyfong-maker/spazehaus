@@ -12,15 +12,12 @@ import { useLocation } from "wouter";
 import { Search, ChevronRight, TrendingUp, Users, Award, XCircle } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import {
-  inquiries,
-  customerSummary,
-  countsByCategory,
   stageConfig,
   categoryConfig,
   tierConfig,
-  type InquiryStage,
-  type CustomerCategory,
 } from "@/lib/customerData";
+import type { InquiryStage, CustomerCategory } from "@/lib/dbTypes";
+import { useInquiries, computeCustomerSummary } from "@/lib/queries";
 import { formatRM } from "@/lib/quotationData";
 
 const HERO_BG = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296470877/DEoUZCqpbvuNBJsc.jpg";
@@ -33,8 +30,15 @@ export default function CustomerDatabase() {
   const [filter, setFilter] = useState<FilterTab>("All");
   const [search, setSearch] = useState("");
 
-  const summary = customerSummary();
-  const catCounts = countsByCategory();
+  const { data: inquiries = [] } = useInquiries();
+  const summary = computeCustomerSummary(inquiries);
+  const catCounts = inquiries.reduce(
+    (acc, i) => {
+      acc[i.category] = (acc[i.category] ?? 0) + 1;
+      return acc;
+    },
+    { Residential: 0, Commercial: 0, "F&B": 0, Office: 0, Investor: 0 } as Record<CustomerCategory, number>,
+  );
 
   // Build the funnel — stage volumes
   const funnel = [

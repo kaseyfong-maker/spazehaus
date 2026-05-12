@@ -10,18 +10,22 @@ import { motion } from "framer-motion";
 import { useLocation } from "wouter";
 import { Coins, PenSquare, AlertCircle, Clock, ChevronRight, FileText, Receipt, CalendarDays } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
-import { projects } from "@/lib/mockData";
 import {
-  getOpenPayments,
-  getOpenSignatures,
-  checkpointSummary,
   bucketLabel,
   bucketTone,
   checkpointStatusConfig,
+  bucketDate,
+  daysFromToday,
+  effectivePaymentStatus,
   type DueBucket,
-  type PaymentRow,
-  type SignatureRow,
 } from "@/lib/lifecycleData";
+import {
+  useOpenPayments,
+  useOpenSignatures,
+  computeCheckpointSummary,
+  type OpenPaymentRow,
+  type OpenSignatureRow,
+} from "@/lib/queries";
 import { formatRM } from "@/lib/quotationData";
 
 const HERO_BG = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296470877/izBqEFfzzpfKonJn.jpg";
@@ -29,24 +33,36 @@ const HERO_BG = "https://files.manuscdn.com/user_upload_by_module/session_file/3
 type FilterTab = "All" | "Payments" | "Documents";
 const filterTabs: FilterTab[] = ["All", "Payments", "Documents"];
 
+type EnrichedPayment = OpenPaymentRow & { bucket: DueBucket; daysFromToday: number | null; effectiveStatus: OpenPaymentRow["status"] };
+
 export default function Checkpoints() {
   const [, navigate] = useLocation();
   const [filter, setFilter] = useState<FilterTab>("All");
 
-  const projectMeta = projects.map((p) => ({ id: p.id, name: p.name, client: p.client }));
-  const summary = checkpointSummary(projectMeta);
-  const payments = getOpenPayments(projectMeta);
-  const signatures = getOpenSignatures(projectMeta);
+  const { data: openPayments = [] } = useOpenPayments();
+  const { data: openSignatures = [] } = useOpenSignatures();
+  const summary = computeCheckpointSummary(openPayments, openSignatures);
 
-  // Group payments by bucket
+  // Enrich each payment with its bucket + days-from-today + effective status
+  const payments: EnrichedPayment[] = openPayments.map((p) => {
+    const days = daysFromToday(p.dueDate);
+    return {
+      ...p,
+      bucket: bucketDate(p.dueDate),
+      daysFromToday: days,
+      effectiveStatus: effectivePaymentStatus({ status: p.status, dueDate: p.dueDate } as Parameters<typeof effectivePaymentStatus>[0]),
+    };
+  });
+
+  // Group payments by bucket — overdue first
   const buckets: DueBucket[] = ["overdue", "this-week", "this-month", "later", "no-date"];
   const paymentsByBucket = buckets
     .map((b) => ({ bucket: b, rows: payments.filter((r) => r.bucket === b) }))
     .filter((g) => g.rows.length > 0);
 
-  // Group signatures by group (contract / drawing)
-  const contracts = signatures.filter((s) => s.signature.group === "contract");
-  const drawings = signatures.filter((s) => s.signature.group === "drawing");
+  // Group signatures by contract / drawing
+  const contracts = openSignatures.filter((s) => s.group === "contract");
+  const drawings = openSignatures.filter((s) => s.group === "drawing");
 
   return (
     <div className="mobile-container" style={{ background: "oklch(0.985 0.004 80)" }}>
@@ -140,7 +156,7 @@ export default function Checkpoints() {
                     >
                       {group.rows.map((row, i) => (
                         <PaymentItem
-                          key={`${row.projectId}-${row.payment.gate}-${i}`}
+                          key={`${row.projectId}-${row.gate}-${i}`}
                           row={row}
                           isLast={i === group.rows.length - 1}
                           onClick={() => navigate(`/projects/${row.projectId}?tab=Lifecycle`)}
@@ -288,19 +304,19 @@ function EmptyCard({ icon: Icon, title, subtitle }: { icon: typeof Coins; title:
 // Payment row
 // ─────────────────────────────────────────────────────────────────────────────
 
-function PaymentItem({ row, isLast, onClick }: { row: PaymentRow; isLast: boolean; onClick: () => void }) {
-  const sc = checkpointStatusConfig[row.status];
-  const gateLabel = ["①", "②", "③", "④", "⑤"][row.payment.gate - 1];
+function PaymentItem({ row, isLast, onClick }: { row: EnrichedPayment; isLast: boolean; onClick: () => void }) {
+  const sc = checkpointStatusConfig[row.effectiveStatus];
+  const gateLabel = ["①", "②", "③", "④", "⑤"][row.gate - 1];
   const dueText =
     row.daysFromToday === null
-      ? row.payment.dueDate || "TBD"
+      ? row.dueDate || "TBD"
       : row.daysFromToday < 0
-      ? `Due ${row.payment.dueDate} · ${Math.abs(row.daysFromToday)}d late`
+      ? `Due ${row.dueDate} · ${Math.abs(row.daysFromToday)}d late`
       : row.daysFromToday === 0
       ? `Due today`
       : row.daysFromToday <= 7
-      ? `Due ${row.payment.dueDate} · in ${row.daysFromToday}d`
-      : `Due ${row.payment.dueDate}`;
+      ? `Due ${row.dueDate} · in ${row.daysFromToday}d`
+      : `Due ${row.dueDate}`;
 
   return (
     <motion.button
@@ -312,8 +328,8 @@ function PaymentItem({ row, isLast, onClick }: { row: PaymentRow; isLast: boolea
       <div
         className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 font-display text-sm font-semibold"
         style={{
-          background: row.status === "overdue" ? "oklch(0.60 0.12 25 / 12%)" : "oklch(0.62 0.09 68 / 10%)",
-          color: row.status === "overdue" ? "oklch(0.50 0.12 25)" : "oklch(0.42 0.09 68)",
+          background: row.effectiveStatus === "overdue" ? "oklch(0.60 0.12 25 / 12%)" : "oklch(0.62 0.09 68 / 10%)",
+          color: row.effectiveStatus === "overdue" ? "oklch(0.50 0.12 25)" : "oklch(0.42 0.09 68)",
         }}
       >
         {gateLabel}
@@ -321,14 +337,14 @@ function PaymentItem({ row, isLast, onClick }: { row: PaymentRow; isLast: boolea
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
           <p className="text-sm font-semibold truncate" style={{ color: "oklch(0.14 0.008 65)" }}>
-            {row.payment.label}
+            {row.label}
           </p>
         </div>
         <p className="text-[11px] truncate mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>
           {row.projectName} · {row.client}
         </p>
         <div className="flex items-center gap-1.5 mt-1">
-          {row.status === "overdue" ? (
+          {row.effectiveStatus === "overdue" ? (
             <AlertCircle size={10} style={{ color: sc.color }} />
           ) : (
             <Clock size={10} style={{ color: sc.color }} />
@@ -337,8 +353,8 @@ function PaymentItem({ row, isLast, onClick }: { row: PaymentRow; isLast: boolea
         </div>
       </div>
       <div className="text-right shrink-0">
-        <p className="font-display text-sm font-semibold" style={{ color: row.status === "overdue" ? "oklch(0.50 0.12 25)" : "oklch(0.42 0.09 68)" }}>
-          {formatRM(row.payment.amount)}
+        <p className="font-display text-sm font-semibold" style={{ color: row.effectiveStatus === "overdue" ? "oklch(0.50 0.12 25)" : "oklch(0.42 0.09 68)" }}>
+          {formatRM(row.amount)}
         </p>
         <ChevronRight size={12} className="ml-auto mt-1" style={{ color: "oklch(0.65 0.008 68)" }} />
       </div>
@@ -362,8 +378,8 @@ function SignatureGroup({
   icon: typeof Coins;
   tint: string;
   tintBg: string;
-  rows: SignatureRow[];
-  onRowClick: (row: SignatureRow) => void;
+  rows: OpenSignatureRow[];
+  onRowClick: (row: OpenSignatureRow) => void;
 }) {
   return (
     <div>
@@ -388,10 +404,10 @@ function SignatureGroup({
           style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
         >
           {rows.map((row, i) => {
-            const sc = checkpointStatusConfig[row.signature.status];
+            const sc = checkpointStatusConfig[row.status];
             return (
               <motion.button
-                key={`${row.projectId}-${row.signature.key}`}
+                key={`${row.projectId}-${row.key}`}
                 whileTap={{ scale: 0.99 }}
                 onClick={() => onRowClick(row)}
                 className="w-full px-3 py-3 flex items-center gap-3 text-left"
@@ -405,14 +421,14 @@ function SignatureGroup({
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold truncate" style={{ color: "oklch(0.14 0.008 65)" }}>
-                    {row.signature.label}
+                    {row.label}
                   </p>
                   <p className="text-[11px] truncate mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>
                     {row.projectName} · {row.client}
                   </p>
-                  {row.signature.notes && (
+                  {row.notes && (
                     <p className="text-[10px] truncate mt-0.5" style={{ color: "oklch(0.55 0.008 65)" }}>
-                      {row.signature.notes}
+                      {row.notes}
                     </p>
                   )}
                 </div>

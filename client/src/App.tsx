@@ -8,9 +8,11 @@ import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch, useLocation } from "wouter";
+import { QueryClientProvider } from "@tanstack/react-query";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { queryClient } from "./lib/queryClient";
 import BottomNav from "./components/BottomNav";
 import Login from "./pages/Login";
 import AuthCallback from "./pages/AuthCallback";
@@ -174,23 +176,25 @@ function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light">
-        <AuthProvider>
-          <TooltipProvider>
-            <Toaster
-              position="top-center"
-              toastOptions={{
-                style: {
-                  background: "oklch(1 0 0)",
-                  border: "1px solid oklch(0.90 0.010 75)",
-                  color: "oklch(0.14 0.008 65)",
-                  fontFamily: "DM Sans, sans-serif",
-                  boxShadow: "0 4px 24px oklch(0 0 0 / 0.08)",
-                },
-              }}
-            />
-            <AuthGate />
-          </TooltipProvider>
-        </AuthProvider>
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <TooltipProvider>
+              <Toaster
+                position="top-center"
+                toastOptions={{
+                  style: {
+                    background: "oklch(1 0 0)",
+                    border: "1px solid oklch(0.90 0.010 75)",
+                    color: "oklch(0.14 0.008 65)",
+                    fontFamily: "DM Sans, sans-serif",
+                    boxShadow: "0 4px 24px oklch(0 0 0 / 0.08)",
+                  },
+                }}
+              />
+              <AuthGate />
+            </TooltipProvider>
+          </AuthProvider>
+        </QueryClientProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );

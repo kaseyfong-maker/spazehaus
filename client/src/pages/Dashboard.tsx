@@ -11,9 +11,9 @@ import {
   Plus, CalendarCheck, FileText, Camera,
   ChevronRight, Bell, Search, AlertCircle, Coins, PenSquare
 } from "lucide-react";
-import { projects, staffMembers, announcements } from "@/lib/mockData";
+import { staffMembers, announcements } from "@/lib/mockData";
 import { useAuth } from "@/contexts/AuthContext";
-import { checkpointSummary } from "@/lib/lifecycleData";
+import { useProjects, useOpenPayments, useOpenSignatures, computeCheckpointSummary } from "@/lib/queries";
 import { formatRM } from "@/lib/quotationData";
 import { reminderSummary } from "@/lib/reminderData";
 
@@ -32,13 +32,17 @@ export default function Dashboard() {
   const [, navigate] = useLocation();
   const { staff } = useAuth();
 
+  const { data: projects = [] } = useProjects();
+  const { data: openPayments = [] } = useOpenPayments();
+  const { data: openSignatures = [] } = useOpenSignatures();
+
   const activeProjects = projects.filter((p) => p.status === "active" || p.status === "assigned").length;
   const pendingReview = projects.filter((p) => p.status === "under-review").length;
   const completedThisMonth = projects.filter((p) => p.status === "completed").length;
   const totalStaff = staffMembers.length;
 
-  // Cross-project SOP checkpoint summary (Phase 2)
-  const ckpt = checkpointSummary(projects.map((p) => ({ id: p.id, name: p.name, client: p.client })));
+  // Cross-project SOP checkpoint summary (Phase 2 → 0C via TanStack Query)
+  const ckpt = computeCheckpointSummary(openPayments, openSignatures);
   const hasUrgent = ckpt.overdueCount > 0 || ckpt.thisWeekCount > 0 || ckpt.pendingSignsCount > 0;
 
   // Daily/weekly reminder summary (Phase 4)
