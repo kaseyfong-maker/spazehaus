@@ -84,7 +84,9 @@ begin
     from lifecycle_stages ls
    where ls.id = v_project.current_stage_id;
 
-  select coalesce(jsonb_agg(s order by s->>'order_index'), '[]'::jsonb)
+  -- Cast order_index to int so the JSON-text sort orders 2 before 10.
+  -- (Without the cast, jsonb_agg sorts as strings and "10" comes before "2".)
+  select coalesce(jsonb_agg(s order by (s->>'order_index')::int), '[]'::jsonb)
     into v_all_stages
     from (
       select to_jsonb(ls.*) as s
@@ -139,7 +141,10 @@ begin
       'client_name',   v_project.client_name,
       'client_contact', v_project.client_contact,
       'client_email',  v_project.client_email,
-      'type',          v_project.type,
+      -- Source column is `project_type` (the staff app's `Project.type` is
+      -- the camelCase alias). Output key stays `type` to match what
+      -- ClientPortalProject expects on the client side.
+      'type',          v_project.project_type,
       'property_type', v_project.property_type,
       'location',      v_project.location,
       'size_sqft',     v_project.size_sqft,
