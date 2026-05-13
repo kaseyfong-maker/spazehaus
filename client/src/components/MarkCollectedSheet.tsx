@@ -1,0 +1,333 @@
+/*
+ * SPAZEHAUS MARK-COLLECTED SHEET
+ * Bottom-sheet form used to mark a Payment Collection gate (or instalment)
+ * as collected from the Checkpoints page or the ProjectDetail Lifecycle tab.
+ *
+ * On submit:
+ *   • payment_records.status      → "completed"
+ *   • payment_records.collected_date → today (DD/MM/YYYY input)
+ *   • payment_records.reference   → user-supplied (txn id / cheque no)
+ *   • payment_records.notes       → optional
+ *
+ * RLS gates the underlying mutation to the OPS tier
+ * (principal / admin / admin_exec / pm / site_supervisor) — see Phase 0D.
+ */
+import { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { X, Coins, Check, AlertCircle } from "lucide-react";
+import { toast } from "sonner";
+import { useUpdatePayment } from "@/lib/queries";
+import { formatRM } from "@/lib/quotationData";
+
+/** YYYY-MM-DD → DD/MM/YYYY (DB → SPAZEHAUS canonical) */
+function isoToDDMM(iso: string): string {
+  const [y, m, d] = iso.split("-");
+  if (!y || !m || !d) return "";
+  return `${d}/${m}/${y}`;
+}
+
+function pad(n: number) { return String(n).padStart(2, "0"); }
+function isoToday(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
+export type MarkCollectedTarget = {
+  id: number;
+  projectId: string;
+  projectName?: string;
+  label: string;
+  amount: number;
+  gate: 1 | 2 | 3 | 4 | 5;
+  reference?: string;
+  notes?: string;
+};
+
+export default function MarkCollectedSheet({
+  target,
+  open,
+  onClose,
+}: {
+  target: MarkCollectedTarget | null;
+  open: boolean;
+  onClose: () => void;
+}) {
+  const updatePayment = useUpdatePayment();
+  const [collectedDateIso, setCollectedDateIso] = useState(isoToday());
+  const [reference, setReference] = useState("");
+  const [notes, setNotes] = useState("");
+
+  // Reset the form whenever the sheet opens against a new target
+  useEffect(() => {
+    if (open && target) {
+      setCollectedDateIso(isoToday());
+      setReference(target.reference ?? "");
+      setNotes(target.notes ?? "");
+    }
+  }, [open, target]);
+
+  if (!target) return null;
+
+  const gateLabel = ["①", "②", "③", "④", "⑤"][target.gate - 1];
+  const collectedDDMM = isoToDDMM(collectedDateIso);
+  const isValidDate = collectedDDMM.length > 0;
+
+  async function handleSubmit() {
+    if (!target) return;
+    if (!isValidDate) {
+      toast.error("Pick a collected date");
+      return;
+    }
+    if (!reference.trim()) {
+      toast.error("Reference is required (txn id / cheque no / bank slip)");
+      return;
+    }
+    try {
+      await updatePayment.mutateAsync({
+        id: target.id,
+        projectId: target.projectId,
+        status: "completed",
+        collectedDate: collectedDDMM,
+        reference: reference.trim(),
+        notes: notes.trim() || null,
+      });
+      toast.success(`Payment ${gateLabel} marked collected`, {
+        description: `${formatRM(target.amount)} · ${reference.trim()}`,
+      });
+      onClose();
+    } catch (err) {
+      toast.error(`Update failed: ${err instanceof Error ? err.message : "unknown error"}`);
+    }
+  }
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <>
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            onClick={() => !updatePayment.isPending && onClose()}
+            className="fixed inset-0 z-40"
+            style={{ background: "oklch(0.11 0.004 285 / 0.55)", backdropFilter: "blur(4px)" }}
+          />
+
+          {/* Bottom sheet */}
+          <motion.div
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            exit={{ y: "100%" }}
+            transition={{ type: "spring", damping: 32, stiffness: 320 }}
+            className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-50 flex flex-col"
+            style={{
+              maxHeight: "92vh",
+              background: "oklch(1 0 0)",
+              borderTopLeftRadius: 28,
+              borderTopRightRadius: 28,
+              boxShadow: "0 -12px 48px oklch(0 0 0 / 0.18)",
+            }}
+          >
+            {/* Drag handle */}
+            <div className="flex justify-center pt-2.5 pb-1.5 shrink-0">
+              <div className="w-10 h-1 rounded-full" style={{ background: "oklch(0.85 0.008 75)" }} />
+            </div>
+
+            {/* Header */}
+            <div
+              className="px-4 pb-3 flex items-start justify-between shrink-0"
+              style={{ borderBottom: "1px solid oklch(0.93 0.008 75)" }}
+            >
+              <div className="flex items-center gap-2.5">
+                <div
+                  className="w-9 h-9 rounded-xl flex items-center justify-center"
+                  style={{ background: "linear-gradient(135deg, oklch(0.55 0.09 145), oklch(0.45 0.09 145))" }}
+                >
+                  <Coins size={16} className="text-white" />
+                </div>
+                <div>
+                  <p className="font-display text-base font-semibold leading-tight" style={{ color: "oklch(0.14 0.008 65)" }}>
+                    Mark Collected
+                  </p>
+                  <p className="text-[11px]" style={{ color: "oklch(0.52 0.010 68)" }}>
+                    {target.label} · {gateLabel}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={onClose}
+                disabled={updatePayment.isPending}
+                className="w-8 h-8 rounded-full flex items-center justify-center"
+                style={{ background: "oklch(0.96 0.006 75)", opacity: updatePayment.isPending ? 0.5 : 1 }}
+              >
+                <X size={14} style={{ color: "oklch(0.42 0.09 68)" }} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+              {/* Amount summary card */}
+              <div
+                className="rounded-2xl p-4 flex items-center justify-between"
+                style={{
+                  background: "linear-gradient(135deg, oklch(0.55 0.09 145 / 8%), oklch(1 0 0))",
+                  border: "1px solid oklch(0.55 0.09 145 / 25%)",
+                }}
+              >
+                <div>
+                  <p className="text-[10px] font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.06em" }}>
+                    AMOUNT
+                  </p>
+                  <p className="font-display text-xl font-semibold" style={{ color: "oklch(0.38 0.09 145)" }}>
+                    {formatRM(target.amount)}
+                  </p>
+                  {target.projectName && (
+                    <p className="text-[11px] mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>
+                      {target.projectName}
+                    </p>
+                  )}
+                </div>
+                <div
+                  className="w-12 h-12 rounded-full flex items-center justify-center text-2xl font-display"
+                  style={{ background: "oklch(0.55 0.09 145 / 12%)", color: "oklch(0.38 0.09 145)" }}
+                >
+                  {gateLabel}
+                </div>
+              </div>
+
+              {/* Collected date */}
+              <FieldGroup label="COLLECTED DATE *">
+                <input
+                  type="date"
+                  value={collectedDateIso}
+                  onChange={(e) => setCollectedDateIso(e.target.value)}
+                  max={isoToday()}
+                  style={inputStyle}
+                />
+              </FieldGroup>
+
+              {/* Reference */}
+              <FieldGroup label="REFERENCE *" hint="Bank transaction ID, cheque number, or bank slip ref.">
+                <input
+                  type="text"
+                  value={reference}
+                  onChange={(e) => setReference(e.target.value)}
+                  placeholder="e.g. TXN20260513-001 or MBB-CHQ-882"
+                  style={inputStyle}
+                  autoCapitalize="characters"
+                />
+              </FieldGroup>
+
+              {/* Notes (optional) */}
+              <FieldGroup label="NOTES" hint="Optional — internal context for the audit log">
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  placeholder="e.g. Partial payment received, balance carried forward…"
+                  style={{ ...inputStyle, minHeight: 70, resize: "none" }}
+                />
+              </FieldGroup>
+
+              {/* Caution row */}
+              <div
+                className="rounded-xl p-3 flex items-start gap-2"
+                style={{ background: "oklch(0.62 0.09 68 / 5%)", border: "1px solid oklch(0.62 0.09 68 / 18%)" }}
+              >
+                <AlertCircle size={13} className="shrink-0 mt-0.5" style={{ color: "oklch(0.42 0.09 68)" }} />
+                <p className="text-[11px] leading-relaxed" style={{ color: "oklch(0.35 0.008 65)" }}>
+                  This will mark the payment as <strong>completed</strong> and log the change in the audit
+                  trail. Only the OPS tier (admin / PM / site supervisor) can perform this action.
+                </p>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div
+              className="px-4 py-3 flex gap-2 shrink-0"
+              style={{ borderTop: "1px solid oklch(0.93 0.008 75)" }}
+            >
+              <button
+                onClick={onClose}
+                disabled={updatePayment.isPending}
+                className="flex-1 py-3 rounded-xl text-sm font-label"
+                style={{
+                  background: "oklch(0.96 0.006 75)",
+                  color: "oklch(0.35 0.008 65)",
+                  border: "1px solid oklch(0.90 0.010 75)",
+                  letterSpacing: "0.04em",
+                  opacity: updatePayment.isPending ? 0.5 : 1,
+                }}
+              >
+                Cancel
+              </button>
+              <motion.button
+                whileTap={updatePayment.isPending ? undefined : { scale: 0.96 }}
+                onClick={handleSubmit}
+                disabled={updatePayment.isPending}
+                className="flex-1 py-3 rounded-xl text-sm font-label font-semibold flex items-center justify-center gap-2"
+                style={{
+                  background: "linear-gradient(135deg, oklch(0.55 0.09 145), oklch(0.45 0.09 145))",
+                  color: "oklch(1 0 0)",
+                  letterSpacing: "0.04em",
+                  boxShadow: updatePayment.isPending
+                    ? "none"
+                    : "0 4px 16px oklch(0.55 0.09 145 / 0.35)",
+                  opacity: updatePayment.isPending ? 0.7 : 1,
+                }}
+              >
+                {updatePayment.isPending ? (
+                  <span>Saving…</span>
+                ) : (
+                  <>
+                    <Check size={15} />
+                    Mark Collected
+                  </>
+                )}
+              </motion.button>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+}
+
+// ─── Form primitives ────────────────────────────────────────────────────────
+
+function FieldGroup({
+  label,
+  hint,
+  children,
+}: {
+  label: string;
+  hint?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <label
+        className="block text-[10px] font-label mb-1.5"
+        style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.06em", fontWeight: 700 }}
+      >
+        {label}
+      </label>
+      {children}
+      {hint && (
+        <p className="text-[10px] mt-1" style={{ color: "oklch(0.52 0.010 68)" }}>{hint}</p>
+      )}
+    </div>
+  );
+}
+
+const inputStyle: React.CSSProperties = {
+  background: "oklch(0.97 0.004 80)",
+  border: "1px solid oklch(0.90 0.010 75)",
+  color: "oklch(0.20 0.008 65)",
+  borderRadius: "0.75rem",
+  padding: "0.7rem 0.9rem",
+  fontSize: "0.875rem",
+  width: "100%",
+  outline: "none",
+};

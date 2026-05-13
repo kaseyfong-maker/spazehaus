@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useParams, useLocation } from "wouter";
 import { Upload, UserPlus, CheckSquare, MapPin, Maximize2, Phone, FileText, Receipt, Coins, PenSquare, Check, Clock, AlertCircle } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
+import MarkCollectedSheet, { type MarkCollectedTarget } from "@/components/MarkCollectedSheet";
 import { statusConfig, priorityConfig } from "@/lib/mockData";
 import { statusConfig as qStatusConfig, computeTotals, formatRM } from "@/lib/quotationData";
 import {
@@ -29,9 +30,11 @@ import {
   useAllStaff,
   useQuotations,
   useProjectLifecycle,
+  canEditPayments,
   type PaymentRecord,
   type DocumentSignRecord,
 } from "@/lib/queries";
+import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
 const CARD_BG1 = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296470877/VpBogREhxCtoLqGD.jpg";
@@ -452,6 +455,9 @@ export default function ProjectDetail() {
 
 function LifecycleTab({ projectId }: { projectId: string }) {
   const { data: lc, isLoading } = useProjectLifecycle(projectId);
+  const { staff: me } = useAuth();
+  const canCollect = canEditPayments(me?.role);
+  const [collectTarget, setCollectTarget] = useState<MarkCollectedTarget | null>(null);
   if (isLoading) {
     return (
       <div className="rounded-2xl p-8 text-center" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
@@ -596,7 +602,23 @@ function LifecycleTab({ projectId }: { projectId: string }) {
                       {payments && payments.length > 0 && (
                         <div className="mt-2 space-y-1.5">
                           {payments.map((p, idx) => (
-                            <PaymentRow key={`${p.gate}-${idx}`} payment={p} />
+                            <PaymentRow
+                              key={`${p.gate}-${idx}`}
+                              payment={p}
+                              projectId={projectId}
+                              canCollect={canCollect}
+                              onCollect={() =>
+                                setCollectTarget({
+                                  id: p.id,
+                                  projectId,
+                                  label: p.label,
+                                  amount: p.amount,
+                                  gate: p.gate,
+                                  reference: p.reference,
+                                  notes: p.notes,
+                                })
+                              }
+                            />
                           ))}
                         </div>
                       )}
@@ -616,6 +638,13 @@ function LifecycleTab({ projectId }: { projectId: string }) {
       <p className="text-[10px] text-center font-label" style={{ color: "oklch(0.65 0.008 68)", letterSpacing: "0.06em" }}>
         SPAZEHAUS · DESIGN & RENOVATION WORKFLOW · 5 PAYMENT GATES · 6 DOCUMENT SIGNATURES
       </p>
+
+      {/* Mark-collected sheet */}
+      <MarkCollectedSheet
+        target={collectTarget}
+        open={collectTarget !== null}
+        onClose={() => setCollectTarget(null)}
+      />
     </div>
   );
 }
@@ -734,8 +763,18 @@ function GateBadge({
   );
 }
 
-function PaymentRow({ payment }: { payment: PaymentRecord }) {
+function PaymentRow({
+  payment,
+  canCollect,
+  onCollect,
+}: {
+  payment: PaymentRecord;
+  projectId: string;
+  canCollect: boolean;
+  onCollect: () => void;
+}) {
   const sc = checkpointStatusConfig[payment.status];
+  const isOpen = payment.status !== "completed" && payment.status !== "skipped";
   return (
     <div
       className="rounded-lg px-2.5 py-2 flex items-center justify-between gap-2"
@@ -762,9 +801,28 @@ function PaymentRow({ payment }: { payment: PaymentRecord }) {
           </p>
         </div>
       </div>
-      <p className="text-[11px] font-display font-semibold shrink-0" style={{ color: sc.color }}>
-        {formatRM(payment.amount)}
-      </p>
+      <div className="flex items-center gap-2 shrink-0">
+        <p className="text-[11px] font-display font-semibold" style={{ color: sc.color }}>
+          {formatRM(payment.amount)}
+        </p>
+        {isOpen && canCollect && (
+          <motion.button
+            whileTap={{ scale: 0.94 }}
+            onClick={onCollect}
+            className="px-2 py-0.5 rounded-md flex items-center gap-1"
+            style={{
+              background: "oklch(0.55 0.09 145 / 12%)",
+              color: "oklch(0.38 0.09 145)",
+              border: "1px solid oklch(0.55 0.09 145 / 25%)",
+            }}
+          >
+            <Check size={9} strokeWidth={3} />
+            <span className="text-[9px] font-label" style={{ letterSpacing: "0.04em", fontWeight: 700 }}>
+              COLLECT
+            </span>
+          </motion.button>
+        )}
+      </div>
     </div>
   );
 }

@@ -8,8 +8,9 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
-import { Coins, PenSquare, AlertCircle, Clock, ChevronRight, FileText, Receipt, CalendarDays } from "lucide-react";
+import { Coins, PenSquare, AlertCircle, Clock, ChevronRight, FileText, Receipt, CalendarDays, Check } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
+import MarkCollectedSheet, { type MarkCollectedTarget } from "@/components/MarkCollectedSheet";
 import {
   bucketLabel,
   bucketTone,
@@ -23,9 +24,11 @@ import {
   useOpenPayments,
   useOpenSignatures,
   computeCheckpointSummary,
+  canEditPayments,
   type OpenPaymentRow,
   type OpenSignatureRow,
 } from "@/lib/queries";
+import { useAuth } from "@/contexts/AuthContext";
 import { formatRM } from "@/lib/quotationData";
 
 const HERO_BG = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296470877/izBqEFfzzpfKonJn.jpg";
@@ -38,6 +41,9 @@ type EnrichedPayment = OpenPaymentRow & { bucket: DueBucket; daysFromToday: numb
 export default function Checkpoints() {
   const [, navigate] = useLocation();
   const [filter, setFilter] = useState<FilterTab>("All");
+  const [collectTarget, setCollectTarget] = useState<MarkCollectedTarget | null>(null);
+  const { staff: me } = useAuth();
+  const canCollect = canEditPayments(me?.role);
 
   const { data: openPayments = [] } = useOpenPayments();
   const { data: openSignatures = [] } = useOpenSignatures();
@@ -159,7 +165,20 @@ export default function Checkpoints() {
                           key={`${row.projectId}-${row.gate}-${i}`}
                           row={row}
                           isLast={i === group.rows.length - 1}
+                          canCollect={canCollect}
                           onClick={() => navigate(`/projects/${row.projectId}?tab=Lifecycle`)}
+                          onCollect={() =>
+                            setCollectTarget({
+                              id: row.id,
+                              projectId: row.projectId,
+                              projectName: row.projectName,
+                              label: row.label,
+                              amount: row.amount,
+                              gate: row.gate,
+                              reference: row.reference,
+                              notes: row.notes,
+                            })
+                          }
                         />
                       ))}
                     </div>
@@ -199,6 +218,13 @@ export default function Checkpoints() {
           SPAZEHAUS · IMPORTANT CHECKPOINT SOP · 2026 ANNUAL MEETING
         </p>
       </div>
+
+      {/* Mark-collected sheet */}
+      <MarkCollectedSheet
+        target={collectTarget}
+        open={collectTarget !== null}
+        onClose={() => setCollectTarget(null)}
+      />
     </div>
   );
 }
@@ -304,7 +330,19 @@ function EmptyCard({ icon: Icon, title, subtitle }: { icon: typeof Coins; title:
 // Payment row
 // ─────────────────────────────────────────────────────────────────────────────
 
-function PaymentItem({ row, isLast, onClick }: { row: EnrichedPayment; isLast: boolean; onClick: () => void }) {
+function PaymentItem({
+  row,
+  isLast,
+  canCollect,
+  onClick,
+  onCollect,
+}: {
+  row: EnrichedPayment;
+  isLast: boolean;
+  canCollect: boolean;
+  onClick: () => void;
+  onCollect: () => void;
+}) {
   const sc = checkpointStatusConfig[row.effectiveStatus];
   const gateLabel = ["①", "②", "③", "④", "⑤"][row.gate - 1];
   const dueText =
@@ -319,46 +357,74 @@ function PaymentItem({ row, isLast, onClick }: { row: EnrichedPayment; isLast: b
       : `Due ${row.dueDate}`;
 
   return (
-    <motion.button
-      whileTap={{ scale: 0.99 }}
-      onClick={onClick}
-      className="w-full px-3 py-3 flex items-center gap-3 text-left"
+    <div
+      className="w-full px-3 py-3 flex items-center gap-3"
       style={{ borderBottom: isLast ? "none" : "1px solid oklch(0.95 0.008 75)" }}
     >
-      <div
-        className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 font-display text-sm font-semibold"
-        style={{
-          background: row.effectiveStatus === "overdue" ? "oklch(0.60 0.12 25 / 12%)" : "oklch(0.62 0.09 68 / 10%)",
-          color: row.effectiveStatus === "overdue" ? "oklch(0.50 0.12 25)" : "oklch(0.42 0.09 68)",
-        }}
+      {/* Row body — tapping navigates to the project's Lifecycle tab */}
+      <motion.button
+        whileTap={{ scale: 0.99 }}
+        onClick={onClick}
+        className="flex items-center gap-3 flex-1 min-w-0 text-left"
       >
-        {gateLabel}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <p className="text-sm font-semibold truncate" style={{ color: "oklch(0.14 0.008 65)" }}>
-            {row.label}
+        <div
+          className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 font-display text-sm font-semibold"
+          style={{
+            background: row.effectiveStatus === "overdue" ? "oklch(0.60 0.12 25 / 12%)" : "oklch(0.62 0.09 68 / 10%)",
+            color: row.effectiveStatus === "overdue" ? "oklch(0.50 0.12 25)" : "oklch(0.42 0.09 68)",
+          }}
+        >
+          {gateLabel}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-semibold truncate" style={{ color: "oklch(0.14 0.008 65)" }}>
+              {row.label}
+            </p>
+          </div>
+          <p className="text-[11px] truncate mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>
+            {row.projectName} · {row.client}
           </p>
+          <div className="flex items-center gap-1.5 mt-1">
+            {row.effectiveStatus === "overdue" ? (
+              <AlertCircle size={10} style={{ color: sc.color }} />
+            ) : (
+              <Clock size={10} style={{ color: sc.color }} />
+            )}
+            <p className="text-[10px]" style={{ color: sc.color }}>{dueText}</p>
+          </div>
         </div>
-        <p className="text-[11px] truncate mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>
-          {row.projectName} · {row.client}
-        </p>
-        <div className="flex items-center gap-1.5 mt-1">
-          {row.effectiveStatus === "overdue" ? (
-            <AlertCircle size={10} style={{ color: sc.color }} />
-          ) : (
-            <Clock size={10} style={{ color: sc.color }} />
-          )}
-          <p className="text-[10px]" style={{ color: sc.color }}>{dueText}</p>
-        </div>
-      </div>
-      <div className="text-right shrink-0">
-        <p className="font-display text-sm font-semibold" style={{ color: row.effectiveStatus === "overdue" ? "oklch(0.50 0.12 25)" : "oklch(0.42 0.09 68)" }}>
+      </motion.button>
+
+      {/* Right side — amount + action stack */}
+      <div className="flex flex-col items-end gap-1.5 shrink-0">
+        <p
+          className="font-display text-sm font-semibold"
+          style={{ color: row.effectiveStatus === "overdue" ? "oklch(0.50 0.12 25)" : "oklch(0.42 0.09 68)" }}
+        >
           {formatRM(row.amount)}
         </p>
-        <ChevronRight size={12} className="ml-auto mt-1" style={{ color: "oklch(0.65 0.008 68)" }} />
+        {canCollect ? (
+          <motion.button
+            whileTap={{ scale: 0.94 }}
+            onClick={onCollect}
+            className="px-2.5 py-1 rounded-md flex items-center gap-1"
+            style={{
+              background: "oklch(0.55 0.09 145 / 12%)",
+              color: "oklch(0.38 0.09 145)",
+              border: "1px solid oklch(0.55 0.09 145 / 25%)",
+            }}
+          >
+            <Check size={10} strokeWidth={3} />
+            <span className="text-[10px] font-label" style={{ letterSpacing: "0.04em", fontWeight: 700 }}>
+              COLLECT
+            </span>
+          </motion.button>
+        ) : (
+          <ChevronRight size={12} style={{ color: "oklch(0.65 0.008 68)" }} />
+        )}
       </div>
-    </motion.button>
+    </div>
   );
 }
 

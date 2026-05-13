@@ -9,9 +9,9 @@
 
 ## Where We Are
 
-A **production-deployed**, **auth-gated**, **fully-database-backed** internal management app for SPAZEHAUS interior design firm in Johor Bahru. Every page now reads from real Postgres through TanStack Query + Supabase. Magic-link auth restricts access to staff with matching emails, and **role-based RLS** enforces what each user can read and write. The daily close-door photo SOP uploads real JPEGs to Supabase Storage. The Vercel production build is lean (no more inlined `vitePluginManusRuntime`).
+A **production-deployed**, **auth-gated**, **fully-database-backed** internal management app for SPAZEHAUS interior design firm in Johor Bahru. Every page reads from real Postgres through TanStack Query + Supabase. Magic-link auth restricts access to staff with matching emails, **role-based RLS** enforces what each user can read and write, and the daily close-door photo SOP uploads real JPEGs to Supabase Storage. The Vercel production build is lean (no more inlined `vitePluginManusRuntime`).
 
-Tier 0 is complete. The app is safe to share with the SpazeHaus team — every authenticated request is filtered by role at the database layer, not at the UI.
+**Tier 1 has started.** Admins (principal / admin / admin_exec / pm / site_supervisor) can now mark payment gates as collected directly from the Checkpoints page or the project's Lifecycle tab — closing the SOP loop end-to-end. Every status change flows through the audit_log trigger.
 
 ---
 
@@ -41,7 +41,13 @@ Tier 0 is complete. The app is safe to share with the SpazeHaus team — every a
 | **Phase 0C.2 — Full page migration + new tables** | _this commit_ | New tables: `calendar_events`, `kpi_records`. New seed data for both. `dbTypes.ts` extended with 10 new row shapes. `queries.ts` expanded with ~20 new hooks: quotations (incl. create + status mutation), leave_requests (incl. apply + approve), candidates, announcements, sales_targets, kpi_records, calendar_events, site_photos, plus pure computational helpers (`computeTeamPerformance`, `computeCompanyPerformance`, `buildReminders`, `reminderSummary`, `buildProjectTimeline`, `buildSitePhotoMaps`). Every mock-backed page migrated. **Daily site-photo upload flow live** via Supabase Storage. |
 | **Phase 0D — Role-based RLS** | _this commit_ | Replaces the permissive 0A policies. Three tiers: ADMIN (principal / admin / admin_exec — full access), OPERATIONS (pm / site_supervisor — read all + write operational tables), FIELD (designer / sales — read all + write records assigned to them + own leave). SECURITY DEFINER helpers (`current_staff_id()`, `current_staff_role()`, `is_admin_tier()`, `is_ops_tier()`) keep policy bodies readable. KPI records + sales targets are now strictly self-or-admin. Audit log is admin-only + own actions. Storage bucket tightened too. |
 | **Phase 0E — Real staff emails (template)** | _this commit_ | SQL template at `20260513000004_phase_0e_staff_emails.sql` with one `UPDATE` per staff. Paste real addresses inline, run in Supabase SQL Editor, then each staff member can sign in via magic link. |
-| **Phase 0F — Vercel polish** | _this commit_ | `vite.config.ts` gates the legacy `vitePluginManusRuntime` + `vitePluginManusDebugCollector` behind `MANUS_RUNTIME=1`. Production builds no longer inline ~100kb into `index.html` — confirmed by build: `index.html` is now **0.92kB** (down from 367kB). |
+| **Phase 0F — Vercel polish** | `61fe7a7` | `vite.config.ts` gates the legacy `vitePluginManusRuntime` + `vitePluginManusDebugCollector` behind `MANUS_RUNTIME=1`. Production builds no longer inline ~100kb into `index.html` — confirmed by build: `index.html` is now **0.92kB** (down from 367kB). |
+
+### Tier 1 — User-facing features (in progress)
+
+| Feature | Commit | What shipped |
+|---|---|---|
+| **Payment-collected mutations** | _this commit_ | New `useUpdatePayment` hook in `queries.ts` with invalidations across `qk.openPayments / projectLifecycle / projects / project`. New `MarkCollectedSheet` bottom-sheet component (collected date · reference · notes). Wired into the Checkpoints page (per-payment "COLLECT" pill) and the ProjectDetail Lifecycle tab (inline COLLECT button on each open payment row). Gated to OPS tier (`canEditPayments()` helper) so field staff don't see the button. Audit log captures every change via the Phase 0A trigger. |
 
 ---
 
@@ -158,18 +164,18 @@ After step 3, the app behaves as before for `kaseyfong@saysheji.com` (principal,
 
 ## Next Steps — Tier 1 candidates
 
-Tier 0 is done. Whenever you're ready to push into Tier 1:
+Payment-collected mutations are done. Remaining Tier 1 options:
 
 | Feature | Effort | Why it matters |
 |---|---|---|
+| **Document upload (e-sign placeholder)** | 1 day | Use Supabase Storage for the 6 signature documents per project. Tap → upload PDF → mark signed. Same upload pattern as site photos. |
 | **WhatsApp reminder integration** | 1–2 days | Hook Reminders into WhatsApp Business API so site supervisors get pinged at 5pm if they haven't uploaded their close-door photo. |
-| **Payment-collected mutations** | ½ day | Let admin mark payment gates as collected via UI. Currently the data is read-only; the mutation hook + invalidation are the missing piece. |
-| **Document upload (e-sign placeholder)** | 1 day | Use Supabase Storage for the 6 signature documents per project. Tap → upload PDF → mark signed. |
+| **Stage advancement on payment collection** | ½ day | When ① is collected, auto-advance `current_stage_id` to the next stage. Currently the stage is decoupled from payment status — admins have to advance it manually. |
 | **Client portal** | 2–3 days | Read-only public link per project for clients to see progress + sign documents. Requires separate Supabase auth flow. |
 | **`/admin/audit` page** | 1 hour | Surface the audit_log table for the admin tier — already populated by triggers, just needs a viewer. |
 | **Auto-generate TS types** | 30 min | `supabase gen types typescript --project-id jifrzsvqdshjbqptubgz` and replace `dbTypes.ts`. |
 | **Sentry / error tracking** | 30 min | One-line setup, big upside as more staff start using the app. |
-| **E2E test for the conversion flow** | 1–2 hours | The Convert Inquiry flow is the highest-value mutation — worth a Playwright happy-path test. |
+| **E2E test for the conversion flow + payment collection** | 1–2 hours | The two highest-value mutations — worth Playwright happy-path tests. |
 
 ---
 

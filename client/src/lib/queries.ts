@@ -404,6 +404,62 @@ export function useOpenSignatures() {
   });
 }
 
+// ─── PAYMENT MUTATIONS ──────────────────────────────────────────────────────
+// Used by the Checkpoints page + ProjectDetail Lifecycle tab so admins can
+// mark a payment gate (or instalment) as collected. RLS gates this to the
+// OPS tier (principal/admin/admin_exec/pm/site_supervisor) — see Phase 0D.
+
+export type UpdatePaymentArgs = {
+  id: number;
+  projectId: string;                  // required for cache invalidation
+  status?: PaymentRecordRow["status"];
+  collectedDate?: string;             // DD/MM/YYYY — null clears
+  dueDate?: string;                   // DD/MM/YYYY — null clears
+  reference?: string | null;
+  notes?: string | null;
+};
+
+export function useUpdatePayment() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (args: UpdatePaymentArgs): Promise<PaymentRecordRow> => {
+      const payload: Record<string, unknown> = {};
+      if (args.status !== undefined) payload.status = args.status;
+      if (args.collectedDate !== undefined) {
+        payload.collected_date = args.collectedDate ? ddmmyyyyToIso(args.collectedDate) : null;
+      }
+      if (args.dueDate !== undefined) {
+        payload.due_date = args.dueDate ? ddmmyyyyToIso(args.dueDate) : null;
+      }
+      if (args.reference !== undefined) payload.reference = args.reference;
+      if (args.notes !== undefined) payload.notes = args.notes;
+
+      const { data, error } = await supabase
+        .from("payment_records")
+        .update(payload)
+        .eq("id", args.id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data as PaymentRecordRow;
+    },
+    onSuccess: (_row, args) => {
+      qc.invalidateQueries({ queryKey: qk.openPayments });
+      qc.invalidateQueries({ queryKey: qk.projectLifecycle(args.projectId) });
+      qc.invalidateQueries({ queryKey: qk.projects });
+      qc.invalidateQueries({ queryKey: qk.project(args.projectId) });
+    },
+  });
+}
+
+/** Convenience helper: returns true when the current staff role may write payments. */
+export function canEditPayments(role: StaffRow["role"] | null | undefined): boolean {
+  if (!role) return false;
+  return role === "principal" || role === "admin" || role === "admin_exec"
+      || role === "pm" || role === "site_supervisor";
+}
+
 // ─── INQUIRIES ──────────────────────────────────────────────────────────────
 
 export function useInquiries() {
