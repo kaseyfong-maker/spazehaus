@@ -329,7 +329,13 @@ function AuditEventCard({ entry }: { entry: AuditEntry }) {
 // ─── Diff view ──────────────────────────────────────────────────────────────
 
 function DiffView({ entry }: { entry: AuditEntry }) {
-  const { action, before_data, after_data } = entry;
+  const { action } = entry;
+  // Audit trigger always serialises row records as JSON objects (never bare
+  // scalars or arrays), but Postgres JSONB is typed as `Json` in the schema.
+  // Narrow at the boundary so the rest of the diff helpers can treat them as
+  // structured records.
+  const before_data = entry.before_data as Record<string, unknown> | null;
+  const after_data = entry.after_data as Record<string, unknown> | null;
 
   // For INSERT show only the resulting row's interesting fields.
   if (action === "INSERT") {

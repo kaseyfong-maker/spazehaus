@@ -28,6 +28,9 @@ build/
 bun.lock
 bun.lockb
 
+# Supabase CLI download cache (bun x supabase ... drops binary here)
+supabase/.temp/
+
 # OS generated files
 .DS_Store
 .DS_Store?

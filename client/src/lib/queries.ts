@@ -32,7 +32,9 @@ import type {
   KpiRecordRow,
   AuditLogRow,
   AuditAction,
+  ContactLogEntryDb,
 } from "@/lib/dbTypes";
+import type { TablesUpdate, TablesInsert } from "@/lib/database.types";
 import type { SignatureKey } from "@/lib/lifecycleData";
 import type { LineItem } from "@/lib/quotationData";
 
@@ -118,8 +120,12 @@ export type ProjectLifecycle = {
   signatures: DocumentSignRecord[];
 };
 
-// Re-export Inquiry / Staff shapes (close-enough to the existing mock types)
-export type Inquiry = InquiryRow & {
+// Re-export Inquiry / Staff shapes (close-enough to the existing mock types).
+// `contact_log` is JSONB at the DB level (typed as `Json` in database.types.ts)
+// but every row in the wild is an array of ContactLogEntryDb. Narrow at the app
+// boundary so the UI doesn't have to cast on every read.
+export type Inquiry = Omit<InquiryRow, "contact_log"> & {
+  contact_log: ContactLogEntryDb[];
   // Aliases so the existing UI keeps working without per-component rewrites
   date: string;
   client: string;
@@ -132,7 +138,7 @@ export type Inquiry = InquiryRow & {
   rejectionReason?: string;
   lastUpdated: string;
   propertyType: string;
-  contactLog: InquiryRow["contact_log"];
+  contactLog: ContactLogEntryDb[];
 };
 
 export type Staff = StaffRow;
@@ -206,6 +212,8 @@ function mapSignature(row: SignatureRecordRow): DocumentSignRecord {
 
 function mapInquiry(row: InquiryRow, staffById: Map<string, StaffRow>): Inquiry {
   const assignedAvatar = row.assigned_to_id ? staffById.get(row.assigned_to_id)?.avatar_code : undefined;
+  // `contact_log` is JSONB on the wire — narrow it here once.
+  const contactLog = (row.contact_log ?? []) as ContactLogEntryDb[];
   return {
     ...row,
     date: isoToDDMMYYYY(row.inquiry_date),
@@ -219,8 +227,8 @@ function mapInquiry(row: InquiryRow, staffById: Map<string, StaffRow>): Inquiry 
     rejectedDate: isoToDDMMYYYY(row.rejected_date) || undefined,
     rejectionReason: row.rejection_reason ?? undefined,
     lastUpdated: isoToDDMMYYYY(row.last_updated),
-    contact_log: (row.contact_log ?? []) as Inquiry["contact_log"],
-    contactLog: (row.contact_log ?? []) as Inquiry["contact_log"],
+    contact_log: contactLog,
+    contactLog,
   };
 }
 
@@ -300,10 +308,13 @@ export function useProject(id: string | undefined) {
     queryKey: qk.project(id ?? ""),
     enabled: Boolean(id),
     queryFn: async (): Promise<Project | null> => {
+      // `enabled: Boolean(id)` guarantees id is defined here — TS doesn't infer
+      // that across the closure, so pin it.
+      const safeId = id ?? "";
       const { data, error } = await supabase
         .from("projects")
         .select(PROJECT_SELECT)
-        .eq("id", id)
+        .eq("id", safeId)
         .maybeSingle();
       if (error) throw error;
       return data ? mapProject(data as unknown as ProjectWithStaffJoin) : null;
@@ -319,22 +330,23 @@ export function useProjectLifecycle(projectId: string | undefined) {
     enabled: Boolean(projectId),
     queryFn: async (): Promise<ProjectLifecycle | null> => {
       // Two parallel reads — payments + signatures + the project's stage info
+      const safeProjectId = projectId ?? "";
       const [proj, payRes, sigRes] = await Promise.all([
         supabase
           .from("projects")
           .select("id, current_stage_id, lifecycle_started_at")
-          .eq("id", projectId)
+          .eq("id", safeProjectId)
           .maybeSingle(),
         supabase
           .from("payment_records")
           .select("*")
-          .eq("project_id", projectId)
+          .eq("project_id", safeProjectId)
           .order("gate")
           .order("instalment", { nullsFirst: true }),
         supabase
           .from("signature_records")
           .select("*")
-          .eq("project_id", projectId)
+          .eq("project_id", safeProjectId)
           .order("group_name")
           .order("signature_key"),
       ]);
@@ -467,7 +479,7 @@ export function useUpdatePayment() {
 
   return useMutation({
     mutationFn: async (args: UpdatePaymentArgs): Promise<CheckpointMutationResult<PaymentRecordRow>> => {
-      const payload: Record<string, unknown> = {};
+      const payload: TablesUpdate<"payment_records"> = {};
       if (args.status !== undefined) payload.status = args.status;
       if (args.collectedDate !== undefined) {
         payload.collected_date = args.collectedDate ? ddmmyyyyToIso(args.collectedDate) : null;
@@ -617,7 +629,7 @@ export function useUpdateSignature() {
 
   return useMutation({
     mutationFn: async (args: UpdateSignatureArgs): Promise<CheckpointMutationResult<SignatureRecordRow>> => {
-      const payload: Record<string, unknown> = {};
+      const payload: TablesUpdate<"signature_records"> = {};
       if (args.status !== undefined) payload.status = args.status;
       if (args.signedDate !== undefined) {
         payload.signed_date = args.signedDate ? ddmmyyyyToIso(args.signedDate) : null;
@@ -749,8 +761,9 @@ export function useInquiry(id: string | undefined) {
     queryKey: qk.inquiry(id ?? ""),
     enabled: Boolean(id),
     queryFn: async (): Promise<Inquiry | null> => {
+      const safeId = id ?? "";
       const [inqRes, staffRes] = await Promise.all([
-        supabase.from("inquiries").select("*").eq("id", id).maybeSingle(),
+        supabase.from("inquiries").select("*").eq("id", safeId).maybeSingle(),
         supabase.from("staff").select("*"),
       ]);
       if (inqRes.error) throw inqRes.error;
@@ -965,10 +978,11 @@ export function useQuotation(id: string | undefined) {
     queryKey: qk.quotation(id ?? ""),
     enabled: Boolean(id),
     queryFn: async (): Promise<QuotationWithItems | null> => {
+      const safeId = id ?? "";
       const { data, error } = await supabase
         .from("quotations")
         .select(QUOTATION_SELECT)
-        .eq("id", id)
+        .eq("id", safeId)
         .maybeSingle();
       if (error) throw error;
       if (!data) return null;
@@ -1257,10 +1271,11 @@ export function useStaffKpiRecords(staffId: string | undefined) {
     queryKey: qk.staffKpi(staffId ?? ""),
     enabled: Boolean(staffId),
     queryFn: async (): Promise<KpiRecordRow[]> => {
+      const safeId = staffId ?? "";
       const { data, error } = await supabase
         .from("kpi_records")
         .select("*")
-        .eq("staff_id", staffId)
+        .eq("staff_id", safeId)
         .order("year", { ascending: false })
         .order("month", { ascending: false });
       if (error) throw error;
@@ -1292,10 +1307,11 @@ export function useStaffById(id: string | undefined) {
     queryKey: qk.staffOne(id ?? ""),
     enabled: Boolean(id),
     queryFn: async (): Promise<StaffRow | null> => {
+      const safeId = id ?? "";
       const { data, error } = await supabase
         .from("staff")
         .select("*")
-        .eq("id", id)
+        .eq("id", safeId)
         .maybeSingle();
       if (error) throw error;
       return (data as StaffRow | null) ?? null;
@@ -1324,10 +1340,11 @@ export function useProjectSitePhotos(projectId: string | undefined) {
     queryKey: qk.projectSitePhotos(projectId ?? ""),
     enabled: Boolean(projectId),
     queryFn: async (): Promise<SitePhotoRow[]> => {
+      const safeProjectId = projectId ?? "";
       const { data, error } = await supabase
         .from("site_photos")
         .select("*")
-        .eq("project_id", projectId)
+        .eq("project_id", safeProjectId)
         .order("photo_date", { ascending: false });
       if (error) throw error;
       return (data ?? []) as SitePhotoRow[];

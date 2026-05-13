@@ -10,6 +10,7 @@
  */
 
 import { createClient } from "@supabase/supabase-js";
+import type { Database } from "@/lib/database.types";
 
 const url = import.meta.env.VITE_SUPABASE_URL;
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -20,7 +21,9 @@ if (!url || !anonKey) {
   );
 }
 
-export const supabase = createClient(url, anonKey, {
+// Generic-typed client so every `.from()` and `.rpc()` is checked against the
+// hand-authored `Database` schema in client/src/lib/database.types.ts.
+export const supabase = createClient<Database>(url, anonKey, {
   auth: {
     // Persist the session in localStorage so a page refresh keeps the user logged in
     persistSession: true,
