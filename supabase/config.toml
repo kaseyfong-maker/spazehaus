@@ -1,0 +1,22 @@
+# Supabase project config — only the per-function overrides we actually need.
+# The CLI fills in the rest from project defaults at deploy time.
+#
+# Why this file exists:
+#   `client-portal-photo` is invoked from the public /portal/:token page
+#   which has NO Supabase Auth session. By default Supabase's edge gateway
+#   rejects unauthenticated requests with HTTP 401
+#   `UNAUTHORIZED_NO_AUTH_HEADER` before the function's own code runs.
+#   Setting verify_jwt = false here disables that gateway check so the
+#   function can apply its own (token, storage_path) validation instead.
+#
+#   Authentication for THIS function is the unguessable
+#   `projects.client_access_token` UUID in the request body — validated
+#   inside the function before any work happens.
+#
+#   `send-daily-reminders` keeps the default (verify_jwt = true): it's
+#   invoked from pg_cron / Supabase Cron Jobs with the service role key
+#   in the Authorization header, which is a valid Supabase JWT, so the
+#   gateway lets it through.
+
+[functions.client-portal-photo]
+verify_jwt = false
