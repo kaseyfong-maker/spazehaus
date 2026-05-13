@@ -265,6 +265,86 @@ export default defineConfig({
     // `"hidden"` emits .map files but omits the sourceMappingURL comment,
     // so browsers won't fetch them even if they leak.
     sourcemap: SENTRY_UPLOAD_ENABLED ? ("hidden" as const) : false,
+    // By default Vite injects `<link rel="modulepreload">` for every async
+    // chunk reachable from the entry — meaning even our intentionally-lazy
+    // PDF chunk (~180 KB gzip) gets fetched on first paint. Filter it out
+    // so the PDF stack only loads when the user actually taps "Download PDF".
+    modulePreload: {
+      resolveDependencies: (_filename, deps) =>
+        deps.filter((dep) => !dep.includes("/pdf-")),
+    },
+    // Split heavy third-party dependencies into separate chunks so the
+    // browser can fetch them in parallel and cache each one independently
+    // of app-code changes. Without this, every minor app update busts the
+    // entire ~530 KB gzip bundle. With it: a one-line app change only
+    // invalidates the small main chunk; React, Radix, Supabase, etc. stay
+    // in the user's cache across deploys.
+    //
+    // Grouping strategy: cluster by maintainer + change frequency. React
+    // core barely changes → its own chunk. Radix primitives ship together →
+    // one chunk. Data layer (Supabase + TanStack Query) co-changes →
+    // grouped. Charts (recharts + d3-*) only matter on /performance and
+    // /company/kpi → isolated. PDF stack (jspdf + html2canvas + dompurify)
+    // is already dynamically imported by the quotation flow, but pinned
+    // here too for predictable filenames.
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          // App code (anything in client/src/) stays in the main chunk.
+          if (!id.includes("node_modules")) return undefined;
+
+          // React core — most stable, biggest cache win.
+          if (/[\\/]node_modules[\\/](react|react-dom|scheduler)[\\/]/.test(id)) {
+            return "react-vendor";
+          }
+
+          // Radix UI primitives (accordion, dialog, dropdown, etc.) — large
+          // family, all from one maintainer, all change together.
+          if (id.includes("@radix-ui") || id.includes("@floating-ui")) {
+            return "radix";
+          }
+
+          // Data layer.
+          if (id.includes("@tanstack")) return "query";
+          if (id.includes("@supabase")) return "supabase";
+
+          // Error tracking — pinned so the Sentry source-map plugin
+          // resolves predictable chunk filenames.
+          if (id.includes("@sentry")) return "sentry";
+
+          // Charts (recharts + d3 deps it pulls in).
+          if (id.includes("recharts") || id.includes("/d3-")) return "charts";
+
+          // Animation.
+          if (id.includes("framer-motion") || id.includes("motion-")) {
+            return "motion";
+          }
+
+          // Forms (react-hook-form + resolvers + zod).
+          if (
+            id.includes("react-hook-form") ||
+            id.includes("@hookform") ||
+            id.includes("/zod/")
+          ) {
+            return "forms";
+          }
+
+          // PDF stack — jspdf already dynamically imports these, so they
+          // typically appear in their own chunks anyway. Pinning the name
+          // here just makes them predictable.
+          if (
+            id.includes("/jspdf") ||
+            id.includes("html2canvas") ||
+            id.includes("dompurify")
+          ) {
+            return "pdf";
+          }
+
+          // Everything else falls into a generic vendor chunk.
+          return "vendor";
+        },
+      },
+    },
   },
   server: {
     port: 3000,

@@ -14,8 +14,10 @@ import AppHeader from "@/components/AppHeader";
 import { useQuotation, useUpdateQuotationStatus } from "@/lib/queries";
 import { statusConfig, computeTotals, formatRM, categoryColors } from "@/lib/quotationData";
 import type { QuotationStatus } from "@/lib/dbTypes";
-import { generateQuotationPDF } from "@/lib/generatePDF";
 import { toast } from "sonner";
+// `generateQuotationPDF` is dynamically imported below so the ~600 KB jspdf
+// + html2canvas + dompurify stack is fetched only when the user actually
+// taps "Download PDF". Keeps the initial route payload lean.
 
 const statusFlow: Record<string, { next: string; label: string; icon: typeof Send }[]> = {
   draft: [{ next: "sent", label: "Mark as Sent", icon: Send }],
@@ -84,6 +86,9 @@ export default function QuotationDetail() {
     setExporting(true);
     toast.info("Generating PDF…");
     try {
+      // Lazy-load the PDF stack (jspdf + html2canvas + dompurify, ~180 KB
+      // gzipped) only when the user actually requests an export.
+      const { generateQuotationPDF } = await import("@/lib/generatePDF");
       // The PDF generator was built against the legacy Quotation shape — coerce
       // nullable fields to strings here so the type contract matches.
       await generateQuotationPDF({
