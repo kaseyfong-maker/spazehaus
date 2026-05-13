@@ -10,7 +10,7 @@
     "preview": "vite preview --host",
     "check": "tsc --noEmit",
     "format": "prettier --write .",
-    "gen:types": "supabase gen types typescript --project-id jifrzsvqdshjbqptubgz > client/src/lib/database.types.ts"
+    "gen:types": "bun x supabase gen types typescript --project-id jifrzsvqdshjbqptubgz > /tmp/spazehaus.types.next.ts && mv /tmp/spazehaus.types.next.ts client/src/lib/database.types.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

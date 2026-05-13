@@ -11,7 +11,9 @@
 
 A **production-deployed**, **auth-gated**, **fully-database-backed** internal management app for SPAZEHAUS interior design firm in Johor Bahru. Every page reads from real Postgres through TanStack Query + Supabase. Magic-link auth restricts access to staff with matching emails, **role-based RLS** enforces what each user can read and write, and the daily close-door photo SOP uploads real JPEGs to Supabase Storage. The Vercel production build is lean (no more inlined `vitePluginManusRuntime`).
 
-**Tier 1 is mid-flight.** Admins (principal / admin / admin_exec / pm / site_supervisor) can mark payment gates as collected AND upload + sign the 6 contract / drawing documents per project directly from the UI. Signed PDFs are stored privately in Supabase Storage and viewed via short-lived signed URLs. Every status change flows through the audit_log trigger — and the project's `current_stage_id` now auto-advances server-side whenever a checkpoint completes, closing the workflow loop. Admins have a dedicated `/company/audit` viewer with smart event summaries + field-level diffs. Sentry error tracking is wired (env-gated, with user context + ErrorBoundary forwarding). The Supabase client is now fully typed against the live schema — `.from()`, `.update()`, `.insert()`, and `.rpc()` are all checked at compile time.
+**Tier 1 is mid-flight.** Admins (principal / admin / admin_exec / pm / site_supervisor) can mark payment gates as collected AND upload + sign the 6 contract / drawing documents per project directly from the UI. Signed PDFs are stored privately in Supabase Storage and viewed via short-lived signed URLs. Every status change flows through the audit_log trigger — and the project's `current_stage_id` now auto-advances server-side whenever a checkpoint completes, closing the workflow loop. Admins have a dedicated `/company/audit` viewer with smart event summaries + field-level diffs (now paginated with a row-id search). Sentry error tracking is wired (env-gated, with user context + ErrorBoundary forwarding). The Supabase client is fully typed against the schema — `.from()`, `.update()`, `.insert()`, and `.rpc()` are all checked at compile time.
+
+> ⚠️ **Heads up — 6 DB migrations pending.** The `gen:types` sanity check (2026-05-13) revealed the live Supabase project is several migrations behind the codebase. The Convert Inquiry flow, Calendar page, KPI tabs, role-based RLS, and stage auto-advance all need the migrations in the "Pending DB migrations" section below to actually work in production. The deployed app currently renders fine but several backend code paths return 404. The hand-authored `database.types.ts` is the *target state* — it stays the source of truth until the SQL Editor catches up.
 
 ---
 
@@ -54,7 +56,8 @@ A **production-deployed**, **auth-gated**, **fully-database-backed** internal ma
 | **Sentry error tracking** | `d748132` | Added `@sentry/react` with an env-gated `initSentry()` in `client/src/lib/sentry.ts`. Called from `main.tsx` before React mounts, so boot-time crashes are captured too. `AuthContext` tags the Sentry user on every resolved session (auth user id + email + staff id / role / name) and clears it on sign-out. `ErrorBoundary` now also forwards caught errors to Sentry with the React component stack. A `beforeSend` hook drops the routine Supabase network blips (`Load failed` / `NetworkError when attempting`) so the inbox stays signal-only. When `VITE_SENTRY_DSN` is unset the entire integration short-circuits to a silent no-op — local dev / CI builds work without any DSN. Bundle cost: +~25 KB / +5 KB gzip on the main chunk. |
 | **Typed Supabase schema** | `fbeb666` | New `client/src/lib/database.types.ts` mirrors what `supabase gen types typescript` emits — Row / Insert / Update for all 16 tables, all 13 enums, all 5 callable RPCs, plus `Tables<>` / `TablesInsert<>` / `TablesUpdate<>` / `Enums<>` extraction helpers. `supabase` is now `createClient<Database>(...)`, so every `.from()`, `.update()`, `.insert()`, and `.rpc()` is checked against the schema. `dbTypes.ts` keeps the legacy `StaffRow` / `ProjectRow` / etc. aliases working but derives them from `Database`. The new types caught ~25 real bugs — untyped `Record<string, unknown>` payloads, `string \| undefined` ids passed to `.eq()`, JSONB columns being read as if they were typed objects — all fixed at the call sites instead of papered over with casts. New `bun run gen:types` script regenerates the schema file via the Supabase CLI for anyone with a `SUPABASE_ACCESS_TOKEN`. The critical gotcha: `Relationships: readonly []` silently collapses the entire Schema generic to `never` — must be `Relationships: []` (mutable). |
 | **Dead-mock cleanup** | `5faaa31` | Six mock-data files in `client/src/lib/` (mockData / customerData / reminderData / performanceData / quotationData / lifecycleData) collectively shed **~1,860 lines** of orphaned exports — the in-memory `staffMembers`, `projects`, `inquiries`, `quotations`, `projectLifecycles`, `sitePhotoLogs`, `staffTargets`, `leaveRequests`, `candidates`, `announcements`, `kpiData`, `calendarEvents` arrays plus all their derived helpers (`convertInquiryToProject`, `getReminders`, `companyPerformance`, `getOpenPayments`, etc.). `performanceData.ts` was deleted entirely (no external importers). What remains is pure: the 29-stage workflow catalogue, in-app TypeScript shapes, badge palettes (`statusConfig` / `priorityConfig` / `stageConfig` / `categoryConfig` / `tierConfig` / `phaseColors` / `checkpointStatusConfig` / `bucketLabel` / `bucketTone` / `categoryColors` / `reminderTypeConfig` / `reminderStatusConfig`), and pure helpers (`lastNDays`, `daysFromToday`, `bucketDate`, `effectivePaymentStatus`, `paymentSummary`, `signatureSummary`, `stageStatus`, `computeTotals`, `formatRM`). Two consumers needed a small migration first: `Projects.tsx` (Quotations shortcut card) now reads `useQuotations()` instead of the mock array, and `generatePDF.ts` now takes `QuotationWithItems` as its input type. Total file footprint: **2,047 → 457 lines** across the 5 surviving files. |
-| **Audit log pagination + row search** | _this commit_ | `useAuditLog` switched from a single-shot `useQuery` (capped at 200 rows) to `useInfiniteQuery` with cursor-based pagination on `audit_log.id`. Since `id` is `bigserial` (monotonically increasing), cursoring on `id desc` gives the same newest-first sequence as `changed_at desc` but with a stable unique key — no millisecond tie-breakers, no .or() pseudo-cursor. Each page fetches 50 rows (hard-capped at 200) and reports a `nextCursor` of the oldest row's id when full, or `null` when exhausted. The page surfaces a "LOAD 50 MORE" button that disappears once `hasNextPage` is false (replaced with "End of results"). The KPI strip (24h / 7d / actors) now reflects the loaded window, growing as more pages are fetched. Added a `ROW ID` text input to the filters card — debounced 300ms (typing doesn't flood the query layer), filters on the exact `row_id` column (e.g. `PRJ001`, an inquiry id, a payment row id), and has a CLEAR chip. Useful for tracing every change against a specific entity (e.g. "show me everything that ever happened to PRJ001"). |
+| **Audit log pagination + row search** | `7d2defa` | `useAuditLog` switched from a single-shot `useQuery` (capped at 200 rows) to `useInfiniteQuery` with cursor-based pagination on `audit_log.id`. Since `id` is `bigserial` (monotonically increasing), cursoring on `id desc` gives the same newest-first sequence as `changed_at desc` but with a stable unique key — no millisecond tie-breakers, no .or() pseudo-cursor. Each page fetches 50 rows (hard-capped at 200) and reports a `nextCursor` of the oldest row's id when full, or `null` when exhausted. The page surfaces a "LOAD 50 MORE" button that disappears once `hasNextPage` is false (replaced with "End of results"). The KPI strip (24h / 7d / actors) now reflects the loaded window, growing as more pages are fetched. Added a `ROW ID` text input to the filters card — debounced 300ms (typing doesn't flood the query layer), filters on the exact `row_id` column (e.g. `PRJ001`, an inquiry id, a payment row id), and has a CLEAR chip. Useful for tracing every change against a specific entity (e.g. "show me everything that ever happened to PRJ001"). |
+| **Live `gen:types` sanity check** | _this commit_ | Ran `bun run gen:types` against project `jifrzsvqdshjbqptubgz` for the first time. **Two findings**: (1) The `gen:types` package.json script was unsafe — bare `supabase gen ...` assumed a global CLI binary (which isn't installed here), and the shell `>` redirect truncated `database.types.ts` before the CLI errored out. Fixed: now uses `bun x supabase ...` (lazy-installs the binary), pipes to a `/tmp` staging file first, and only `mv`s into place if the CLI succeeded. (2) The diff against the hand-authored types revealed the live DB is **several migrations behind** the codebase — 3 tables, 1 enum, and 6 functions are missing on the deployed project. See the "Pending DB migrations" section above for the catch-up checklist. Hand-authored `database.types.ts` was preserved as the *target* state — it stays the source of truth until the SQL Editor catches the live DB up. |
 
 ---
 
@@ -66,7 +69,7 @@ A **production-deployed**, **auth-gated**, **fully-database-backed** internal ma
 - ✅ Vercel free-tier hosting at `spazehaus.vercel.app` with HTTPS + Singapore CDN edge
 - ✅ Supabase project (Singapore region, free tier — covers SpazeHaus's volume for years)
 - ✅ Magic-link auth via Supabase Auth (Site URL + redirect URLs configured for both localhost + prod)
-- ✅ All 9 migrations applied to the live database (after running 0C.2 + 0D + 0E)
+- ⚠️ **Live DB migration debt** — confirmed 2026-05-13 via `bun run gen:types` + REST probes: only the first 4 migrations are applied. Six migrations are pending (`20260512000005_convert_inquiry_rpc.sql`, `20260513000001_phase_0c2_schema.sql`, `20260513000002_phase_0c2_seed.sql`, `20260513000003_phase_0d_rls.sql`, `20260513000005_tier1_signature_docs_bucket.sql`, `20260513000006_tier1_stage_advancement.sql`). See "Pending DB migrations" section below.
 - ✅ Vercel env vars (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`) configured for Production / Preview / Development
 - ✅ pnpm lockfile in sync (Vercel builds pass)
 - ✅ TS check passes (`bun run check` exit 0)
@@ -76,7 +79,7 @@ A **production-deployed**, **auth-gated**, **fully-database-backed** internal ma
 ### Authentication & access
 
 - ✅ `kaseyfong@saysheji.com` mapped to Grace Tan (SH001), role `principal` — full admin access
-- ✅ Role-based RLS enforced — every authenticated user is gated at the DB layer
+- ⚠️ Role-based RLS is **NOT** yet enforced on the live DB — phase 0D RLS migration is pending. Currently running with the permissive Phase 0A policy (any authenticated user has full read/write).
 - ⏳ Other 9 staff still have placeholder `@spazehaus.com.my` emails. Run `20260513000004_phase_0e_staff_emails.sql` (after filling in real addresses) to wire them up.
 
 ### Data fidelity
@@ -156,32 +159,49 @@ select current_staff_id(), current_staff_role(), is_admin_tier(), is_ops_tier();
 
 ---
 
-## Applying the new migrations
+## Pending DB migrations (⚠️ verified 2026-05-13)
 
-Run these in the Supabase SQL editor, in order, against project `jifrzsvqdshjbqptubgz`:
+The `bun run gen:types` sanity check revealed that the live Supabase project is several migrations behind what the codebase expects. Confirmed via direct REST probes — these tables/functions return HTTP 404 today:
 
-1. `supabase/migrations/20260513000001_phase_0c2_schema.sql` — adds `calendar_events`, `kpi_records`, Storage `site-photos` bucket
-2. `supabase/migrations/20260513000002_phase_0c2_seed.sql` — seeds calendar events + KPI records
-3. `supabase/migrations/20260513000003_phase_0d_rls.sql` — tightens RLS to role-based
-4. `supabase/migrations/20260513000004_phase_0e_staff_emails.sql` — **edit first**, then paste
-5. `supabase/migrations/20260513000005_tier1_signature_docs_bucket.sql` — adds `signature-docs` Storage bucket + OPS-tier object RLS (must be run AFTER 0D so `public.is_ops_tier()` exists)
-6. `supabase/migrations/20260513000006_tier1_stage_advancement.sql` — materialises the 29-stage workflow into `lifecycle_stages`, adds FK + auto-advance triggers
+| Migration file | What it adds | Status |
+|---|---|---|
+| `20260512000005_convert_inquiry_rpc.sql` | `convert_inquiry_to_project()` Postgres function | ❌ not applied — Convert Inquiry flow returns 404 in prod |
+| `20260513000001_phase_0c2_schema.sql` | `calendar_events`, `kpi_records` tables + `calendar_event_type` enum + Storage `site-photos` bucket | ❌ not applied — Calendar page + KPI tabs hit 404 |
+| `20260513000002_phase_0c2_seed.sql` | 15 calendar events + 22 KPI records | ❌ not applied (depends on `20260513000001`) |
+| `20260513000003_phase_0d_rls.sql` | Role-based RLS + helpers (`current_staff_id`, `is_admin_tier`, etc.) | ❌ not applied — RLS still on permissive Phase 0A |
+| `20260513000004_phase_0e_staff_emails.sql` | Real staff email UPDATEs (template) | ⏳ blocked on real-email content |
+| `20260513000005_tier1_signature_docs_bucket.sql` | Private `signature-docs` Storage bucket + OPS-tier object RLS | ❌ not applied (must run AFTER `20260513000003`) |
+| `20260513000006_tier1_stage_advancement.sql` | `lifecycle_stages` table + `maybe_advance_project_stage()` function + payment/signature triggers | ❌ not applied — stage auto-advance is a no-op in prod |
 
-After step 3, the app behaves as before for `kaseyfong@saysheji.com` (principal, full access). Any new sign-ins from staff are filtered per their role. After step 4, the other 9 staff can sign in with their real emails. After step 5, the SIGN button in the Lifecycle tab + Checkpoints page works end-to-end. After step 6, marking a payment collected or a signature signed automatically moves the project to the next required SOP action.
+**To bring the live DB up to date**, run these in the Supabase SQL editor against project `jifrzsvqdshjbqptubgz`, in this order:
+
+1. `supabase/migrations/20260512000005_convert_inquiry_rpc.sql`
+2. `supabase/migrations/20260513000001_phase_0c2_schema.sql`
+3. `supabase/migrations/20260513000002_phase_0c2_seed.sql`
+4. `supabase/migrations/20260513000003_phase_0d_rls.sql`
+5. `supabase/migrations/20260513000005_tier1_signature_docs_bucket.sql`
+6. `supabase/migrations/20260513000006_tier1_stage_advancement.sql`
+
+Optionally:
+- `supabase/migrations/20260513000004_phase_0e_staff_emails.sql` — **edit first** to fill in each staff member's real email, then paste.
+
+After step 1, the Convert Inquiry flow works. After step 2, the Calendar + KPI pages work. After step 4, role-based RLS is enforced (the app behaves as before for `kaseyfong@saysheji.com` — principal, full access; other sign-ins are filtered per their role). After step 5, the SIGN button in the Lifecycle tab + Checkpoints page can upload PDFs to the private bucket. After step 6, marking a payment collected or a signature signed automatically moves the project to the next required SOP action.
+
+**To re-verify**: `export SUPABASE_ACCESS_TOKEN=sbp_…` then `bun run gen:types`. The output should match the hand-authored `client/src/lib/database.types.ts` (16 tables, 13 enums, 5 functions). Until that's true, leave the hand-authored file alone — it's the target state, not a snapshot of reality.
 
 ---
 
 ## Next Steps — Tier 1 candidates
 
-Payment-collected mutations, document upload + e-sign, stage auto-advance, `/company/audit`, Sentry, typed schema, dead-mock cleanup, and audit pagination + row search are all done. Remaining options:
+Payment-collected mutations, document upload + e-sign, stage auto-advance, `/company/audit`, Sentry, typed schema, dead-mock cleanup, audit pagination + row search, and the `gen:types` sanity check are all done. Remaining options:
 
 | Feature | Effort | Why it matters |
 |---|---|---|
+| **Apply pending DB migrations** | 15 min | **Highest priority.** Convert Inquiry, Calendar, KPI, and stage auto-advance are all broken in production until the 6 pending migrations are run in the Supabase SQL Editor. See "Pending DB migrations" above. |
 | **WhatsApp reminder integration** | 1–2 days | Hook Reminders into WhatsApp Business API so site supervisors get pinged at 5pm if they haven't uploaded their close-door photo. |
 | **Client portal** | 2–3 days | Read-only public link per project for clients to see progress + sign documents. Requires separate Supabase auth flow. |
 | **E2E test suite** | 2–3 hours | Convert Inquiry / Payment Collection / Sign Document are the three highest-value mutations — worth Playwright happy-path tests for each. |
 | **Sentry source-map uploads** | 30 min | Add `@sentry/vite-plugin` so production stack traces show real symbols instead of minified ones. Needs a `SENTRY_AUTH_TOKEN` build-time env var. |
-| **Live `supabase gen types` regen** | 5 min | `export SUPABASE_ACCESS_TOKEN=...` then `bun run gen:types`. Replaces the hand-authored `database.types.ts` with the CLI output as a sanity check. |
 | **Bundle chunk-splitting** | 30 min | The main JS bundle is 1.89 MB (gzip 526 KB). Adding `build.rollupOptions.output.manualChunks` to split out Sentry, recharts, jspdf, framer-motion etc. would meaningfully improve first paint. |
 
 ---
