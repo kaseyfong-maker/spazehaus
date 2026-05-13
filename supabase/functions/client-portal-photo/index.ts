@@ -25,10 +25,6 @@ declare const Deno: { env: { get(key: string): string | undefined } };
 const SIGNED_URL_TTL_SECONDS = 60 * 60; // 1 hour — long enough for a page session
 
 Deno.serve(async (req: Request): Promise<Response> => {
-  if (req.method !== "POST") {
-    return json({ error: "Method not allowed" }, 405);
-  }
-
   // Permissive CORS — this endpoint is called from the portal page which
   // can be opened on any device / browser.
   const corsHeaders = {
@@ -36,8 +32,18 @@ Deno.serve(async (req: Request): Promise<Response> => {
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Allow-Headers": "content-type",
   };
+
+  // 1. Handle CORS preflight FIRST — must respond with 204 + headers so the
+  //    browser will then send the real POST. (Earlier bug: the method gate
+  //    below ran first and 405'd preflights, blocking every photo load.)
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: corsHeaders });
+  }
+
+  // 2. Reject non-POST methods (still return corsHeaders so the browser
+  //    gets a usable error message instead of a CORS reject).
+  if (req.method !== "POST") {
+    return json({ error: "Method not allowed" }, 405, corsHeaders);
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
