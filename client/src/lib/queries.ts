@@ -30,6 +30,8 @@ import type {
   SalesTargetRow,
   CalendarEventRow,
   KpiRecordRow,
+  AuditLogRow,
+  AuditAction,
 } from "@/lib/dbTypes";
 import type { SignatureKey } from "@/lib/lifecycleData";
 import type { LineItem } from "@/lib/quotationData";
@@ -245,6 +247,17 @@ export const qk = {
   calendarEvents: ["calendar_events"] as const,
   sitePhotos: ["site_photos"] as const,
   projectSitePhotos: (id: string) => ["site_photos", id] as const,
+  auditLog: (filters?: AuditLogFilters) => ["audit_log", filters ?? {}] as const,
+};
+
+// ─── AUDIT LOG ──────────────────────────────────────────────────────────────
+
+export type AuditLogFilters = {
+  table?: string;                     // exact table_name match
+  action?: AuditAction;               // INSERT / UPDATE / DELETE
+  daysBack?: number;                  // limit to events in the last N days
+  limit?: number;                     // default 200, hard-capped at 1000
+  rowId?: string;                     // exact row_id match (e.g. PRJ001)
 };
 
 // ─── STAFF ──────────────────────────────────────────────────────────────────
@@ -511,6 +524,79 @@ export function canEditPayments(role: StaffRow["role"] | null | undefined): bool
 
 /** Same OPS-tier predicate, named for the signature/document flow. */
 export const canEditSignatures = canEditPayments;
+
+/**
+ * Returns true when the current staff role is allowed to view the cross-system
+ * audit log. Mirrors the Phase 0D `audit_log_read_admin` policy — only the
+ * admin tier sees all activity. Non-admin users can still read their own
+ * activity via the `audit_log_read_own` policy but the dedicated viewer is
+ * admin-only for v1.
+ */
+export function canViewAuditLog(role: StaffRow["role"] | null | undefined): boolean {
+  if (!role) return false;
+  return role === "principal" || role === "admin" || role === "admin_exec";
+}
+
+/**
+ * Audit log entry enriched with the actor's staff record (name + avatar +
+ * role) when one can be resolved via auth_user_id.
+ */
+export type AuditEntry = AuditLogRow & {
+  actor: { id: string; name: string; avatar_code: string; role: StaffRow["role"] } | null;
+};
+
+export function useAuditLog(filters?: AuditLogFilters) {
+  return useQuery({
+    queryKey: qk.auditLog(filters),
+    queryFn: async (): Promise<AuditEntry[]> => {
+      const limit = Math.min(filters?.limit ?? 200, 1000);
+
+      let q = supabase
+        .from("audit_log")
+        .select("*")
+        .order("changed_at", { ascending: false })
+        .limit(limit);
+
+      if (filters?.table) q = q.eq("table_name", filters.table);
+      if (filters?.action) q = q.eq("action", filters.action);
+      if (filters?.rowId) q = q.eq("row_id", filters.rowId);
+      if (filters?.daysBack && filters.daysBack > 0) {
+        const since = new Date();
+        since.setDate(since.getDate() - filters.daysBack);
+        q = q.gte("changed_at", since.toISOString());
+      }
+
+      const [logRes, staffRes] = await Promise.all([
+        q,
+        supabase.from("staff").select("id, name, avatar_code, role, auth_user_id"),
+      ]);
+      if (logRes.error) throw logRes.error;
+      if (staffRes.error) throw staffRes.error;
+
+      const staffByAuth = new Map<
+        string,
+        { id: string; name: string; avatar_code: string; role: StaffRow["role"] }
+      >();
+      for (const s of (staffRes.data ?? []) as Array<
+        { id: string; name: string; avatar_code: string; role: StaffRow["role"]; auth_user_id: string | null }
+      >) {
+        if (s.auth_user_id) {
+          staffByAuth.set(s.auth_user_id, {
+            id: s.id,
+            name: s.name,
+            avatar_code: s.avatar_code,
+            role: s.role,
+          });
+        }
+      }
+
+      return ((logRes.data ?? []) as AuditLogRow[]).map((row) => ({
+        ...row,
+        actor: row.changed_by ? staffByAuth.get(row.changed_by) ?? null : null,
+      }));
+    },
+  });
+}
 
 // ─── SIGNATURE MUTATIONS + DOCUMENT UPLOAD (Tier 1 — e-sign) ────────────────
 // `signature-docs` is a private Supabase Storage bucket; objects are fetched

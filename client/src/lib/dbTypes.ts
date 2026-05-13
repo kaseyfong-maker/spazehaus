@@ -293,3 +293,18 @@ export type KpiRecordRow = {
   created_at: string;
   updated_at: string;
 };
+
+// ─── AUDIT LOG ──────────────────────────────────────────────────────────────
+
+export type AuditAction = "INSERT" | "UPDATE" | "DELETE";
+
+export type AuditLogRow = {
+  id: number;
+  table_name: string;
+  row_id: string;
+  action: AuditAction;
+  changed_by: string | null;     // auth.users.id (uuid) — null when system change
+  changed_at: string;
+  before_data: Record<string, unknown> | null;
+  after_data: Record<string, unknown> | null;
+};

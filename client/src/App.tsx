@@ -35,6 +35,7 @@ import LeaveManagement from "./pages/LeaveManagement";
 import Recruitment from "./pages/Recruitment";
 import KPIPerformance from "./pages/KPIPerformance";
 import Announcements from "./pages/Announcements";
+import AuditLog from "./pages/AuditLog";
 
 // Quotation & Invoice module
 import QuotationList from "./pages/QuotationList";
@@ -89,6 +90,7 @@ function AppLayout() {
           <Route path="/company/recruitment" component={Recruitment} />
           <Route path="/company/kpi" component={KPIPerformance} />
           <Route path="/company/announcements" component={Announcements} />
+          <Route path="/company/audit" component={AuditLog} />
 
           {/* Quotation & Invoice module — order matters: /new before /:id */}
           <Route path="/quotations" component={QuotationList} />

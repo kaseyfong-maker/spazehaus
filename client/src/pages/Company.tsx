@@ -5,7 +5,7 @@
 import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
-import { Users, CalendarCheck, UserSearch, BarChart3, Megaphone, ChevronRight, TrendingUp } from "lucide-react";
+import { Users, CalendarCheck, UserSearch, BarChart3, Megaphone, ChevronRight, TrendingUp, ShieldCheck } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import {
   useAllStaff,
@@ -17,8 +17,10 @@ import {
   useSalesTargets,
   computeTeamPerformance,
   computeCompanyPerformance,
+  canViewAuditLog,
   formatRMCompact,
 } from "@/lib/queries";
+import { useAuth } from "@/contexts/AuthContext";
 
 const HERO_BG = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296470877/DEoUZCqpbvuNBJsc.jpg";
 
@@ -31,6 +33,7 @@ const deptColors: Record<string, { color: string; bg: string }> = {
 
 export default function Company() {
   const [, navigate] = useLocation();
+  const { staff: me } = useAuth();
 
   const { data: staffMembers = [] } = useAllStaff();
   const { data: leaveRequests = [] } = useLeaveRequests();
@@ -39,6 +42,7 @@ export default function Company() {
   const { data: inquiries = [] } = useInquiries();
   const { data: quotations = [] } = useQuotations();
   const { data: targets = [] } = useSalesTargets();
+  const showAudit = canViewAuditLog(me?.role);
 
   const company = useMemo(() => {
     const team = computeTeamPerformance(staffMembers, targets, inquiries);
@@ -52,6 +56,9 @@ export default function Company() {
     { id: "recruitment",   title: "Recruitment",         subtitle: "Talent pipeline & candidates",  icon: UserSearch,   color: "oklch(0.45 0.10 55)",  bg: "oklch(0.65 0.10 55 / 10%)",  path: "/company/recruitment",   stat: `${candidates.length} candidate${candidates.length === 1 ? "" : "s"}` },
     { id: "kpi",           title: "KPI & Performance",   subtitle: "Monthly scores & reviews",      icon: BarChart3,    color: "oklch(0.38 0.09 145)", bg: "oklch(0.55 0.09 145 / 10%)", path: "/company/kpi",           stat: "Monthly review" },
     { id: "announcements", title: "Announcements",       subtitle: "Company news & updates",        icon: Megaphone,    color: "oklch(0.45 0.10 25)",  bg: "oklch(0.60 0.10 25 / 10%)",  path: "/company/announcements", stat: `${announcements.length} post${announcements.length === 1 ? "" : "s"}` },
+    ...(showAudit
+      ? [{ id: "audit", title: "Audit Log", subtitle: "System activity history (admin)", icon: ShieldCheck, color: "oklch(0.42 0.09 68)", bg: "oklch(0.62 0.09 68 / 10%)", path: "/company/audit", stat: "Admin only" }]
+      : []),
   ];
 
   const byDept = staffMembers.reduce((acc, s) => {
