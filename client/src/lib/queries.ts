@@ -12,7 +12,7 @@
  * Mutations invalidate the query keys they touch, so the UI auto-refreshes.
  */
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import type {
   ProjectRow,
@@ -264,8 +264,18 @@ export type AuditLogFilters = {
   table?: string;                     // exact table_name match
   action?: AuditAction;               // INSERT / UPDATE / DELETE
   daysBack?: number;                  // limit to events in the last N days
-  limit?: number;                     // default 200, hard-capped at 1000
+  pageSize?: number;                  // default 50, hard-capped at 200 per page
   rowId?: string;                     // exact row_id match (e.g. PRJ001)
+};
+
+/** One page of audit entries — `nextCursor` is the id of the oldest row in this
+ *  page when the page was full (more results exist), or null when the page came
+ *  back short (we've reached the end). Pagination is keyset on `audit_log.id`
+ *  which is bigserial + monotonically increasing, so cursoring on id desc gives
+ *  the same order as `changed_at desc` without any tie-breaker complexity. */
+export type AuditLogPage = {
+  entries: AuditEntry[];
+  nextCursor: number | null;
 };
 
 // ─── STAFF ──────────────────────────────────────────────────────────────────
@@ -558,16 +568,20 @@ export type AuditEntry = AuditLogRow & {
 };
 
 export function useAuditLog(filters?: AuditLogFilters) {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: qk.auditLog(filters),
-    queryFn: async (): Promise<AuditEntry[]> => {
-      const limit = Math.min(filters?.limit ?? 200, 1000);
+    initialPageParam: null as number | null,
+    queryFn: async ({ pageParam }): Promise<AuditLogPage> => {
+      const pageSize = Math.min(filters?.pageSize ?? 50, 200);
 
       let q = supabase
         .from("audit_log")
         .select("*")
-        .order("changed_at", { ascending: false })
-        .limit(limit);
+        // `id` is bigserial → monotonic w.r.t. insertion, so ordering on id desc
+        // produces the same newest-first sequence as changed_at desc, but with
+        // a stable unique key for cursoring (no millisecond tie-breakers).
+        .order("id", { ascending: false })
+        .limit(pageSize);
 
       if (filters?.table) q = q.eq("table_name", filters.table);
       if (filters?.action) q = q.eq("action", filters.action);
@@ -577,6 +591,7 @@ export function useAuditLog(filters?: AuditLogFilters) {
         since.setDate(since.getDate() - filters.daysBack);
         q = q.gte("changed_at", since.toISOString());
       }
+      if (pageParam !== null) q = q.lt("id", pageParam);
 
       const [logRes, staffRes] = await Promise.all([
         q,
@@ -602,11 +617,17 @@ export function useAuditLog(filters?: AuditLogFilters) {
         }
       }
 
-      return ((logRes.data ?? []) as AuditLogRow[]).map((row) => ({
+      const rows = (logRes.data ?? []) as AuditLogRow[];
+      const entries: AuditEntry[] = rows.map((row) => ({
         ...row,
         actor: row.changed_by ? staffByAuth.get(row.changed_by) ?? null : null,
       }));
+      // If the page came back full, the oldest row's id is the cursor for the
+      // next page. If short, we've reached the end of the filtered window.
+      const nextCursor = rows.length === pageSize ? rows[rows.length - 1].id : null;
+      return { entries, nextCursor };
     },
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
   });
 }
 

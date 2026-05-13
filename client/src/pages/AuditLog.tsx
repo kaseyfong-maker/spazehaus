@@ -22,11 +22,14 @@ import { useLocation } from "wouter";
 import {
   ShieldCheck, Filter, ChevronDown, ChevronUp, Activity,
   Users, ArrowLeft, Database, PlusCircle, PencilLine, Trash2, Clock,
+  Search, Loader2,
 } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import { useAuditLog, canViewAuditLog, type AuditEntry } from "@/lib/queries";
 import { useAuth } from "@/contexts/AuthContext";
 import type { AuditAction } from "@/lib/dbTypes";
+
+const PAGE_SIZE = 50;
 
 // ─── Table filter options ───────────────────────────────────────────────────
 
@@ -75,6 +78,10 @@ export default function AuditLog() {
   const [table, setTable] = useState<string>("");
   const [action, setAction] = useState<AuditAction | "">("");
   const [daysBack, setDaysBack] = useState<number | undefined>(7);
+  // rowId has two states: what the user is typing, and what's actually filtered.
+  // Debouncing avoids re-querying on every keystroke.
+  const [rowIdInput, setRowIdInput] = useState("");
+  const [rowIdApplied, setRowIdApplied] = useState("");
 
   // Redirect non-admin users back to the Company hub — also the entry on the
   // hub card itself is hidden for them, so this is a safety net for direct nav.
@@ -84,14 +91,34 @@ export default function AuditLog() {
     }
   }, [me, navigate]);
 
-  const { data: entries = [], isLoading } = useAuditLog({
+  // Debounce rowId input → applied filter (300ms).
+  useEffect(() => {
+    const t = setTimeout(() => setRowIdApplied(rowIdInput.trim()), 300);
+    return () => clearTimeout(t);
+  }, [rowIdInput]);
+
+  const {
+    data,
+    isLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useAuditLog({
     table: table || undefined,
     action: action || undefined,
     daysBack,
-    limit: 200,
+    pageSize: PAGE_SIZE,
+    rowId: rowIdApplied || undefined,
   });
 
-  // KPIs
+  // Flatten all loaded pages into a single event list.
+  const entries = useMemo(
+    () => data?.pages.flatMap((p) => p.entries) ?? [],
+    [data],
+  );
+
+  // KPIs — computed over the loaded pages. "Last 24h" / "Last 7d" remain meaningful
+  // because the events are sorted newest-first; the actor count grows as more pages load.
   const summary = useMemo(() => {
     const now = Date.now();
     const today = now - 24 * 60 * 60 * 1000;
@@ -182,6 +209,44 @@ export default function AuditLog() {
                 ))}
               </div>
             </FilterRow>
+
+            <FilterRow label="ROW ID">
+              <div
+                className="flex items-center gap-2 rounded-xl px-2.5 py-1.5"
+                style={{ background: "oklch(0.96 0.006 75)", border: "1px solid oklch(0.90 0.010 75)" }}
+              >
+                <Search size={12} style={{ color: "oklch(0.52 0.010 68)" }} />
+                <input
+                  type="text"
+                  value={rowIdInput}
+                  onChange={(e) => setRowIdInput(e.target.value)}
+                  placeholder="e.g. PRJ001 or 42"
+                  className="flex-1 bg-transparent text-[11px] outline-none placeholder:opacity-60"
+                  style={{ color: "oklch(0.14 0.008 65)" }}
+                  spellCheck={false}
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                />
+                {rowIdInput && (
+                  <button
+                    onClick={() => setRowIdInput("")}
+                    className="text-[10px] font-label px-1.5 py-0.5 rounded"
+                    style={{
+                      color: "oklch(0.52 0.010 68)",
+                      background: "oklch(1 0 0)",
+                      border: "1px solid oklch(0.90 0.010 75)",
+                      letterSpacing: "0.04em",
+                      fontWeight: 700,
+                    }}
+                  >
+                    CLEAR
+                  </button>
+                )}
+              </div>
+              <p className="text-[9px] mt-1" style={{ color: "oklch(0.55 0.008 65)" }}>
+                Exact match — finds every event for a specific row (project, payment, signature, etc.).
+              </p>
+            </FilterRow>
           </div>
         </div>
 
@@ -192,7 +257,7 @@ export default function AuditLog() {
               EVENTS
             </p>
             <span className="text-[10px]" style={{ color: "oklch(0.52 0.010 68)" }}>
-              {entries.length} {entries.length === 200 ? "shown (capped)" : "shown"}
+              {entries.length} loaded{hasNextPage ? " · more available" : ""}
             </span>
           </div>
 
@@ -221,6 +286,39 @@ export default function AuditLog() {
                 <AuditEventCard key={entry.id} entry={entry} />
               ))}
             </div>
+          )}
+
+          {!isLoading && entries.length > 0 && hasNextPage && (
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={() => fetchNextPage()}
+              disabled={isFetchingNextPage}
+              className="w-full mt-3 rounded-xl py-2.5 flex items-center justify-center gap-2 disabled:opacity-60"
+              style={{
+                background: "oklch(1 0 0)",
+                border: "1px solid oklch(0.62 0.09 68 / 35%)",
+                boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)",
+              }}
+            >
+              {isFetchingNextPage ? (
+                <>
+                  <Loader2 size={13} className="animate-spin" style={{ color: "oklch(0.42 0.09 68)" }} />
+                  <span className="text-xs font-label" style={{ color: "oklch(0.42 0.09 68)", letterSpacing: "0.04em", fontWeight: 700 }}>
+                    LOADING…
+                  </span>
+                </>
+              ) : (
+                <span className="text-xs font-label" style={{ color: "oklch(0.42 0.09 68)", letterSpacing: "0.04em", fontWeight: 700 }}>
+                  LOAD {PAGE_SIZE} MORE
+                </span>
+              )}
+            </motion.button>
+          )}
+
+          {!isLoading && entries.length > 0 && !hasNextPage && (
+            <p className="text-[10px] text-center mt-3" style={{ color: "oklch(0.55 0.008 65)" }}>
+              End of results
+            </p>
           )}
         </div>
 
