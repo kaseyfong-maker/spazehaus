@@ -41,6 +41,12 @@ export type LifecycleStage = {
  * The full 29-step workflow, in canonical order.
  * Numbering matches the yellow ① ② ③ ④ ⑤ payment circles and
  * the pink/brown ① ② ③ document-sign circles in the PDF.
+ *
+ * KEEP IN LOCKSTEP with the `lifecycle_stages` table seeded in
+ * supabase/migrations/20260513000006_tier1_stage_advancement.sql.
+ * That table powers the server-side `maybe_advance_project_stage()`
+ * function that auto-advances `projects.current_stage_id` when
+ * payment / signature checkpoints flip to completed.
  */
 export const LIFECYCLE_STAGES: LifecycleStage[] = [
   // —— INQUIRY ——

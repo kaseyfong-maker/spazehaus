@@ -419,11 +419,41 @@ export type UpdatePaymentArgs = {
   notes?: string | null;
 };
 
+/**
+ * Result of a checkpoint mutation that may have auto-advanced the project's
+ * current stage server-side (see migration 20260513000006_tier1_stage_advancement).
+ */
+export type CheckpointMutationResult<TRow> = {
+  row: TRow;
+  /** Stage transition observed by comparing project.current_stage_id before vs after the update. */
+  stageAdvanced?: {
+    from: string;
+    to: string;
+    fromLabel: string | null;
+    toLabel: string | null;
+  };
+};
+
+/** Look up a project's current_stage_id + the stage's label in one round-trip. */
+async function fetchProjectStage(projectId: string): Promise<{ id: string | null; label: string | null }> {
+  const { data, error } = await supabase
+    .from("projects")
+    .select("current_stage_id, stage:lifecycle_stages(label)")
+    .eq("id", projectId)
+    .maybeSingle();
+  if (error || !data) return { id: null, label: null };
+  const stage = (data as { stage?: { label?: string } | null }).stage;
+  return {
+    id: data.current_stage_id ?? null,
+    label: stage?.label ?? null,
+  };
+}
+
 export function useUpdatePayment() {
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: async (args: UpdatePaymentArgs): Promise<PaymentRecordRow> => {
+    mutationFn: async (args: UpdatePaymentArgs): Promise<CheckpointMutationResult<PaymentRecordRow>> => {
       const payload: Record<string, unknown> = {};
       if (args.status !== undefined) payload.status = args.status;
       if (args.collectedDate !== undefined) {
@@ -435,6 +465,10 @@ export function useUpdatePayment() {
       if (args.reference !== undefined) payload.reference = args.reference;
       if (args.notes !== undefined) payload.notes = args.notes;
 
+      // Snapshot the project's stage before the write so we can detect any
+      // server-side auto-advance triggered by the new completion status.
+      const beforeStage = await fetchProjectStage(args.projectId);
+
       const { data, error } = await supabase
         .from("payment_records")
         .update(payload)
@@ -442,10 +476,25 @@ export function useUpdatePayment() {
         .select()
         .single();
       if (error) throw error;
-      return data as PaymentRecordRow;
+
+      const afterStage = await fetchProjectStage(args.projectId);
+
+      return {
+        row: data as PaymentRecordRow,
+        stageAdvanced:
+          beforeStage.id && afterStage.id && beforeStage.id !== afterStage.id
+            ? {
+                from: beforeStage.id,
+                to: afterStage.id,
+                fromLabel: beforeStage.label,
+                toLabel: afterStage.label,
+              }
+            : undefined,
+      };
     },
-    onSuccess: (_row, args) => {
+    onSuccess: (_result, args) => {
       qc.invalidateQueries({ queryKey: qk.openPayments });
+      qc.invalidateQueries({ queryKey: qk.openSignatures });
       qc.invalidateQueries({ queryKey: qk.projectLifecycle(args.projectId) });
       qc.invalidateQueries({ queryKey: qk.projects });
       qc.invalidateQueries({ queryKey: qk.project(args.projectId) });
@@ -481,7 +530,7 @@ export function useUpdateSignature() {
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: async (args: UpdateSignatureArgs): Promise<SignatureRecordRow> => {
+    mutationFn: async (args: UpdateSignatureArgs): Promise<CheckpointMutationResult<SignatureRecordRow>> => {
       const payload: Record<string, unknown> = {};
       if (args.status !== undefined) payload.status = args.status;
       if (args.signedDate !== undefined) {
@@ -491,6 +540,9 @@ export function useUpdateSignature() {
       if (args.documentRef !== undefined) payload.document_ref = args.documentRef;
       if (args.notes !== undefined) payload.notes = args.notes;
 
+      // Snapshot the project's stage before the write to detect auto-advance.
+      const beforeStage = await fetchProjectStage(args.projectId);
+
       const { data, error } = await supabase
         .from("signature_records")
         .update(payload)
@@ -498,11 +550,28 @@ export function useUpdateSignature() {
         .select()
         .single();
       if (error) throw error;
-      return data as SignatureRecordRow;
+
+      const afterStage = await fetchProjectStage(args.projectId);
+
+      return {
+        row: data as SignatureRecordRow,
+        stageAdvanced:
+          beforeStage.id && afterStage.id && beforeStage.id !== afterStage.id
+            ? {
+                from: beforeStage.id,
+                to: afterStage.id,
+                fromLabel: beforeStage.label,
+                toLabel: afterStage.label,
+              }
+            : undefined,
+      };
     },
-    onSuccess: (_row, args) => {
+    onSuccess: (_result, args) => {
       qc.invalidateQueries({ queryKey: qk.openSignatures });
+      qc.invalidateQueries({ queryKey: qk.openPayments });
       qc.invalidateQueries({ queryKey: qk.projectLifecycle(args.projectId) });
+      qc.invalidateQueries({ queryKey: qk.projects });
+      qc.invalidateQueries({ queryKey: qk.project(args.projectId) });
     },
   });
 }

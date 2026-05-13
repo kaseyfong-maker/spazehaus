@@ -11,7 +11,7 @@
 
 A **production-deployed**, **auth-gated**, **fully-database-backed** internal management app for SPAZEHAUS interior design firm in Johor Bahru. Every page reads from real Postgres through TanStack Query + Supabase. Magic-link auth restricts access to staff with matching emails, **role-based RLS** enforces what each user can read and write, and the daily close-door photo SOP uploads real JPEGs to Supabase Storage. The Vercel production build is lean (no more inlined `vitePluginManusRuntime`).
 
-**Tier 1 is mid-flight.** Admins (principal / admin / admin_exec / pm / site_supervisor) can now mark payment gates as collected AND upload + sign the 6 contract / drawing documents per project directly from the UI. Signed PDFs are stored privately in Supabase Storage and viewed via short-lived signed URLs. Every status change flows through the audit_log trigger.
+**Tier 1 is mid-flight.** Admins (principal / admin / admin_exec / pm / site_supervisor) can mark payment gates as collected AND upload + sign the 6 contract / drawing documents per project directly from the UI. Signed PDFs are stored privately in Supabase Storage and viewed via short-lived signed URLs. Every status change flows through the audit_log trigger — and the project's `current_stage_id` now auto-advances server-side whenever a checkpoint completes, closing the workflow loop.
 
 ---
 
@@ -48,7 +48,8 @@ A **production-deployed**, **auth-gated**, **fully-database-backed** internal ma
 | Feature | Commit | What shipped |
 |---|---|---|
 | **Payment-collected mutations** | `51d683e` | New `useUpdatePayment` hook in `queries.ts` with invalidations across `qk.openPayments / projectLifecycle / projects / project`. New `MarkCollectedSheet` bottom-sheet component (collected date · reference · notes). Wired into the Checkpoints page (per-payment "COLLECT" pill) and the ProjectDetail Lifecycle tab (inline COLLECT button on each open payment row). Gated to OPS tier (`canEditPayments()` helper) so field staff don't see the button. Audit log captures every change via the Phase 0A trigger. |
-| **Document upload + e-sign** | _this commit_ | New `signature-docs` Supabase Storage bucket (private; 20 MB cap; PDF / JPEG / PNG only). Migration `20260513000005_tier1_signature_docs_bucket.sql` creates the bucket and tightens object-level RLS to the OPS tier. New `useUploadSignatureDoc` + `useUpdateSignature` hooks + `getSignatureDocUrl` helper that mints short-lived signed URLs. New `SignDocumentSheet` component handles PDF picker, optional re-upload, signed date / signed by / notes, and a toggleable "Mark as signed" switch. Wired into the Checkpoints SignatureGroup (per-row "SIGN" pill, scoped to canSign) and the ProjectDetail Lifecycle tab (inline SIGN + VIEW affordances on each `SignatureRow`). VIEW button distinguishes between real Storage paths (`/`-separated → opens signed URL in new tab) and legacy seed filenames (toasts the ref). |
+| **Document upload + e-sign** | `cb33936` | New `signature-docs` Supabase Storage bucket (private; 20 MB cap; PDF / JPEG / PNG only). Migration `20260513000005_tier1_signature_docs_bucket.sql` creates the bucket and tightens object-level RLS to the OPS tier. New `useUploadSignatureDoc` + `useUpdateSignature` hooks + `getSignatureDocUrl` helper that mints short-lived signed URLs. New `SignDocumentSheet` component handles PDF picker, optional re-upload, signed date / signed by / notes, and a toggleable "Mark as signed" switch. Wired into the Checkpoints SignatureGroup (per-row "SIGN" pill, scoped to canSign) and the ProjectDetail Lifecycle tab (inline SIGN + VIEW affordances on each `SignatureRow`). VIEW button distinguishes between real Storage paths (`/`-separated → opens signed URL in new tab) and legacy seed filenames (toasts the ref). |
+| **Stage auto-advance** | _this commit_ | Migration `20260513000006_tier1_stage_advancement.sql` materialises the 29-stage workflow into a `lifecycle_stages` table, adds a FK from `projects.current_stage_id`, and installs a SECURITY DEFINER function `maybe_advance_project_stage(project_id)` that loops forward through stages whose requirements are now satisfied. Triggers on `payment_records` and `signature_records` call the function on any status transition into `completed`. Special cases: stage 9 (Design Contract Signed) needs BOTH payment gate ② AND the design-contract signature; stage 22 (Progressive Payment) needs EVERY gate-4 instalment completed; retroactive completions never regress the current stage. Client side, `useUpdatePayment` and `useUpdateSignature` now snapshot the project's stage before + after the write and return a `stageAdvanced` field; both sheets toast a follow-up `Project advanced to "X"` when the trigger moved the project forward. Note that this changes the Convert Inquiry behaviour: newly converted projects auto-advance from `design-prop-signed` (stage 4) all the way to `design-contract` (stage 9), since the proposal deposit is collected at conversion time. |
 
 ---
 
@@ -159,24 +160,25 @@ Run these in the Supabase SQL editor, in order, against project `jifrzsvqdshjbqp
 3. `supabase/migrations/20260513000003_phase_0d_rls.sql` — tightens RLS to role-based
 4. `supabase/migrations/20260513000004_phase_0e_staff_emails.sql` — **edit first**, then paste
 5. `supabase/migrations/20260513000005_tier1_signature_docs_bucket.sql` — adds `signature-docs` Storage bucket + OPS-tier object RLS (must be run AFTER 0D so `public.is_ops_tier()` exists)
+6. `supabase/migrations/20260513000006_tier1_stage_advancement.sql` — materialises the 29-stage workflow into `lifecycle_stages`, adds FK + auto-advance triggers
 
-After step 3, the app behaves as before for `kaseyfong@saysheji.com` (principal, full access). Any new sign-ins from staff are filtered per their role. After step 4, the other 9 staff can sign in with their real emails. After step 5, the SIGN button in the Lifecycle tab + Checkpoints page works end-to-end.
+After step 3, the app behaves as before for `kaseyfong@saysheji.com` (principal, full access). Any new sign-ins from staff are filtered per their role. After step 4, the other 9 staff can sign in with their real emails. After step 5, the SIGN button in the Lifecycle tab + Checkpoints page works end-to-end. After step 6, marking a payment collected or a signature signed automatically moves the project to the next required SOP action.
 
 ---
 
 ## Next Steps — Tier 1 candidates
 
-Payment-collected mutations and document upload + e-sign are done. Remaining options:
+Payment-collected mutations, document upload + e-sign, and stage auto-advance are all done. Remaining options:
 
 | Feature | Effort | Why it matters |
 |---|---|---|
 | **WhatsApp reminder integration** | 1–2 days | Hook Reminders into WhatsApp Business API so site supervisors get pinged at 5pm if they haven't uploaded their close-door photo. |
-| **Stage advancement on payment / signature** | ½ day | When ① is collected (or design contract signed), auto-advance `current_stage_id`. Currently the stage is decoupled from these status flips — admins still have to advance it manually. |
 | **Client portal** | 2–3 days | Read-only public link per project for clients to see progress + sign documents. Requires separate Supabase auth flow. |
-| **`/admin/audit` page** | 1 hour | Surface the audit_log table for the admin tier — already populated by triggers, just needs a viewer. |
+| **`/admin/audit` page** | 1 hour | Surface the audit_log table for the admin tier — already populated by triggers (including stage advancements), just needs a viewer. |
 | **Auto-generate TS types** | 30 min | `supabase gen types typescript --project-id jifrzsvqdshjbqptubgz` and replace `dbTypes.ts`. |
 | **Sentry / error tracking** | 30 min | One-line setup, big upside as more staff start using the app. |
 | **E2E test suite** | 2–3 hours | Convert Inquiry / Payment Collection / Sign Document are the three highest-value mutations — worth Playwright happy-path tests for each. |
+| **Dead-mock cleanup** | 1 hour | Delete the orphaned mock arrays in `mockData.ts`, `customerData.ts`, `reminderData.ts`, `performanceData.ts`, `quotationData.ts`, `lifecycleData.ts` (config exports stay). |
 
 ---
 

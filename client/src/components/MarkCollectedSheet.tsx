@@ -83,7 +83,7 @@ export default function MarkCollectedSheet({
       return;
     }
     try {
-      await updatePayment.mutateAsync({
+      const result = await updatePayment.mutateAsync({
         id: target.id,
         projectId: target.projectId,
         status: "completed",
@@ -94,6 +94,20 @@ export default function MarkCollectedSheet({
       toast.success(`Payment ${gateLabel} marked collected`, {
         description: `${formatRM(target.amount)} · ${reference.trim()}`,
       });
+      // Server-side advancement trigger may have moved the project forward
+      if (result.stageAdvanced) {
+        const { toLabel, fromLabel } = result.stageAdvanced;
+        setTimeout(() => {
+          toast.info(
+            toLabel ? `Project advanced to "${toLabel}"` : "Project advanced",
+            {
+              description: fromLabel
+                ? `From "${fromLabel}" · auto-advanced by SOP`
+                : "Auto-advanced by SOP",
+            },
+          );
+        }, 350);
+      }
       onClose();
     } catch (err) {
       toast.error(`Update failed: ${err instanceof Error ? err.message : "unknown error"}`);

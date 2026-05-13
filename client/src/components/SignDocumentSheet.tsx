@@ -140,7 +140,7 @@ export default function SignDocumentSheet({
       }
 
       // 2. Update status / signed_by / signed_date / notes
-      await updateSig.mutateAsync({
+      const result = await updateSig.mutateAsync({
         id: target.id,
         projectId: target.projectId,
         status: markSigned ? "completed" : "in-progress",
@@ -155,6 +155,21 @@ export default function SignDocumentSheet({
           : `${target.label} document uploaded`,
         { description: target.projectName },
       );
+
+      // Stage advancement (only happens when status flipped to completed)
+      if (result.stageAdvanced) {
+        const { toLabel, fromLabel } = result.stageAdvanced;
+        setTimeout(() => {
+          toast.info(
+            toLabel ? `Project advanced to "${toLabel}"` : "Project advanced",
+            {
+              description: fromLabel
+                ? `From "${fromLabel}" · auto-advanced by SOP`
+                : "Auto-advanced by SOP",
+            },
+          );
+        }, 350);
+      }
       onClose();
     } catch (err) {
       toast.error(`Update failed: ${err instanceof Error ? err.message : "unknown error"}`);
