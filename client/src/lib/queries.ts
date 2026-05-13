@@ -460,6 +460,117 @@ export function canEditPayments(role: StaffRow["role"] | null | undefined): bool
       || role === "pm" || role === "site_supervisor";
 }
 
+/** Same OPS-tier predicate, named for the signature/document flow. */
+export const canEditSignatures = canEditPayments;
+
+// ─── SIGNATURE MUTATIONS + DOCUMENT UPLOAD (Tier 1 — e-sign) ────────────────
+// `signature-docs` is a private Supabase Storage bucket; objects are fetched
+// via short-lived signed URLs. Path pattern: {projectId}/{signatureKey}/{ts}.pdf
+
+export type UpdateSignatureArgs = {
+  id: number;
+  projectId: string;                  // required for cache invalidation
+  status?: SignatureRecordRow["status"];
+  signedDate?: string | null;         // DD/MM/YYYY — null clears
+  signedBy?: string | null;
+  documentRef?: string | null;        // Storage path or legacy filename
+  notes?: string | null;
+};
+
+export function useUpdateSignature() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (args: UpdateSignatureArgs): Promise<SignatureRecordRow> => {
+      const payload: Record<string, unknown> = {};
+      if (args.status !== undefined) payload.status = args.status;
+      if (args.signedDate !== undefined) {
+        payload.signed_date = args.signedDate ? ddmmyyyyToIso(args.signedDate) : null;
+      }
+      if (args.signedBy !== undefined) payload.signed_by = args.signedBy;
+      if (args.documentRef !== undefined) payload.document_ref = args.documentRef;
+      if (args.notes !== undefined) payload.notes = args.notes;
+
+      const { data, error } = await supabase
+        .from("signature_records")
+        .update(payload)
+        .eq("id", args.id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data as SignatureRecordRow;
+    },
+    onSuccess: (_row, args) => {
+      qc.invalidateQueries({ queryKey: qk.openSignatures });
+      qc.invalidateQueries({ queryKey: qk.projectLifecycle(args.projectId) });
+    },
+  });
+}
+
+export type UploadSignatureDocArgs = {
+  signatureId: number;
+  projectId: string;
+  signatureKey: string;
+  file: File;
+};
+
+/**
+ * Upload a signature document (PDF or image) to the `signature-docs` bucket
+ * and update the underlying signature_records row's `document_ref` to point
+ * at the new storage path. Returns the storage path that was written.
+ *
+ * Does NOT change the signature's status — call useUpdateSignature separately
+ * to mark it as completed (typically as part of the same submit handler).
+ */
+export function useUploadSignatureDoc() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (args: UploadSignatureDocArgs): Promise<string> => {
+      const ext = args.file.name.split(".").pop()?.toLowerCase() ?? "pdf";
+      const path = `${args.projectId}/${args.signatureKey}/${Date.now()}.${ext}`;
+
+      const { error: upErr } = await supabase.storage
+        .from("signature-docs")
+        .upload(path, args.file, {
+          cacheControl: "3600",
+          upsert: false,
+          contentType: args.file.type || "application/pdf",
+        });
+      if (upErr) throw upErr;
+
+      const { error: dbErr } = await supabase
+        .from("signature_records")
+        .update({ document_ref: path })
+        .eq("id", args.signatureId);
+      if (dbErr) throw dbErr;
+
+      return path;
+    },
+    onSuccess: (_path, args) => {
+      qc.invalidateQueries({ queryKey: qk.openSignatures });
+      qc.invalidateQueries({ queryKey: qk.projectLifecycle(args.projectId) });
+    },
+  });
+}
+
+/** Mint a short-lived signed URL for viewing a signature document. */
+export async function getSignatureDocUrl(storagePath: string, expiresInSec = 3600): Promise<string | null> {
+  const { data, error } = await supabase.storage
+    .from("signature-docs")
+    .createSignedUrl(storagePath, expiresInSec);
+  if (error || !data) return null;
+  return data.signedUrl;
+}
+
+/**
+ * Returns true when a row's `document_ref` looks like a real Storage path
+ * (contains a "/") rather than a legacy filename from the seed data.
+ */
+export function isStorageDocRef(documentRef: string | null | undefined): boolean {
+  return typeof documentRef === "string" && documentRef.includes("/");
+}
+
 // ─── INQUIRIES ──────────────────────────────────────────────────────────────
 
 export function useInquiries() {

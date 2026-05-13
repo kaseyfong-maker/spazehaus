@@ -8,9 +8,10 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
-import { Coins, PenSquare, AlertCircle, Clock, ChevronRight, FileText, Receipt, CalendarDays, Check } from "lucide-react";
+import { Coins, PenSquare, AlertCircle, Clock, ChevronRight, FileText, Receipt, CalendarDays, Check, Upload } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import MarkCollectedSheet, { type MarkCollectedTarget } from "@/components/MarkCollectedSheet";
+import SignDocumentSheet, { type SignDocumentTarget } from "@/components/SignDocumentSheet";
 import {
   bucketLabel,
   bucketTone,
@@ -25,6 +26,7 @@ import {
   useOpenSignatures,
   computeCheckpointSummary,
   canEditPayments,
+  canEditSignatures,
   type OpenPaymentRow,
   type OpenSignatureRow,
 } from "@/lib/queries";
@@ -42,8 +44,10 @@ export default function Checkpoints() {
   const [, navigate] = useLocation();
   const [filter, setFilter] = useState<FilterTab>("All");
   const [collectTarget, setCollectTarget] = useState<MarkCollectedTarget | null>(null);
+  const [signTarget, setSignTarget] = useState<SignDocumentTarget | null>(null);
   const { staff: me } = useAuth();
   const canCollect = canEditPayments(me?.role);
+  const canSign = canEditSignatures(me?.role);
 
   const { data: openPayments = [] } = useOpenPayments();
   const { data: openSignatures = [] } = useOpenSignatures();
@@ -200,7 +204,24 @@ export default function Checkpoints() {
               tint="oklch(0.50 0.10 25)"
               tintBg="oklch(0.60 0.10 25 / 12%)"
               rows={contracts}
+              canSign={canSign}
               onRowClick={(r) => navigate(`/projects/${r.projectId}?tab=Lifecycle`)}
+              onSign={(r) =>
+                setSignTarget({
+                  id: r.id,
+                  projectId: r.projectId,
+                  projectName: r.projectName,
+                  signatureKey: r.key,
+                  label: r.label,
+                  group: r.group,
+                  status: r.status,
+                  documentRef: r.documentRef,
+                  signedDate: r.signedDate,
+                  signedBy: r.signedBy,
+                  notes: r.notes,
+                  defaultSignedBy: r.client,
+                })
+              }
             />
 
             <SignatureGroup
@@ -209,7 +230,24 @@ export default function Checkpoints() {
               tint="oklch(0.38 0.09 240)"
               tintBg="oklch(0.55 0.09 240 / 12%)"
               rows={drawings}
+              canSign={canSign}
               onRowClick={(r) => navigate(`/projects/${r.projectId}?tab=Lifecycle`)}
+              onSign={(r) =>
+                setSignTarget({
+                  id: r.id,
+                  projectId: r.projectId,
+                  projectName: r.projectName,
+                  signatureKey: r.key,
+                  label: r.label,
+                  group: r.group,
+                  status: r.status,
+                  documentRef: r.documentRef,
+                  signedDate: r.signedDate,
+                  signedBy: r.signedBy,
+                  notes: r.notes,
+                  defaultSignedBy: r.client,
+                })
+              }
             />
           </div>
         )}
@@ -224,6 +262,13 @@ export default function Checkpoints() {
         target={collectTarget}
         open={collectTarget !== null}
         onClose={() => setCollectTarget(null)}
+      />
+
+      {/* Sign-document sheet */}
+      <SignDocumentSheet
+        target={signTarget}
+        open={signTarget !== null}
+        onClose={() => setSignTarget(null)}
       />
     </div>
   );
@@ -438,14 +483,18 @@ function SignatureGroup({
   tint,
   tintBg,
   rows,
+  canSign,
   onRowClick,
+  onSign,
 }: {
   title: string;
   icon: typeof Coins;
   tint: string;
   tintBg: string;
   rows: OpenSignatureRow[];
+  canSign: boolean;
   onRowClick: (row: OpenSignatureRow) => void;
+  onSign: (row: OpenSignatureRow) => void;
 }) {
   return (
     <div>
@@ -472,33 +521,38 @@ function SignatureGroup({
           {rows.map((row, i) => {
             const sc = checkpointStatusConfig[row.status];
             return (
-              <motion.button
+              <div
                 key={`${row.projectId}-${row.key}`}
-                whileTap={{ scale: 0.99 }}
-                onClick={() => onRowClick(row)}
-                className="w-full px-3 py-3 flex items-center gap-3 text-left"
+                className="w-full px-3 py-3 flex items-center gap-3"
                 style={{ borderBottom: i === rows.length - 1 ? "none" : "1px solid oklch(0.95 0.008 75)" }}
               >
-                <div
-                  className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                  style={{ background: tintBg }}
+                <motion.button
+                  whileTap={{ scale: 0.99 }}
+                  onClick={() => onRowClick(row)}
+                  className="flex items-center gap-3 flex-1 min-w-0 text-left"
                 >
-                  <Icon size={15} style={{ color: tint }} />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold truncate" style={{ color: "oklch(0.14 0.008 65)" }}>
-                    {row.label}
-                  </p>
-                  <p className="text-[11px] truncate mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>
-                    {row.projectName} · {row.client}
-                  </p>
-                  {row.notes && (
-                    <p className="text-[10px] truncate mt-0.5" style={{ color: "oklch(0.55 0.008 65)" }}>
-                      {row.notes}
+                  <div
+                    className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                    style={{ background: tintBg }}
+                  >
+                    <Icon size={15} style={{ color: tint }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold truncate" style={{ color: "oklch(0.14 0.008 65)" }}>
+                      {row.label}
                     </p>
-                  )}
-                </div>
-                <div className="text-right shrink-0 flex items-center gap-2">
+                    <p className="text-[11px] truncate mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>
+                      {row.projectName} · {row.client}
+                    </p>
+                    {row.notes && (
+                      <p className="text-[10px] truncate mt-0.5" style={{ color: "oklch(0.55 0.008 65)" }}>
+                        {row.notes}
+                      </p>
+                    )}
+                  </div>
+                </motion.button>
+
+                <div className="flex flex-col items-end gap-1.5 shrink-0">
                   <span
                     className="text-[9px] font-label px-2 py-0.5 rounded-full"
                     style={{
@@ -510,9 +564,27 @@ function SignatureGroup({
                   >
                     {sc.label}
                   </span>
-                  <ChevronRight size={12} style={{ color: "oklch(0.65 0.008 68)" }} />
+                  {canSign ? (
+                    <motion.button
+                      whileTap={{ scale: 0.94 }}
+                      onClick={() => onSign(row)}
+                      className="px-2.5 py-1 rounded-md flex items-center gap-1"
+                      style={{
+                        background: tintBg,
+                        color: tint,
+                        border: `1px solid ${tint}40`,
+                      }}
+                    >
+                      <Upload size={10} />
+                      <span className="text-[10px] font-label" style={{ letterSpacing: "0.04em", fontWeight: 700 }}>
+                        SIGN
+                      </span>
+                    </motion.button>
+                  ) : (
+                    <ChevronRight size={12} style={{ color: "oklch(0.65 0.008 68)" }} />
+                  )}
                 </div>
-              </motion.button>
+              </div>
             );
           })}
         </div>

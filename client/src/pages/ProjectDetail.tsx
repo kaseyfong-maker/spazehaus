@@ -13,6 +13,7 @@ import { useParams, useLocation } from "wouter";
 import { Upload, UserPlus, CheckSquare, MapPin, Maximize2, Phone, FileText, Receipt, Coins, PenSquare, Check, Clock, AlertCircle } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import MarkCollectedSheet, { type MarkCollectedTarget } from "@/components/MarkCollectedSheet";
+import SignDocumentSheet, { type SignDocumentTarget } from "@/components/SignDocumentSheet";
 import { statusConfig, priorityConfig } from "@/lib/mockData";
 import { statusConfig as qStatusConfig, computeTotals, formatRM } from "@/lib/quotationData";
 import {
@@ -31,6 +32,9 @@ import {
   useQuotations,
   useProjectLifecycle,
   canEditPayments,
+  canEditSignatures,
+  getSignatureDocUrl,
+  isStorageDocRef,
   type PaymentRecord,
   type DocumentSignRecord,
 } from "@/lib/queries";
@@ -264,7 +268,7 @@ export default function ProjectDetail() {
           )}
 
           {activeTab === "Lifecycle" && (
-            <LifecycleTab projectId={project.id} />
+            <LifecycleTab projectId={project.id} clientName={project.client} projectName={project.name} />
           )}
 
           {activeTab === "Tasks" && (
@@ -453,11 +457,13 @@ export default function ProjectDetail() {
 // with inline Payment Collection (5 gates) and Document Sign (6 items) badges.
 // ─────────────────────────────────────────────────────────────────────────────
 
-function LifecycleTab({ projectId }: { projectId: string }) {
+function LifecycleTab({ projectId, clientName, projectName }: { projectId: string; clientName?: string; projectName?: string }) {
   const { data: lc, isLoading } = useProjectLifecycle(projectId);
   const { staff: me } = useAuth();
   const canCollect = canEditPayments(me?.role);
+  const canSign = canEditSignatures(me?.role);
   const [collectTarget, setCollectTarget] = useState<MarkCollectedTarget | null>(null);
+  const [signTarget, setSignTarget] = useState<SignDocumentTarget | null>(null);
   if (isLoading) {
     return (
       <div className="rounded-2xl p-8 text-center" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
@@ -624,7 +630,28 @@ function LifecycleTab({ projectId }: { projectId: string }) {
                       )}
 
                       {/* Signature detail */}
-                      {signature && <SignatureRow signature={signature} />}
+                      {signature && (
+                        <SignatureRow
+                          signature={signature}
+                          canSign={canSign}
+                          onSign={() =>
+                            setSignTarget({
+                              id: signature.id,
+                              projectId,
+                              projectName,
+                              signatureKey: signature.key,
+                              label: signature.label,
+                              group: signature.group,
+                              status: signature.status,
+                              documentRef: signature.documentRef,
+                              signedDate: signature.signedDate,
+                              signedBy: signature.signedBy,
+                              notes: signature.notes,
+                              defaultSignedBy: clientName,
+                            })
+                          }
+                        />
+                      )}
                     </div>
                   </div>
                 );
@@ -644,6 +671,13 @@ function LifecycleTab({ projectId }: { projectId: string }) {
         target={collectTarget}
         open={collectTarget !== null}
         onClose={() => setCollectTarget(null)}
+      />
+
+      {/* Sign-document sheet */}
+      <SignDocumentSheet
+        target={signTarget}
+        open={signTarget !== null}
+        onClose={() => setSignTarget(null)}
       />
     </div>
   );
@@ -827,8 +861,41 @@ function PaymentRow({
   );
 }
 
-function SignatureRow({ signature }: { signature: DocumentSignRecord }) {
+function SignatureRow({
+  signature,
+  canSign,
+  onSign,
+}: {
+  signature: DocumentSignRecord;
+  canSign: boolean;
+  onSign: () => void;
+}) {
   const sc = checkpointStatusConfig[signature.status];
+  const isOpen = signature.status !== "completed" && signature.status !== "skipped";
+  const hasStoredDoc = isStorageDocRef(signature.documentRef);
+  const hasLegacyDoc = !!signature.documentRef && !hasStoredDoc;
+  const [viewLoading, setViewLoading] = useState(false);
+
+  async function handleViewPdf(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (!signature.documentRef) return;
+    if (!hasStoredDoc) {
+      toast.info(`Legacy reference: ${signature.documentRef}`);
+      return;
+    }
+    setViewLoading(true);
+    try {
+      const url = await getSignatureDocUrl(signature.documentRef);
+      if (url) {
+        window.open(url, "_blank", "noopener,noreferrer");
+      } else {
+        toast.error("Could not open document — link may have expired");
+      }
+    } finally {
+      setViewLoading(false);
+    }
+  }
+
   return (
     <div
       className="mt-2 rounded-lg px-2.5 py-2 flex items-center justify-between gap-2"
@@ -853,22 +920,49 @@ function SignatureRow({ signature }: { signature: DocumentSignRecord }) {
           </p>
         </div>
       </div>
-      {signature.documentRef && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            toast.info(`Opening ${signature.documentRef}…`);
-          }}
-          className="text-[9px] font-label px-2 py-1 rounded-md shrink-0"
-          style={{
-            background: "oklch(0.62 0.09 68 / 10%)",
-            color: "oklch(0.42 0.09 68)",
-            letterSpacing: "0.04em",
-          }}
-        >
-          PDF
-        </button>
-      )}
+      <div className="flex items-center gap-1.5 shrink-0">
+        {(hasStoredDoc || hasLegacyDoc) && (
+          <button
+            onClick={handleViewPdf}
+            disabled={viewLoading}
+            className="text-[9px] font-label px-2 py-1 rounded-md flex items-center gap-1"
+            style={{
+              background: "oklch(0.62 0.09 68 / 10%)",
+              color: "oklch(0.42 0.09 68)",
+              letterSpacing: "0.04em",
+              opacity: viewLoading ? 0.6 : 1,
+            }}
+          >
+            {viewLoading ? "…" : hasStoredDoc ? "VIEW" : "REF"}
+          </button>
+        )}
+        {isOpen && canSign && (
+          <motion.button
+            whileTap={{ scale: 0.94 }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onSign();
+            }}
+            className="px-2 py-0.5 rounded-md flex items-center gap-1"
+            style={{
+              background: signature.group === "contract"
+                ? "oklch(0.60 0.10 25 / 12%)"
+                : "oklch(0.55 0.09 240 / 12%)",
+              color: signature.group === "contract"
+                ? "oklch(0.50 0.10 25)"
+                : "oklch(0.38 0.09 240)",
+              border: signature.group === "contract"
+                ? "1px solid oklch(0.50 0.10 25 / 35%)"
+                : "1px solid oklch(0.38 0.09 240 / 35%)",
+            }}
+          >
+            <Upload size={9} />
+            <span className="text-[9px] font-label" style={{ letterSpacing: "0.04em", fontWeight: 700 }}>
+              SIGN
+            </span>
+          </motion.button>
+        )}
+      </div>
     </div>
   );
 }

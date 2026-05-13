@@ -11,7 +11,7 @@
 
 A **production-deployed**, **auth-gated**, **fully-database-backed** internal management app for SPAZEHAUS interior design firm in Johor Bahru. Every page reads from real Postgres through TanStack Query + Supabase. Magic-link auth restricts access to staff with matching emails, **role-based RLS** enforces what each user can read and write, and the daily close-door photo SOP uploads real JPEGs to Supabase Storage. The Vercel production build is lean (no more inlined `vitePluginManusRuntime`).
 
-**Tier 1 has started.** Admins (principal / admin / admin_exec / pm / site_supervisor) can now mark payment gates as collected directly from the Checkpoints page or the project's Lifecycle tab — closing the SOP loop end-to-end. Every status change flows through the audit_log trigger.
+**Tier 1 is mid-flight.** Admins (principal / admin / admin_exec / pm / site_supervisor) can now mark payment gates as collected AND upload + sign the 6 contract / drawing documents per project directly from the UI. Signed PDFs are stored privately in Supabase Storage and viewed via short-lived signed URLs. Every status change flows through the audit_log trigger.
 
 ---
 
@@ -47,7 +47,8 @@ A **production-deployed**, **auth-gated**, **fully-database-backed** internal ma
 
 | Feature | Commit | What shipped |
 |---|---|---|
-| **Payment-collected mutations** | _this commit_ | New `useUpdatePayment` hook in `queries.ts` with invalidations across `qk.openPayments / projectLifecycle / projects / project`. New `MarkCollectedSheet` bottom-sheet component (collected date · reference · notes). Wired into the Checkpoints page (per-payment "COLLECT" pill) and the ProjectDetail Lifecycle tab (inline COLLECT button on each open payment row). Gated to OPS tier (`canEditPayments()` helper) so field staff don't see the button. Audit log captures every change via the Phase 0A trigger. |
+| **Payment-collected mutations** | `51d683e` | New `useUpdatePayment` hook in `queries.ts` with invalidations across `qk.openPayments / projectLifecycle / projects / project`. New `MarkCollectedSheet` bottom-sheet component (collected date · reference · notes). Wired into the Checkpoints page (per-payment "COLLECT" pill) and the ProjectDetail Lifecycle tab (inline COLLECT button on each open payment row). Gated to OPS tier (`canEditPayments()` helper) so field staff don't see the button. Audit log captures every change via the Phase 0A trigger. |
+| **Document upload + e-sign** | _this commit_ | New `signature-docs` Supabase Storage bucket (private; 20 MB cap; PDF / JPEG / PNG only). Migration `20260513000005_tier1_signature_docs_bucket.sql` creates the bucket and tightens object-level RLS to the OPS tier. New `useUploadSignatureDoc` + `useUpdateSignature` hooks + `getSignatureDocUrl` helper that mints short-lived signed URLs. New `SignDocumentSheet` component handles PDF picker, optional re-upload, signed date / signed by / notes, and a toggleable "Mark as signed" switch. Wired into the Checkpoints SignatureGroup (per-row "SIGN" pill, scoped to canSign) and the ProjectDetail Lifecycle tab (inline SIGN + VIEW affordances on each `SignatureRow`). VIEW button distinguishes between real Storage paths (`/`-separated → opens signed URL in new tab) and legacy seed filenames (toasts the ref). |
 
 ---
 
@@ -157,25 +158,25 @@ Run these in the Supabase SQL editor, in order, against project `jifrzsvqdshjbqp
 2. `supabase/migrations/20260513000002_phase_0c2_seed.sql` — seeds calendar events + KPI records
 3. `supabase/migrations/20260513000003_phase_0d_rls.sql` — tightens RLS to role-based
 4. `supabase/migrations/20260513000004_phase_0e_staff_emails.sql` — **edit first**, then paste
+5. `supabase/migrations/20260513000005_tier1_signature_docs_bucket.sql` — adds `signature-docs` Storage bucket + OPS-tier object RLS (must be run AFTER 0D so `public.is_ops_tier()` exists)
 
-After step 3, the app behaves as before for `kaseyfong@saysheji.com` (principal, full access). Any new sign-ins from staff are filtered per their role. After step 4, the other 9 staff can sign in with their real emails.
+After step 3, the app behaves as before for `kaseyfong@saysheji.com` (principal, full access). Any new sign-ins from staff are filtered per their role. After step 4, the other 9 staff can sign in with their real emails. After step 5, the SIGN button in the Lifecycle tab + Checkpoints page works end-to-end.
 
 ---
 
 ## Next Steps — Tier 1 candidates
 
-Payment-collected mutations are done. Remaining Tier 1 options:
+Payment-collected mutations and document upload + e-sign are done. Remaining options:
 
 | Feature | Effort | Why it matters |
 |---|---|---|
-| **Document upload (e-sign placeholder)** | 1 day | Use Supabase Storage for the 6 signature documents per project. Tap → upload PDF → mark signed. Same upload pattern as site photos. |
 | **WhatsApp reminder integration** | 1–2 days | Hook Reminders into WhatsApp Business API so site supervisors get pinged at 5pm if they haven't uploaded their close-door photo. |
-| **Stage advancement on payment collection** | ½ day | When ① is collected, auto-advance `current_stage_id` to the next stage. Currently the stage is decoupled from payment status — admins have to advance it manually. |
+| **Stage advancement on payment / signature** | ½ day | When ① is collected (or design contract signed), auto-advance `current_stage_id`. Currently the stage is decoupled from these status flips — admins still have to advance it manually. |
 | **Client portal** | 2–3 days | Read-only public link per project for clients to see progress + sign documents. Requires separate Supabase auth flow. |
 | **`/admin/audit` page** | 1 hour | Surface the audit_log table for the admin tier — already populated by triggers, just needs a viewer. |
 | **Auto-generate TS types** | 30 min | `supabase gen types typescript --project-id jifrzsvqdshjbqptubgz` and replace `dbTypes.ts`. |
 | **Sentry / error tracking** | 30 min | One-line setup, big upside as more staff start using the app. |
-| **E2E test for the conversion flow + payment collection** | 1–2 hours | The two highest-value mutations — worth Playwright happy-path tests. |
+| **E2E test suite** | 2–3 hours | Convert Inquiry / Payment Collection / Sign Document are the three highest-value mutations — worth Playwright happy-path tests for each. |
 
 ---
 
