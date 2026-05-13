@@ -24,6 +24,7 @@ import {
   type ReactNode,
 } from "react";
 import { supabase, type Session, type User } from "@/lib/supabase";
+import { setSentryUser, clearSentryUser } from "@/lib/sentry";
 import type { StaffRow } from "@/lib/dbTypes";
 
 type AuthState =
@@ -79,7 +80,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const updateFromSession = useCallback(async (session: Session | null) => {
     const next = await resolve(session);
-    if (mounted.current) setState(next);
+    if (!mounted.current) return;
+    setState(next);
+
+    // Mirror the resolved identity into Sentry so any captured error is
+    // tagged with the acting staff member. Pass nulls on sign-out so
+    // unauthenticated errors don't get attributed to the previous user.
+    if (next.status === "authenticated") {
+      setSentryUser(next.user.id, next.user.email ?? null, next.staff);
+    } else if (next.status === "authenticated-no-staff") {
+      setSentryUser(next.user.id, next.user.email ?? null, null);
+    } else {
+      clearSentryUser();
+    }
   }, []);
 
   useEffect(() => {
@@ -108,6 +121,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     setState({ status: "unauthenticated" });
+    clearSentryUser();
   }, []);
 
   const refresh = useCallback(async () => {
