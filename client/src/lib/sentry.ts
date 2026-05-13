@@ -11,12 +11,16 @@
  *   VITE_SENTRY_DSN          — required; missing/empty means Sentry is OFF
  *   VITE_SENTRY_ENVIRONMENT  — optional; defaults to "production" / "development"
  *                              based on the Vite mode
- *   VITE_SENTRY_RELEASE      — optional; tagged on every event for source-map
- *                              correlation. We default to import.meta.env.MODE
- *                              plus a short build hash if available.
+ *   VITE_SENTRY_RELEASE      — auto-injected by vite.config.ts as
+ *                              `spazehaus@<git-short-sha>` so that the runtime
+ *                              release tag matches the source maps the
+ *                              @sentry/vite-plugin uploaded under the same SHA.
+ *                              Override at build time if you want a custom
+ *                              release name.
  *
  * If the DSN is unset, every Sentry call below short-circuits to a no-op so
- * local dev and CI builds work without a DSN configured.
+ * local dev and CI builds work without a DSN configured. Source-map upload
+ * is configured separately in vite.config.ts and gated on SENTRY_AUTH_TOKEN.
  */
 import * as Sentry from "@sentry/react";
 import type { StaffRow } from "@/lib/dbTypes";

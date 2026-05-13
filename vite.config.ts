@@ -1,6 +1,8 @@
 import { jsxLocPlugin } from "@builder.io/vite-plugin-jsx-loc";
+import { sentryVitePlugin } from "@sentry/vite-plugin";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
+import { execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { defineConfig, type Plugin, type ViteDevServer } from "vite";
@@ -161,11 +163,86 @@ function vitePluginManusDebugCollector(): Plugin {
   };
 }
 
+// =============================================================================
+// Sentry — source-map upload
+// =============================================================================
+//
+// When SENTRY_AUTH_TOKEN + SENTRY_ORG + SENTRY_PROJECT are set, the
+// @sentry/vite-plugin uploads sourcemaps to Sentry under a release tag so
+// production stack traces show real symbols instead of minified names. The
+// same release tag is injected into the runtime via VITE_SENTRY_RELEASE so
+// @sentry/react reports events against the matching release.
+//
+// Release name resolution (highest priority first):
+//   1. process.env.SENTRY_RELEASE       (explicit override)
+//   2. process.env.VERCEL_GIT_COMMIT_SHA (auto-injected by Vercel)
+//   3. `git rev-parse --short HEAD`     (local + most CI)
+//   4. fallback "spazehaus@<NODE_ENV>"
+//
+// Without all three secrets present, the plugin is omitted entirely and
+// production builds emit no sourcemaps (so they can't leak via dist/).
+const SENTRY_AUTH_TOKEN = process.env.SENTRY_AUTH_TOKEN;
+const SENTRY_ORG = process.env.SENTRY_ORG;
+const SENTRY_PROJECT = process.env.SENTRY_PROJECT;
+const SENTRY_UPLOAD_ENABLED =
+  isProd && !!SENTRY_AUTH_TOKEN && !!SENTRY_ORG && !!SENTRY_PROJECT;
+
+function resolveSentryRelease(): string {
+  if (process.env.SENTRY_RELEASE) return process.env.SENTRY_RELEASE;
+  const sha =
+    process.env.VERCEL_GIT_COMMIT_SHA ??
+    (() => {
+      try {
+        return execSync("git rev-parse --short HEAD", { stdio: ["ignore", "pipe", "ignore"] })
+          .toString()
+          .trim();
+      } catch {
+        return null;
+      }
+    })();
+  if (sha) return `spazehaus@${sha.slice(0, 12)}`;
+  return `spazehaus@${process.env.NODE_ENV || "dev"}`;
+}
+const SENTRY_RELEASE = resolveSentryRelease();
+// Expose to the client bundle through the Vite env layer so
+// `client/src/lib/sentry.ts` reports events tagged with the SAME release
+// the plugin just uploaded source maps under.
+process.env.VITE_SENTRY_RELEASE ??= SENTRY_RELEASE;
+
 const plugins = [
   react(),
   tailwindcss(),
   jsxLocPlugin(),
   ...(MANUS_RUNTIME_ENABLED ? [vitePluginManusRuntime(), vitePluginManusDebugCollector()] : []),
+  ...(SENTRY_UPLOAD_ENABLED
+    ? [
+        sentryVitePlugin({
+          org: SENTRY_ORG,
+          project: SENTRY_PROJECT,
+          authToken: SENTRY_AUTH_TOKEN,
+          release: { name: SENTRY_RELEASE },
+          sourcemaps: {
+            // dist/public is set by `build.outDir` below; the assets are the
+            // emitted JS + their adjacent .map files.
+            assets: ["./dist/public/**/*.js", "./dist/public/**/*.map"],
+            // Delete .map files after upload so they never reach the CDN.
+            filesToDeleteAfterUpload: ["./dist/public/**/*.map"],
+          },
+          telemetry: false,
+          // A failed source-map upload (bad token, network blip, Sentry
+          // outage) should NOT block a Vercel deploy — production stack
+          // traces are a nice-to-have, not a hard dependency. Log loudly so
+          // it's obvious in the build output, then swallow the error.
+          errorHandler: (err) => {
+            console.warn(
+              `[sentry-vite-plugin] sourcemap upload failed — production stack ` +
+                `traces will be minified for release ${SENTRY_RELEASE}. ` +
+                `Build continues. Error: ${err.message}`,
+            );
+          },
+        }),
+      ]
+    : []),
 ];
 
 export default defineConfig({
@@ -182,6 +259,12 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    // Produce source maps only when we'll upload + delete them. Without the
+    // upload step, maps in dist/public would be served publicly — and
+    // production stack traces with real symbols aren't worth that trade.
+    // `"hidden"` emits .map files but omits the sourceMappingURL comment,
+    // so browsers won't fetch them even if they leak.
+    sourcemap: SENTRY_UPLOAD_ENABLED ? ("hidden" as const) : false,
   },
   server: {
     port: 3000,
