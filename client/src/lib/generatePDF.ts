@@ -5,7 +5,8 @@
  */
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import { Quotation, computeTotals, formatRM } from "./quotationData";
+import { computeTotals, formatRM } from "./quotationData";
+import type { QuotationWithItems } from "./queries";
 
 // Brand colors as RGB arrays for jsPDF
 const GOLD = [201, 169, 110] as [number, number, number];        // #C9A96E
@@ -25,7 +26,7 @@ const COMPANY_INFO = {
   website: "www.spazehaus.com",
 };
 
-export async function generateQuotationPDF(quotation: Quotation): Promise<void> {
+export async function generateQuotationPDF(quotation: QuotationWithItems): Promise<void> {
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();

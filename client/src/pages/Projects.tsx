@@ -7,10 +7,10 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
 import { Plus, Search, MapPin, Calendar, FileText, Receipt, AlertCircle, Users, ChevronRight } from "lucide-react";
-import { quotations, computeTotals, formatRM } from "@/lib/quotationData";
+import { computeTotals, formatRM } from "@/lib/quotationData";
 import AppHeader from "@/components/AppHeader";
 import { statusConfig, priorityConfig } from "@/lib/mockData";
-import { useProjects, useOpenPayments, useOpenSignatures, useInquiries, computeCheckpointSummary, computeCustomerSummary } from "@/lib/queries";
+import { useProjects, useOpenPayments, useOpenSignatures, useInquiries, useQuotations, computeCheckpointSummary, computeCustomerSummary } from "@/lib/queries";
 
 const HERO_BG = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296470877/izBqEFfzzpfKonJn.jpg";
 
@@ -40,6 +40,7 @@ export default function Projects() {
   const { data: openPayments = [] } = useOpenPayments();
   const { data: openSignatures = [] } = useOpenSignatures();
   const { data: inquiries = [] } = useInquiries();
+  const { data: quotations = [] } = useQuotations();
 
   const filtered = projects.filter((p) => {
     const matchStatus = activeFilter === "all" || p.status === activeFilter;

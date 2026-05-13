@@ -1,10 +1,22 @@
 /*
- * SPAZEHAUS PROJECT LIFECYCLE DATA
+ * SPAZEHAUS PROJECT LIFECYCLE — Types, constants, and pure helpers
  * Source: 2026 Annual Meeting PDF — Design & Renovation Workflow
  *
  * 29 canonical stages across 5 phases (Inquiry → Design → Pre-Build → Build → Closeout)
  * 5 Payment Collection Checkpoints (① ② ③ ④ ⑤)
  * 6 Document Sign Checkpoints — 3 Contracts + 3 Drawings
+ *
+ * The historical per-project `projectLifecycles` mock array + its accessor
+ * helpers (getLifecycle / getOpenPayments / getOpenSignatures / checkpointSummary)
+ * were removed once the app moved to Supabase. The Lifecycle tab, the
+ * Checkpoints dashboard, and the cross-project KPIs all read from
+ * `useProjectLifecycle()` / `useOpenPayments()` / `useOpenSignatures()` in
+ * queries.ts now.
+ *
+ * What remains here is pure: the 29-stage catalogue, the in-app TypeScript
+ * shapes for a lifecycle / payment / signature, palette tokens, and a small
+ * set of date helpers (`MOCK_TODAY`, `daysFromToday`, `bucketDate`, etc.)
+ * plus the summary helpers consumed by the ProjectDetail Lifecycle tab.
  */
 
 export type StagePhase = "Inquiry" | "Design" | "Pre-Build" | "Build" | "Closeout";
@@ -90,7 +102,8 @@ export const LIFECYCLE_STAGES: LifecycleStage[] = [
 ];
 
 // —————————————————————————————————————————————————————————————
-// Per-project lifecycle state
+// Per-project lifecycle state — in-app TypeScript shapes
+// Live row mapping happens in queries.ts via `useProjectLifecycle()`.
 // —————————————————————————————————————————————————————————————
 
 export type CheckpointStatus = "completed" | "in-progress" | "pending" | "overdue" | "skipped";
@@ -153,133 +166,8 @@ export const checkpointStatusConfig: Record<CheckpointStatus, { label: string; c
 };
 
 // —————————————————————————————————————————————————————————————
-// Mock lifecycle data per project (matches existing PRJ001…PRJ005)
-// Today (2026-05-10) drives the "current stage" for each.
+// Per-lifecycle aggregation helpers — consumed by ProjectDetail Lifecycle tab
 // —————————————————————————————————————————————————————————————
-
-export const projectLifecycles: ProjectLifecycle[] = [
-  // PRJ001 — Paragon Residence — active 65% — currently in BUILD / Progressive Payment
-  {
-    projectId: "PRJ001",
-    currentStageId: "progressive-pay",
-    startedAt: "05/01/2026",
-    payments: [
-      { gate: 1, label: "Proposal Deposit",         amount: 3000,   status: "completed",  collectedDate: "10/12/2025", reference: "PD-2025-021" },
-      { gate: 2, label: "Design Contract Fee",      amount: 18000,  status: "completed",  collectedDate: "20/12/2025", reference: "DC-2025-018" },
-      { gate: 3, label: "Renovation Deposit (50%)", amount: 130000, status: "completed",  collectedDate: "08/01/2026", reference: "RD-2026-003" },
-      { gate: 4, label: "Progressive Payment 1/3",  amount: 39000,  status: "completed",  collectedDate: "15/03/2026", reference: "PP-2026-014", instalment: 1, ofInstalments: 3 },
-      { gate: 4, label: "Progressive Payment 2/3",  amount: 39000,  status: "in-progress", dueDate: "15/05/2026", instalment: 2, ofInstalments: 3, notes: "Awaiting site inspection sign-off" },
-      { gate: 4, label: "Progressive Payment 3/3",  amount: 39000,  status: "pending",    dueDate: "10/06/2026", instalment: 3, ofInstalments: 3 },
-      { gate: 5, label: "Final Payment",            amount: 51000,  status: "pending",    dueDate: "30/04/2026" },
-    ],
-    signatures: [
-      { key: "design-contract",     label: "Design Contract",          group: "contract", status: "completed", signedDate: "20/12/2025", signedBy: "Mr. & Mrs. Lim", documentRef: "DC-PRJ001.pdf" },
-      { key: "revised-3d",          label: "Revised 3D Drawing",       group: "drawing",  status: "completed", signedDate: "28/12/2025", signedBy: "Mr. & Mrs. Lim", documentRef: "3D-R2-PRJ001.pdf" },
-      { key: "renovation-contract", label: "Renovation Contract",      group: "contract", status: "completed", signedDate: "05/01/2026", signedBy: "Mr. & Mrs. Lim", documentRef: "RC-PRJ001.pdf" },
-      { key: "material-selection",  label: "Material Selection",       group: "drawing",  status: "completed", signedDate: "12/01/2026", signedBy: "Mr. & Mrs. Lim", documentRef: "MS-PRJ001.pdf" },
-      { key: "2d-shopping",         label: "2D Drawing / Shopping List",group: "drawing", status: "completed", signedDate: "15/01/2026", signedBy: "Mr. & Mrs. Lim", documentRef: "2D-PRJ001.pdf" },
-      { key: "handover",            label: "Handover Acceptance",      group: "contract", status: "pending" },
-    ],
-  },
-
-  // PRJ002 — Eco Botanic Office — under-review 92% — at HANDOVER awaiting Final Payment
-  {
-    projectId: "PRJ002",
-    currentStageId: "final-payment",
-    startedAt: "15/11/2025",
-    payments: [
-      { gate: 1, label: "Proposal Deposit",          amount: 5000,   status: "completed", collectedDate: "01/10/2025", reference: "PD-2025-014" },
-      { gate: 2, label: "Design Contract Fee",       amount: 52000,  status: "completed", collectedDate: "10/10/2025", reference: "DC-2025-009" },
-      { gate: 3, label: "Renovation Deposit (50%)",  amount: 260000, status: "completed", collectedDate: "12/11/2025", reference: "RD-2025-021" },
-      { gate: 4, label: "Progressive Payment 1/2",   amount: 80000,  status: "completed", collectedDate: "15/01/2026", reference: "PP-2026-002", instalment: 1, ofInstalments: 2 },
-      { gate: 4, label: "Progressive Payment 2/2",   amount: 80000,  status: "completed", collectedDate: "20/02/2026", reference: "PP-2026-008", instalment: 2, ofInstalments: 2 },
-      { gate: 5, label: "Final Payment",             amount: 43000,  status: "in-progress", dueDate: "15/05/2026", notes: "Invoice issued, awaiting client transfer" },
-    ],
-    signatures: [
-      { key: "design-contract",     label: "Design Contract",          group: "contract", status: "completed", signedDate: "10/10/2025", signedBy: "TechVenture Sdn Bhd", documentRef: "DC-PRJ002.pdf" },
-      { key: "revised-3d",          label: "Revised 3D Drawing",       group: "drawing",  status: "completed", signedDate: "28/10/2025", signedBy: "TechVenture Sdn Bhd", documentRef: "3D-R3-PRJ002.pdf" },
-      { key: "renovation-contract", label: "Renovation Contract",      group: "contract", status: "completed", signedDate: "08/11/2025", signedBy: "TechVenture Sdn Bhd", documentRef: "RC-PRJ002.pdf" },
-      { key: "material-selection",  label: "Material Selection",       group: "drawing",  status: "completed", signedDate: "20/11/2025", signedBy: "TechVenture Sdn Bhd", documentRef: "MS-PRJ002.pdf" },
-      { key: "2d-shopping",         label: "2D Drawing / Shopping List",group: "drawing", status: "completed", signedDate: "25/11/2025", signedBy: "TechVenture Sdn Bhd", documentRef: "2D-PRJ002.pdf" },
-      { key: "handover",            label: "Handover Acceptance",      group: "contract", status: "completed", signedDate: "20/02/2026", signedBy: "TechVenture Sdn Bhd", documentRef: "HO-PRJ002.pdf" },
-    ],
-  },
-
-  // PRJ003 — Setia Indah Landed — assigned 15% — just past DESIGN CONTRACT SIGNED
-  {
-    projectId: "PRJ003",
-    currentStageId: "3d-meeting",
-    startedAt: "10/02/2026",
-    payments: [
-      { gate: 1, label: "Proposal Deposit",         amount: 5000,   status: "completed",  collectedDate: "12/01/2026", reference: "PD-2026-002" },
-      { gate: 2, label: "Design Contract Fee",      amount: 65000,  status: "completed",  collectedDate: "08/02/2026", reference: "DC-2026-005" },
-      { gate: 3, label: "Renovation Deposit (50%)", amount: 325000, status: "pending",    dueDate: "15/05/2026", notes: "Awaiting renovation contract signing" },
-      { gate: 4, label: "Progressive Payment",      amount: 162500, status: "pending",    dueDate: "TBD",        notes: "To be split into 4 instalments" },
-      { gate: 5, label: "Final Payment",            amount: 97500,  status: "pending",    dueDate: "31/07/2026" },
-    ],
-    signatures: [
-      { key: "design-contract",     label: "Design Contract",          group: "contract", status: "completed", signedDate: "08/02/2026", signedBy: "Dato' Ahmad Razif", documentRef: "DC-PRJ003.pdf" },
-      { key: "revised-3d",          label: "Revised 3D Drawing",       group: "drawing",  status: "in-progress", notes: "3D meeting scheduled this week" },
-      { key: "renovation-contract", label: "Renovation Contract",      group: "contract", status: "pending" },
-      { key: "material-selection",  label: "Material Selection",       group: "drawing",  status: "pending" },
-      { key: "2d-shopping",         label: "2D Drawing / Shopping List",group: "drawing", status: "pending" },
-      { key: "handover",            label: "Handover Acceptance",      group: "contract", status: "pending" },
-    ],
-  },
-
-  // PRJ004 — Paradigm Mall F&B — completed 100% — full lifecycle done
-  {
-    projectId: "PRJ004",
-    currentStageId: "defect-period",
-    startedAt: "20/01/2026",
-    payments: [
-      { gate: 1, label: "Proposal Deposit",         amount: 4000,   status: "completed", collectedDate: "05/12/2025", reference: "PD-2025-019" },
-      { gate: 2, label: "Design Contract Fee",      amount: 38000,  status: "completed", collectedDate: "15/12/2025", reference: "DC-2025-017" },
-      { gate: 3, label: "Renovation Deposit (50%)", amount: 190000, status: "completed", collectedDate: "18/01/2026", reference: "RD-2026-007" },
-      { gate: 4, label: "Progressive Payment 1/2",  amount: 76000,  status: "completed", collectedDate: "10/02/2026", reference: "PP-2026-005", instalment: 1, ofInstalments: 2 },
-      { gate: 4, label: "Progressive Payment 2/2",  amount: 76000,  status: "completed", collectedDate: "01/03/2026", reference: "PP-2026-011", instalment: 2, ofInstalments: 2 },
-      { gate: 5, label: "Final Payment",            amount: 38000,  status: "completed", collectedDate: "16/03/2026", reference: "FP-2026-004" },
-    ],
-    signatures: [
-      { key: "design-contract",     label: "Design Contract",          group: "contract", status: "completed", signedDate: "15/12/2025", signedBy: "Saveur Group", documentRef: "DC-PRJ004.pdf" },
-      { key: "revised-3d",          label: "Revised 3D Drawing",       group: "drawing",  status: "completed", signedDate: "30/12/2025", signedBy: "Saveur Group", documentRef: "3D-R2-PRJ004.pdf" },
-      { key: "renovation-contract", label: "Renovation Contract",      group: "contract", status: "completed", signedDate: "15/01/2026", signedBy: "Saveur Group", documentRef: "RC-PRJ004.pdf" },
-      { key: "material-selection",  label: "Material Selection",       group: "drawing",  status: "completed", signedDate: "22/01/2026", signedBy: "Saveur Group", documentRef: "MS-PRJ004.pdf" },
-      { key: "2d-shopping",         label: "2D Drawing / Shopping List",group: "drawing", status: "completed", signedDate: "25/01/2026", signedBy: "Saveur Group", documentRef: "2D-PRJ004.pdf" },
-      { key: "handover",            label: "Handover Acceptance",      group: "contract", status: "completed", signedDate: "15/03/2026", signedBy: "Saveur Group", documentRef: "HO-PRJ004.pdf" },
-    ],
-  },
-
-  // PRJ005 — Austin Heights — active 30% — RENOVATION DEPOSIT just collected, KICK OFF imminent
-  {
-    projectId: "PRJ005",
-    currentStageId: "work-schedule",
-    startedAt: "01/03/2026",
-    payments: [
-      { gate: 1, label: "Proposal Deposit",         amount: 2000,  status: "completed", collectedDate: "10/02/2026", reference: "PD-2026-006" },
-      { gate: 2, label: "Design Contract Fee",      amount: 8000,  status: "completed", collectedDate: "20/02/2026", reference: "DC-2026-008" },
-      { gate: 3, label: "Renovation Deposit (50%)", amount: 60000, status: "completed", collectedDate: "28/02/2026", reference: "RD-2026-012" },
-      { gate: 4, label: "Progressive Payment",      amount: 36000, status: "pending",   dueDate: "15/04/2026", notes: "To be split into 2 instalments" },
-      { gate: 5, label: "Final Payment",            amount: 24000, status: "pending",   dueDate: "31/05/2026" },
-    ],
-    signatures: [
-      { key: "design-contract",     label: "Design Contract",          group: "contract", status: "completed", signedDate: "20/02/2026", signedBy: "Ms. Tan Wei Lin", documentRef: "DC-PRJ005.pdf" },
-      { key: "revised-3d",          label: "Revised 3D Drawing",       group: "drawing",  status: "completed", signedDate: "25/02/2026", signedBy: "Ms. Tan Wei Lin", documentRef: "3D-R1-PRJ005.pdf" },
-      { key: "renovation-contract", label: "Renovation Contract",      group: "contract", status: "completed", signedDate: "27/02/2026", signedBy: "Ms. Tan Wei Lin", documentRef: "RC-PRJ005.pdf" },
-      { key: "material-selection",  label: "Material Selection",       group: "drawing",  status: "in-progress", notes: "Selection meeting on 12/05/2026" },
-      { key: "2d-shopping",         label: "2D Drawing / Shopping List",group: "drawing", status: "pending" },
-      { key: "handover",            label: "Handover Acceptance",      group: "contract", status: "pending" },
-    ],
-  },
-];
-
-// —————————————————————————————————————————————————————————————
-// Aggregation helpers — used by the Lifecycle tab + future dashboards
-// —————————————————————————————————————————————————————————————
-
-export function getLifecycle(projectId: string): ProjectLifecycle | undefined {
-  return projectLifecycles.find((l) => l.projectId === projectId);
-}
 
 export function paymentSummary(lc: ProjectLifecycle) {
   const collected = lc.payments
@@ -311,7 +199,7 @@ export function stageStatus(stage: LifecycleStage, currentStageId: string): Chec
 }
 
 // —————————————————————————————————————————————————————————————
-// Cross-project aggregation — used by the Checkpoints dashboard
+// Date helpers — used by Checkpoints buckets + queries.ts
 // —————————————————————————————————————————————————————————————
 
 /**
@@ -319,12 +207,12 @@ export function stageStatus(stage: LifecycleStage, currentStageId: string): Chec
  * (the date in the 2026 Annual Meeting context). Using a fixed date keeps
  * the overdue/due-this-week buckets meaningful regardless of when the app runs.
  *
- * Replace with `new Date()` once the app is wired to a real backend.
+ * Replace with `new Date()` once the relative-date buckets should track real time.
  */
 export const MOCK_TODAY = new Date(2026, 4, 10); // May = month index 4
 
 /** Parse a Spazehaus DD/MM/YYYY date string into a Date. Returns null for "TBD" / invalid. */
-export function parseDDMMYYYY(s: string | undefined): Date | null {
+function parseDDMMYYYY(s: string | undefined): Date | null {
   if (!s) return null;
   const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
   if (!m) return null;
@@ -358,114 +246,6 @@ export function effectivePaymentStatus(p: PaymentRecord, today: Date = MOCK_TODA
   const days = daysFromToday(p.dueDate, today);
   if (days !== null && days < 0) return "overdue";
   return p.status;
-}
-
-// —————————————————————————————————————————————————————————————
-// Flattened cross-project rows
-// —————————————————————————————————————————————————————————————
-
-export type PaymentRow = {
-  projectId: string;
-  projectName: string;
-  client: string;
-  payment: PaymentRecord;
-  status: CheckpointStatus;   // effective (may be overdue)
-  bucket: DueBucket;
-  daysFromToday: number | null;
-};
-
-export type SignatureRow = {
-  projectId: string;
-  projectName: string;
-  client: string;
-  signature: DocumentSignRecord;
-};
-
-type ProjectMeta = { id: string; name: string; client: string };
-
-/** Returns every payment record across all projects that is not yet completed. */
-export function getOpenPayments(
-  projectMeta: ProjectMeta[],
-  today: Date = MOCK_TODAY
-): PaymentRow[] {
-  const rows: PaymentRow[] = [];
-  for (const lc of projectLifecycles) {
-    const meta = projectMeta.find((p) => p.id === lc.projectId);
-    if (!meta) continue;
-    for (const p of lc.payments) {
-      if (p.status === "completed" || p.status === "skipped") continue;
-      const status = effectivePaymentStatus(p, today);
-      rows.push({
-        projectId: lc.projectId,
-        projectName: meta.name,
-        client: meta.client,
-        payment: p,
-        status,
-        bucket: bucketDate(p.dueDate, today),
-        daysFromToday: daysFromToday(p.dueDate, today),
-      });
-    }
-  }
-  // Sort: overdue first (most overdue first), then by due date ascending
-  const order: Record<DueBucket, number> = { overdue: 0, "this-week": 1, "this-month": 2, later: 3, "no-date": 4 };
-  return rows.sort((a, b) => {
-    if (a.bucket !== b.bucket) return order[a.bucket] - order[b.bucket];
-    if (a.daysFromToday === null && b.daysFromToday === null) return 0;
-    if (a.daysFromToday === null) return 1;
-    if (b.daysFromToday === null) return -1;
-    return a.daysFromToday - b.daysFromToday;
-  });
-}
-
-/** Returns every signature record across all projects that is not yet signed. */
-export function getOpenSignatures(projectMeta: ProjectMeta[]): SignatureRow[] {
-  const rows: SignatureRow[] = [];
-  for (const lc of projectLifecycles) {
-    const meta = projectMeta.find((p) => p.id === lc.projectId);
-    if (!meta) continue;
-    for (const s of lc.signatures) {
-      if (s.status === "completed" || s.status === "skipped") continue;
-      rows.push({ projectId: lc.projectId, projectName: meta.name, client: meta.client, signature: s });
-    }
-  }
-  // Sort: in-progress first, then by group (contracts before drawings)
-  const groupOrder: Record<"contract" | "drawing", number> = { contract: 0, drawing: 1 };
-  return rows.sort((a, b) => {
-    const aActive = a.signature.status === "in-progress" ? 0 : 1;
-    const bActive = b.signature.status === "in-progress" ? 0 : 1;
-    if (aActive !== bActive) return aActive - bActive;
-    return groupOrder[a.signature.group] - groupOrder[b.signature.group];
-  });
-}
-
-/** Cross-project aggregate counts + RM totals for the dashboard KPI strip. */
-export function checkpointSummary(
-  projectMeta: ProjectMeta[],
-  today: Date = MOCK_TODAY
-) {
-  const payments = getOpenPayments(projectMeta, today);
-  const signatures = getOpenSignatures(projectMeta);
-
-  const outstandingRM = payments.reduce((s, r) => s + r.payment.amount, 0);
-  const overdueCount = payments.filter((r) => r.bucket === "overdue").length;
-  const overdueRM = payments
-    .filter((r) => r.bucket === "overdue")
-    .reduce((s, r) => s + r.payment.amount, 0);
-  const thisWeekCount = payments.filter((r) => r.bucket === "this-week").length;
-  const pendingSignsCount = signatures.length;
-  const pendingContractsCount = signatures.filter((r) => r.signature.group === "contract").length;
-  const pendingDrawingsCount = signatures.filter((r) => r.signature.group === "drawing").length;
-
-  return {
-    outstandingRM,
-    overdueCount,
-    overdueRM,
-    thisWeekCount,
-    pendingSignsCount,
-    pendingContractsCount,
-    pendingDrawingsCount,
-    paymentsCount: payments.length,
-  };
 }
 
 export const bucketLabel: Record<DueBucket, string> = {
