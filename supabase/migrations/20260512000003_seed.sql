@@ -227,3 +227,22 @@ insert into sales_targets (staff_id, monthly_target, ytd_target, gp_target_pct, 
   ('SH001', 200000, 1000000, 28, '2026-01-01'),  -- Grace Tan
   ('SH005', 100000,  500000, 22, '2026-01-01'),  -- Hong Li
   ('SH010',  60000,  300000, 22, '2026-01-01');  -- Chiou Ying
+
+-- ─── BUDGET-VS-PAYMENT ALIGNMENT ────────────────────────────────────────────
+-- The project rows above were INSERTed with `budget` values that were rough
+-- initial quotes, while the payment_records rows above were schedules that
+-- summed to slightly different totals (the gate-4 progressive instalments
+-- + final-payment numbers had to add up cleanly, so the sums drifted from
+-- the original budget figures). Without this step, the client portal would
+-- display two contradictory numbers for the same project ("Contract value:
+-- RM 120,000" vs "RM 70,000 of RM 130,000 collected").
+--
+-- The payment schedule is the authoritative source of truth — it's what the
+-- client actually pays — so we align `projects.budget` to it here. Going
+-- forward, anyone editing the payment seed amounts gets automatic budget
+-- realignment without having to update two places.
+update projects p
+   set budget = (select coalesce(sum(pr.amount), 0)
+                   from payment_records pr
+                  where pr.project_id = p.id)
+ where exists (select 1 from payment_records pr where pr.project_id = p.id);
