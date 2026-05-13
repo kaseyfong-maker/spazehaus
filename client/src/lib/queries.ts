@@ -35,7 +35,7 @@ import type {
   ContactLogEntryDb,
 } from "@/lib/dbTypes";
 import type { TablesUpdate, TablesInsert } from "@/lib/database.types";
-import type { SignatureKey } from "@/lib/lifecycleData";
+import type { PaymentGate, SignatureKey } from "@/lib/lifecycleData";
 import type { LineItem } from "@/lib/quotationData";
 
 // ─── DATE HELPERS ───────────────────────────────────────────────────────────
@@ -183,7 +183,9 @@ function mapProject(row: ProjectWithStaffJoin): Project {
 function mapPayment(row: PaymentRecordRow): PaymentRecord {
   return {
     id: row.id,
-    gate: row.gate,
+    // DB-level CHECK constraint enforces gate ∈ [1..5]; PostgREST schema
+    // introspection widens to `number`. Cast at the boundary.
+    gate: row.gate as PaymentGate,
     label: row.label,
     amount: Number(row.amount),
     status: row.status,
@@ -201,7 +203,9 @@ function mapSignature(row: SignatureRecordRow): DocumentSignRecord {
     id: row.id,
     key: row.signature_key as SignatureKey,
     label: row.label,
-    group: row.group_name,
+    // DB-level CHECK constraint enforces group_name ∈ {contract, drawing};
+    // PostgREST widens to `string`. Cast at the boundary.
+    group: row.group_name as "contract" | "drawing",
     status: row.status,
     signedDate: isoToDDMMYYYY(row.signed_date) || undefined,
     signedBy: row.signed_by ?? undefined,
@@ -819,6 +823,14 @@ export function useConvertInquiry() {
 
   return useMutation({
     mutationFn: async (args: ConvertInquiryArgs): Promise<string> => {
+      // The RPC requires real ISO dates — fail fast with a clear error if the
+      // form somehow let through a malformed DD/MM/YYYY string (`ddmmyyyyToIso`
+      // returns null on parse failure).
+      const startIso = ddmmyyyyToIso(args.startDate);
+      const targetIso = ddmmyyyyToIso(args.targetDate);
+      if (!startIso) throw new Error(`Invalid start date: ${args.startDate}`);
+      if (!targetIso) throw new Error(`Invalid target date: ${args.targetDate}`);
+
       const { data, error } = await supabase.rpc("convert_inquiry_to_project", {
         p_inquiry_id: args.inquiryId,
         p_project_name: args.projectName,
@@ -826,13 +838,15 @@ export function useConvertInquiry() {
         p_pm_name: args.pmName,
         p_designer_avatar: args.designerAvatar,
         p_pm_avatar: args.pmAvatar,
-        p_start_date: ddmmyyyyToIso(args.startDate),
-        p_target_date: ddmmyyyyToIso(args.targetDate),
+        p_start_date: startIso,
+        p_target_date: targetIso,
         p_budget: args.budget,
         p_priority: args.priority,
         p_areas: args.areas,
         p_proposal_deposit: args.proposalDeposit,
-        p_assigned_to_avatar: args.assignedToAvatar ?? null,
+        // RPC arg is optional `string | undefined` (CLI Args shape) — pass
+        // undefined (omit) when caller didn't specify, never `null`.
+        p_assigned_to_avatar: args.assignedToAvatar ?? undefined,
       });
       if (error) throw error;
       return data as string; // new project id (PRJ006…)

@@ -54,8 +54,10 @@ export default function KPIPerformance() {
     const year = new Date().getFullYear();
     return MONTHS_SHORT.slice(0, new Date().getMonth() + 1).map((label, i) => {
       const month = i + 1;
+      // total_score is nullable in the schema (computed lazily once all parts
+      // are filled in). Treat null as zero for the rolling average.
       const rows = kpiRecords.filter((r) => r.year === year && r.month === month);
-      const avg = rows.length === 0 ? 0 : rows.reduce((s, r) => s + r.total_score, 0) / rows.length;
+      const avg = rows.length === 0 ? 0 : rows.reduce((s, r) => s + (r.total_score ?? 0), 0) / rows.length;
       return { month: label, score: Math.round(avg) };
     });
   }, [kpiRecords]);
