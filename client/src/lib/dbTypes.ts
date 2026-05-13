@@ -182,3 +182,114 @@ export type QuotationItemRow = {
   discount: number;
   sort_order: number;
 };
+
+// ─── HR / RECRUITMENT / ANNOUNCEMENTS ───────────────────────────────────────
+
+export type LeaveStatus = "pending" | "approved" | "rejected";
+
+export type LeaveRequestRow = {
+  id: string;
+  staff_id: string;
+  leave_type: string;            // "Annual Leave" | "Medical Leave" | ...
+  start_date: string;
+  end_date: string;
+  days: number;
+  reason: string | null;
+  status: LeaveStatus;
+  applied_date: string;
+  approved_by_id: string | null;
+  approved_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CandidateRow = {
+  id: string;
+  name: string;
+  applied_for_role: string;
+  source: string;
+  stage: string;                 // free-form (Sourced / Shortlisted / Interview / 2nd Interview / Offer / Onboarded)
+  applied_date: string;
+  experience: string | null;
+  portfolio_url: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AnnouncementRow = {
+  id: string;
+  title: string;
+  content: string;
+  priority: string;              // "high" | "medium" | "low"
+  author_id: string | null;
+  published_date: string;
+  created_at: string;
+};
+
+// ─── SITE PHOTOS ────────────────────────────────────────────────────────────
+
+export type SitePhotoRow = {
+  id: number;
+  project_id: string;
+  photo_date: string;
+  uploaded_at: string;
+  uploaded_by_id: string | null;
+  storage_path: string | null;
+  notes: string | null;
+  lat: number | null;
+  lng: number | null;
+};
+
+// ─── SALES TARGETS ──────────────────────────────────────────────────────────
+
+export type SalesTargetRow = {
+  staff_id: string;
+  monthly_target: number;
+  ytd_target: number;
+  gp_target_pct: number;
+  effective_from: string;
+  created_at: string;
+  updated_at: string;
+};
+
+// ─── CALENDAR EVENTS (Phase 0C.2) ───────────────────────────────────────────
+
+export type CalendarEventType = "project" | "meeting" | "leave" | "event";
+
+export type CalendarEventRow = {
+  id: string;
+  title: string;
+  event_date: string;
+  start_time: string | null;
+  end_time: string | null;
+  event_type: CalendarEventType;
+  color: string;
+  project_id: string | null;
+  leave_id: string | null;
+  staff_id: string | null;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+// ─── KPI RECORDS (Phase 0C.2) ───────────────────────────────────────────────
+
+export type KpiRating = "A" | "B" | "C";
+
+export type KpiRecordRow = {
+  id: number;
+  staff_id: string;
+  year: number;
+  month: number;                 // 1..12
+  part_a_score: number;          // 0..30
+  part_b_score: number;          // 0..50
+  part_c_score: number;          // 0..20
+  total_score: number;           // generated column = a + b + c
+  rating: KpiRating;
+  reviewer_id: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+};

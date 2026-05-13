@@ -11,11 +11,20 @@ import {
   Plus, CalendarCheck, FileText, Camera,
   ChevronRight, Bell, Search, AlertCircle, Coins, PenSquare
 } from "lucide-react";
-import { staffMembers, announcements } from "@/lib/mockData";
 import { useAuth } from "@/contexts/AuthContext";
-import { useProjects, useOpenPayments, useOpenSignatures, computeCheckpointSummary } from "@/lib/queries";
+import {
+  useProjects,
+  useOpenPayments,
+  useOpenSignatures,
+  useAllStaff,
+  useAnnouncements,
+  useSitePhotos,
+  buildSitePhotoMaps,
+  buildReminders,
+  reminderSummary,
+  computeCheckpointSummary,
+} from "@/lib/queries";
 import { formatRM } from "@/lib/quotationData";
-import { reminderSummary } from "@/lib/reminderData";
 
 const HERO_BG = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296470877/AuQSChINbJLLhITo.jpg";
 
@@ -35,18 +44,26 @@ export default function Dashboard() {
   const { data: projects = [] } = useProjects();
   const { data: openPayments = [] } = useOpenPayments();
   const { data: openSignatures = [] } = useOpenSignatures();
+  const { data: allStaff = [] } = useAllStaff();
+  const { data: announcements = [] } = useAnnouncements();
+  const { data: sitePhotos = [] } = useSitePhotos();
 
   const activeProjects = projects.filter((p) => p.status === "active" || p.status === "assigned").length;
   const pendingReview = projects.filter((p) => p.status === "under-review").length;
   const completedThisMonth = projects.filter((p) => p.status === "completed").length;
-  const totalStaff = staffMembers.length;
+  const totalStaff = allStaff.length;
 
   // Cross-project SOP checkpoint summary (Phase 2 → 0C via TanStack Query)
   const ckpt = computeCheckpointSummary(openPayments, openSignatures);
   const hasUrgent = ckpt.overdueCount > 0 || ckpt.thisWeekCount > 0 || ckpt.pendingSignsCount > 0;
 
-  // Daily/weekly reminder summary (Phase 4)
-  const rem = reminderSummary();
+  // Daily/weekly reminder summary (Phase 4 → Supabase via Phase 0C.2)
+  const activeProjectIds = projects
+    .filter((p) => p.status === "active" || p.status === "assigned")
+    .map((p) => p.id);
+  const photoMaps = buildSitePhotoMaps(activeProjectIds, sitePhotos, allStaff);
+  const reminders = buildReminders(projects, photoMaps);
+  const rem = reminderSummary(reminders, photoMaps);
 
   const stats = [
     { label: "Active Projects", value: activeProjects, icon: FolderOpen, color: "oklch(0.52 0.09 68)", bg: "oklch(0.62 0.09 68 / 10%)" },
@@ -406,7 +423,7 @@ export default function Dashboard() {
                 <div className="flex-1">
                   <p className="text-sm font-semibold" style={{ color: "oklch(0.14 0.008 65)" }}>{announcements[0].title}</p>
                   <p className="text-xs mt-1 leading-relaxed" style={{ color: "oklch(0.40 0.008 65)" }}>{announcements[0].content.substring(0, 100)}…</p>
-                  <p className="text-[10px] mt-1.5 font-label" style={{ color: "oklch(0.52 0.09 68)", letterSpacing: "0.04em" }}>{announcements[0].date}</p>
+                  <p className="text-[10px] mt-1.5 font-label" style={{ color: "oklch(0.52 0.09 68)", letterSpacing: "0.04em" }}>{announcements[0].publishedDateLabel}</p>
                 </div>
               </div>
             </div>

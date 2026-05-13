@@ -5,7 +5,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import AppHeader from "@/components/AppHeader";
-import { candidates } from "@/lib/mockData";
+import { useCandidates, useAdvanceCandidate } from "@/lib/queries";
 import { toast } from "sonner";
 import { Plus, ExternalLink } from "lucide-react";
 
@@ -30,23 +30,25 @@ const sourceColors: Record<string, string> = {
 
 export default function Recruitment() {
   const [activeStage, setActiveStage] = useState("All");
-  const [candidateList, setCandidateList] = useState(candidates);
+
+  const { data: candidateList = [] } = useCandidates();
+  const advanceCandidate = useAdvanceCandidate();
 
   const filtered = activeStage === "All" ? candidateList : candidateList.filter((c) => c.stage === activeStage);
 
-  const advanceStage = (id: string) => {
-    setCandidateList((prev) =>
-      prev.map((c) => {
-        if (c.id !== id) return c;
-        const idx = stages.indexOf(c.stage);
-        if (idx < stages.length - 1) {
-          toast.success(`Advanced to ${stages[idx + 1]}`);
-          return { ...c, stage: stages[idx + 1] };
-        }
-        toast.info("Already at final stage");
-        return c;
-      })
-    );
+  const advanceStage = async (id: string, currentStage: string) => {
+    const idx = stages.indexOf(currentStage);
+    if (idx < 0 || idx >= stages.length - 1) {
+      toast.info("Already at final stage");
+      return;
+    }
+    const nextStage = stages[idx + 1];
+    try {
+      await advanceCandidate.mutateAsync({ id, stage: nextStage });
+      toast.success(`Advanced to ${nextStage}`);
+    } catch (err) {
+      toast.error(`Update failed: ${err instanceof Error ? err.message : "unknown error"}`);
+    }
   };
 
   return (
@@ -112,9 +114,11 @@ export default function Recruitment() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-neutral-900">{candidate.name}</p>
-                      <p className="text-xs mt-0.5" style={{ color: "oklch(0.52 0.09 68)" }}>{candidate.role}</p>
+                      <p className="text-xs mt-0.5" style={{ color: "oklch(0.52 0.09 68)" }}>{candidate.applied_for_role}</p>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[10px]" style={{ color: "oklch(0.52 0.010 68)" }}>{candidate.experience} exp.</span>
+                        {candidate.experience && (
+                          <span className="text-[10px]" style={{ color: "oklch(0.52 0.010 68)" }}>{candidate.experience} exp.</span>
+                        )}
                         <span
                           className="text-[10px] font-label px-1.5 py-0.5 rounded"
                           style={{ background: `${sourceColors[candidate.source] || "oklch(0.72 0.09 68)"} / 15%`, color: sourceColors[candidate.source] || "oklch(0.72 0.09 68)" }}
@@ -126,19 +130,19 @@ export default function Recruitment() {
                     <span className="status-pill shrink-0" style={{ background: sc.bg, color: sc.color }}>{candidate.stage}</span>
                   </div>
 
-                  {candidate.portfolio && (
+                  {candidate.portfolio_url && (
                     <div className="flex items-center gap-1.5 mb-3 px-1">
                       <ExternalLink size={11} style={{ color: "oklch(0.52 0.010 68)" }} />
-                      <span className="text-[11px]" style={{ color: "oklch(0.52 0.010 68)" }}>{candidate.portfolio}</span>
+                      <span className="text-[11px]" style={{ color: "oklch(0.52 0.010 68)" }}>{candidate.portfolio_url}</span>
                     </div>
                   )}
 
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px]" style={{ color: "oklch(0.52 0.010 68)" }}>Applied: {candidate.appliedDate}</span>
+                    <span className="text-[10px]" style={{ color: "oklch(0.52 0.010 68)" }}>Applied: {candidate.appliedDateLabel}</span>
                     {candidate.stage !== "Onboarded" && (
                       <motion.button
                         whileTap={{ scale: 0.92 }}
-                        onClick={() => advanceStage(candidate.id)}
+                        onClick={() => advanceStage(candidate.id, candidate.stage)}
                         className="px-3 py-1.5 rounded-lg text-xs font-label"
                         style={{ background: "oklch(0.62 0.09 68 / 12%)", color: "oklch(0.52 0.09 68)", border: "1px solid oklch(0.62 0.09 68 / 20%)", letterSpacing: "0.04em" }}
                       >

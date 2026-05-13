@@ -8,7 +8,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
 import { Plus, Search, FileText, Receipt } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
-import { quotations, statusConfig, computeTotals, formatRM } from "@/lib/quotationData";
+import { useQuotations } from "@/lib/queries";
+import { statusConfig, computeTotals, formatRM } from "@/lib/quotationData";
 
 const typeFilters = [
   { key: "all", label: "All" },
@@ -30,6 +31,8 @@ export default function QuotationList() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
+
+  const { data: quotations = [] } = useQuotations();
 
   const filtered = quotations.filter((q) => {
     const matchType = typeFilter === "all" || q.type === typeFilter;

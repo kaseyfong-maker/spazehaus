@@ -5,9 +5,12 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import AppHeader from "@/components/AppHeader";
-import { leaveRequests, staffMembers, statusConfig } from "@/lib/mockData";
+import { useLeaveRequests, useUpdateLeaveStatus, useApplyLeave } from "@/lib/queries";
+import { useAuth } from "@/contexts/AuthContext";
+import { statusConfig } from "@/lib/mockData";
 import { toast } from "sonner";
 import { Check, X, Plus } from "lucide-react";
+import { nanoid } from "nanoid";
 
 const tabs = ["Pending", "All Requests", "Apply Leave"];
 
@@ -18,30 +21,79 @@ const leaveTypeColors: Record<string, string> = {
   "Unpaid Leave": "oklch(0.58 0.12 25)",
 };
 
+/** Count inclusive days between DD/MM/YYYY start and end. Returns 0 if either parse fails. */
+function inclusiveDays(startDDMM: string, endDDMM: string): number {
+  const parse = (s: string) => {
+    const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+    if (!m) return null;
+    return new Date(parseInt(m[3], 10), parseInt(m[2], 10) - 1, parseInt(m[1], 10));
+  };
+  const a = parse(startDDMM);
+  const b = parse(endDDMM);
+  if (!a || !b) return 0;
+  const ms = b.getTime() - a.getTime();
+  return Math.max(0, Math.floor(ms / (1000 * 60 * 60 * 24))) + 1;
+}
+
 export default function LeaveManagement() {
   const [activeTab, setActiveTab] = useState("Pending");
-  const [requests, setRequests] = useState(leaveRequests);
   const [applyForm, setApplyForm] = useState({ type: "Annual Leave", startDate: "", endDate: "", reason: "" });
+
+  const { data: requests = [] } = useLeaveRequests();
+  const updateStatus = useUpdateLeaveStatus();
+  const applyLeave = useApplyLeave();
+  const { staff: me } = useAuth();
 
   const pending = requests.filter((r) => r.status === "pending");
 
-  const handleApprove = (id: string) => {
-    setRequests((prev) => prev.map((r) => r.id === id ? { ...r, status: "approved" } : r));
-    toast.success("Leave approved successfully");
+  const handleApprove = async (id: string) => {
+    try {
+      await updateStatus.mutateAsync({ id, status: "approved", approverId: me?.id });
+      toast.success("Leave approved successfully");
+    } catch (err) {
+      toast.error(`Approval failed: ${err instanceof Error ? err.message : "unknown error"}`);
+    }
   };
 
-  const handleReject = (id: string) => {
-    setRequests((prev) => prev.map((r) => r.id === id ? { ...r, status: "rejected" } : r));
-    toast.error("Leave rejected");
+  const handleReject = async (id: string) => {
+    try {
+      await updateStatus.mutateAsync({ id, status: "rejected", approverId: me?.id });
+      toast.error("Leave rejected");
+    } catch (err) {
+      toast.error(`Rejection failed: ${err instanceof Error ? err.message : "unknown error"}`);
+    }
   };
 
-  const handleApply = () => {
+  const handleApply = async () => {
     if (!applyForm.startDate || !applyForm.endDate) {
       toast.error("Please fill in all required fields");
       return;
     }
-    toast.success("Leave application submitted!", { description: "Your request is pending approval." });
-    setApplyForm({ type: "Annual Leave", startDate: "", endDate: "", reason: "" });
+    if (!me) {
+      toast.error("You need to be signed in to apply for leave");
+      return;
+    }
+    const days = inclusiveDays(applyForm.startDate, applyForm.endDate);
+    if (days === 0) {
+      toast.error("Dates must be in DD/MM/YYYY format with end on or after start");
+      return;
+    }
+    try {
+      await applyLeave.mutateAsync({
+        id: `LV-${nanoid(6).toUpperCase()}`,
+        staffId: me.id,
+        leaveType: applyForm.type,
+        startDate: applyForm.startDate,
+        endDate: applyForm.endDate,
+        days,
+        reason: applyForm.reason || undefined,
+      });
+      toast.success("Leave application submitted!", { description: "Your request is pending approval." });
+      setApplyForm({ type: "Annual Leave", startDate: "", endDate: "", reason: "" });
+      setActiveTab("All Requests");
+    } catch (err) {
+      toast.error(`Submission failed: ${err instanceof Error ? err.message : "unknown error"}`);
+    }
   };
 
   const inputStyle = {
@@ -123,17 +175,19 @@ export default function LeaveManagement() {
                       className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
                       style={{ background: "oklch(0.62 0.09 68 / 12%)", color: "oklch(0.52 0.09 68)", border: "1px solid oklch(0.62 0.09 68 / 20%)" }}
                     >
-                      {staffMembers.find((s) => s.id === req.staffId)?.avatar || "??"}
+                      {req.staffAvatar}
                     </div>
                     <div className="flex-1">
                       <p className="text-sm font-semibold text-neutral-900">{req.staffName}</p>
-                      <p className="text-xs mt-0.5" style={{ color: leaveTypeColors[req.type] || "oklch(0.72 0.09 68)" }}>{req.type}</p>
+                      <p className="text-xs mt-0.5" style={{ color: leaveTypeColors[req.leave_type] || "oklch(0.72 0.09 68)" }}>{req.leave_type}</p>
                       <p className="text-xs mt-1" style={{ color: "oklch(0.52 0.010 68)" }}>
-                        {req.startDate} — {req.endDate} · {req.days} day{req.days > 1 ? "s" : ""}
+                        {req.startDateLabel} — {req.endDateLabel} · {req.days} day{req.days > 1 ? "s" : ""}
                       </p>
                     </div>
                   </div>
-                  <p className="text-xs mb-3 px-1" style={{ color: "oklch(0.52 0.010 68)" }}>"{req.reason}"</p>
+                  {req.reason && (
+                    <p className="text-xs mb-3 px-1" style={{ color: "oklch(0.52 0.010 68)" }}>"{req.reason}"</p>
+                  )}
                   <div className="flex gap-2">
                     <motion.button
                       whileTap={{ scale: 0.95 }}
@@ -172,12 +226,12 @@ export default function LeaveManagement() {
                   >
                     <div
                       className="w-1.5 h-full min-h-[40px] rounded-full shrink-0"
-                      style={{ background: leaveTypeColors[req.type] || "oklch(0.72 0.09 68)" }}
+                      style={{ background: leaveTypeColors[req.leave_type] || "oklch(0.72 0.09 68)" }}
                     />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-neutral-900">{req.staffName}</p>
-                      <p className="text-xs mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>{req.type} · {req.days}d</p>
-                      <p className="text-[10px] mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>{req.startDate} — {req.endDate}</p>
+                      <p className="text-xs mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>{req.leave_type} · {req.days}d</p>
+                      <p className="text-[10px] mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>{req.startDateLabel} — {req.endDateLabel}</p>
                     </div>
                     <span className="status-pill shrink-0" style={{ background: sc.bg, color: sc.color }}>{sc.label}</span>
                   </motion.div>

@@ -8,10 +8,12 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useRoute, useLocation } from "wouter";
 import {
   Download, Send, CheckCircle2, XCircle, FileText, Receipt,
-  ChevronDown, ChevronUp, Building2, Phone, Mail, MapPin
+  ChevronDown, ChevronUp, Building2, Phone, Mail, MapPin, Loader2
 } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
-import { quotations, statusConfig, computeTotals, formatRM, categoryColors } from "@/lib/quotationData";
+import { useQuotation, useUpdateQuotationStatus } from "@/lib/queries";
+import { statusConfig, computeTotals, formatRM, categoryColors } from "@/lib/quotationData";
+import type { QuotationStatus } from "@/lib/dbTypes";
 import { generateQuotationPDF } from "@/lib/generatePDF";
 import { toast } from "sonner";
 
@@ -32,12 +34,19 @@ export default function QuotationDetail() {
   const [, navigate] = useLocation();
   const id = params?.id || "";
 
-  const [quotation, setQuotation] = useState(() =>
-    quotations.find((q) => q.id === id) || quotations[0]
-  );
+  const { data: quotation, isLoading } = useQuotation(id);
+  const updateStatus = useUpdateQuotationStatus();
+
   const [expandedAreas, setExpandedAreas] = useState<Record<string, boolean>>({});
   const [exporting, setExporting] = useState(false);
 
+  if (isLoading) {
+    return (
+      <div className="mobile-container flex items-center justify-center min-h-screen">
+        <Loader2 size={20} className="animate-spin" style={{ color: "oklch(0.52 0.010 68)" }} />
+      </div>
+    );
+  }
   if (!quotation) {
     return (
       <div className="mobile-container flex items-center justify-center min-h-screen">
@@ -62,16 +71,26 @@ export default function QuotationDetail() {
     setExpandedAreas((prev) => ({ ...prev, [area]: !prev[area] }));
   };
 
-  const advanceStatus = (nextStatus: string) => {
-    setQuotation((q) => ({ ...q, status: nextStatus as typeof q.status }));
-    toast.success(`Status updated to ${statusConfig[nextStatus]?.label || nextStatus}`);
+  const advanceStatus = async (nextStatus: string) => {
+    try {
+      await updateStatus.mutateAsync({ id: quotation.id, status: nextStatus as QuotationStatus });
+      toast.success(`Status updated to ${statusConfig[nextStatus]?.label || nextStatus}`);
+    } catch (err) {
+      toast.error(`Update failed: ${err instanceof Error ? err.message : "unknown error"}`);
+    }
   };
 
   const handleExportPDF = async () => {
     setExporting(true);
     toast.info("Generating PDF…");
     try {
-      await generateQuotationPDF(quotation);
+      // The PDF generator was built against the legacy Quotation shape — coerce
+      // nullable fields to strings here so the type contract matches.
+      await generateQuotationPDF({
+        ...quotation,
+        notes: quotation.notes ?? "",
+        terms: quotation.terms ?? "",
+      });
       toast.success("PDF downloaded successfully!");
     } catch (e) {
       toast.error("PDF export failed. Please try again.");

@@ -6,7 +6,7 @@
  *   • Project timeline
  *   • Generate report / analysis
  */
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import {
   TrendingUp, Target, Coins, Award, Briefcase, Calendar, Download, Trophy
@@ -14,18 +14,23 @@ import {
 import AppHeader from "@/components/AppHeader";
 import { toast } from "sonner";
 import {
-  teamPerformance,
-  staffPerformance,
-  companyPerformance,
-  projectTimeline,
+  useProjects,
+  useAllStaff,
+  useInquiries,
+  useQuotations,
+  useSalesTargets,
+  computeTeamPerformance,
+  computeStaffPerformance,
+  computeCompanyPerformance,
+  buildProjectTimeline,
   timelineBounds,
   timelinePos,
   formatRMCompact,
+  MOCK_TODAY,
   type StaffPerformance,
-} from "@/lib/performanceData";
+} from "@/lib/queries";
 import { useAuth } from "@/contexts/AuthContext";
 import { formatRM } from "@/lib/quotationData";
-import { MOCK_TODAY } from "@/lib/lifecycleData";
 
 const HERO_BG = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296470877/AuQSChINbJLLhITo.jpg";
 
@@ -33,13 +38,34 @@ type View = "Team" | "Personal";
 
 export default function PerformanceReport() {
   const [view, setView] = useState<View>("Team");
-  const { staff } = useAuth();
+  const { staff: authStaff } = useAuth();
 
-  const team = teamPerformance();
-  const company = companyPerformance();
-  // Personal view uses the logged-in staff member; falls back to Grace (SH001)
-  // if the current user isn't a sales staff with a target (e.g. site supervisor).
-  const me = staffPerformance(staff?.id ?? "SH001");
+  const { data: projects = [] } = useProjects();
+  const { data: allStaff = [] } = useAllStaff();
+  const { data: inquiries = [] } = useInquiries();
+  const { data: quotations = [] } = useQuotations();
+  const { data: targets = [] } = useSalesTargets();
+
+  // Derived data
+  const team = useMemo(
+    () => computeTeamPerformance(allStaff, targets, inquiries),
+    [allStaff, targets, inquiries],
+  );
+  const company = useMemo(
+    () => computeCompanyPerformance(team, targets, quotations),
+    [team, targets, quotations],
+  );
+
+  // Personal view uses the logged-in staff. Falls back to the top sales staff
+  // (whoever's first in the leaderboard) if the current user doesn't have a target.
+  const me = useMemo<StaffPerformance | undefined>(() => {
+    if (!authStaff) return team[0];
+    const myTarget = targets.find((t) => t.staff_id === authStaff.id);
+    if (myTarget) return computeStaffPerformance(authStaff, myTarget, inquiries);
+    return team[0];
+  }, [authStaff, targets, inquiries, team]);
+
+  const timeline = useMemo(() => buildProjectTimeline(projects), [projects]);
 
   return (
     <div className="mobile-container" style={{ background: "oklch(0.985 0.004 80)" }}>
@@ -79,7 +105,7 @@ export default function PerformanceReport() {
 
         {/* Project timeline — visible on both views */}
         <Section title="PROJECT TIMELINE" subtitle="All projects · Jan – Jul 2026">
-          <ProjectGantt />
+          <ProjectGantt rows={timeline} />
         </Section>
 
         {/* Generate report button */}
@@ -116,7 +142,7 @@ function TeamView({
   team,
   onPickStaff: _onPickStaff,
 }: {
-  company: ReturnType<typeof companyPerformance>;
+  company: ReturnType<typeof computeCompanyPerformance>;
   team: StaffPerformance[];
   onPickStaff: () => void;
 }) {
@@ -507,8 +533,7 @@ function StaffRow({ perf, rank }: { perf: StaffPerformance; rank: number }) {
 // Project gantt
 // ─────────────────────────────────────────────────────────────────────────────
 
-function ProjectGantt() {
-  const rows = projectTimeline();
+function ProjectGantt({ rows }: { rows: ReturnType<typeof buildProjectTimeline> }) {
   const bounds = timelineBounds(rows);
   const todayPos = timelinePos(MOCK_TODAY, bounds);
 

@@ -3,13 +3,14 @@
  * Multi-step form: Document Info → Line Items → Review & Totals
  * Design: Dark premium form with dynamic line item builder
  */
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
 import { Plus, Trash2, Check } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
-import { projects } from "@/lib/mockData";
+import { useProjects, useQuotations, useCreateQuotation } from "@/lib/queries";
 import { LineItem, computeTotals, formatRM, categoryColors } from "@/lib/quotationData";
+import type { QuotationType } from "@/lib/dbTypes";
 import { toast } from "sonner";
 import { nanoid } from "nanoid";
 
@@ -56,9 +57,13 @@ export default function CreateQuotation() {
   const [, navigate] = useLocation();
   const [step, setStep] = useState(1);
 
+  const { data: projects = [] } = useProjects();
+  const { data: existingQuotations = [] } = useQuotations();
+  const createQuotation = useCreateQuotation();
+
   const [docInfo, setDocInfo] = useState({
-    type: "Quotation" as "Quotation" | "Invoice" | "Proforma Invoice",
-    projectId: projects[0].id,
+    type: "Quotation" as QuotationType,
+    projectId: "",
     issueDate: new Date().toLocaleDateString("en-MY", { day: "2-digit", month: "2-digit", year: "numeric" }).replace(/\//g, "/"),
     validUntil: "",
     dueDate: "",
@@ -66,6 +71,13 @@ export default function CreateQuotation() {
     notes: "Prices quoted are inclusive of all materials, labour, and project management fees unless otherwise stated.",
     terms: "50% deposit upon acceptance. 30% upon commencement of works. 20% upon completion and handover.",
   });
+
+  // Default the project picker to the first project once projects load
+  useMemo(() => {
+    if (!docInfo.projectId && projects.length > 0) {
+      setDocInfo((d) => ({ ...d, projectId: projects[0].id }));
+    }
+  }, [projects, docInfo.projectId]);
 
   const [items, setItems] = useState<LineItem[]>([
     { id: nanoid(6), area: "Living Room", description: "", category: "Furniture", qty: 1, unit: "set", unitPrice: 0, discount: 0 },
@@ -90,9 +102,63 @@ export default function CreateQuotation() {
     setItems((prev) => prev.map((i) => i.id === id ? { ...i, [field]: value } : i));
   };
 
-  const handleSubmit = () => {
-    toast.success("Quotation created!", { description: `${docInfo.type} for ${selectedProject.name} — ${formatRM(total)}` });
-    navigate("/quotations");
+  /** Pick the next available QT-YYYY-NNN id, looking at what's already in the DB. */
+  function nextQuotationId(prefix: "QT" | "INV" | "PI", year: number): string {
+    const padded = (n: number) => String(n).padStart(3, "0");
+    const yearPrefix = `${prefix}-${year}-`;
+    const existing = existingQuotations
+      .map((q) => q.id)
+      .filter((id) => id.startsWith(yearPrefix))
+      .map((id) => Number(id.slice(yearPrefix.length)))
+      .filter((n) => !Number.isNaN(n));
+    const next = (existing.length ? Math.max(...existing) : 0) + 1;
+    return `${yearPrefix}${padded(next)}`;
+  }
+
+  const handleSubmit = async () => {
+    if (!selectedProject) {
+      toast.error("Pick a linked project first");
+      return;
+    }
+    if (items.some((i) => !i.description.trim())) {
+      toast.error("Every line item needs a description");
+      return;
+    }
+    const year = new Date().getFullYear();
+    const prefix = docInfo.type === "Invoice" ? "INV" : docInfo.type === "Proforma Invoice" ? "PI" : "QT";
+    const newId = nextQuotationId(prefix, year);
+
+    try {
+      await createQuotation.mutateAsync({
+        id: newId,
+        projectId: selectedProject.id,
+        docType: docInfo.type,
+        clientName: selectedProject.client,
+        clientContact: selectedProject.clientContact,
+        clientEmail: selectedProject.clientEmail,
+        issueDate: docInfo.issueDate,
+        validUntil: docInfo.validUntil || undefined,
+        dueDate: docInfo.dueDate || undefined,
+        taxRate: Number(docInfo.taxRate),
+        notes: docInfo.notes,
+        terms: docInfo.terms,
+        items: items.map((i) => ({
+          area: i.area,
+          description: i.description,
+          category: i.category,
+          qty: i.qty,
+          unit: i.unit,
+          unitPrice: i.unitPrice,
+          discount: i.discount,
+        })),
+      });
+      toast.success(`${docInfo.type} ${newId} created`, {
+        description: `${selectedProject.name} — ${formatRM(total)}`,
+      });
+      navigate(`/quotations/${newId}`);
+    } catch (err) {
+      toast.error(`Create failed: ${err instanceof Error ? err.message : "unknown error"}`);
+    }
   };
 
   const groupedByArea = items.reduce((acc, item) => {

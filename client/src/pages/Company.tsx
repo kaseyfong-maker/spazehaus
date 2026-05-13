@@ -2,24 +2,25 @@
  * SPAZEHAUS COMPANY MANAGEMENT HUB
  * Design: White/light corporate hub with warm gold accents
  */
+import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
 import { Users, CalendarCheck, UserSearch, BarChart3, Megaphone, ChevronRight, TrendingUp } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
-import { staffMembers, leaveRequests } from "@/lib/mockData";
-import { companyPerformance, formatRMCompact } from "@/lib/performanceData";
+import {
+  useAllStaff,
+  useLeaveRequests,
+  useCandidates,
+  useAnnouncements,
+  useInquiries,
+  useQuotations,
+  useSalesTargets,
+  computeTeamPerformance,
+  computeCompanyPerformance,
+  formatRMCompact,
+} from "@/lib/queries";
 
 const HERO_BG = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296470877/DEoUZCqpbvuNBJsc.jpg";
-
-const company = companyPerformance();
-const modules = [
-  { id: "staff",         title: "Staff Directory",     subtitle: "Team profiles & roles",         icon: Users,        color: "oklch(0.42 0.09 68)",  bg: "oklch(0.62 0.09 68 / 10%)",  path: "/company/staff",         stat: `${staffMembers.length} members` },
-  { id: "performance",   title: "Performance Report",  subtitle: "Sales · GP · Project timeline", icon: TrendingUp,   color: "oklch(0.50 0.10 25)",  bg: "oklch(0.60 0.10 25 / 10%)",  path: "/performance",            stat: `${formatRMCompact(company.awardedYTD)} YTD` },
-  { id: "leave",         title: "Leave Management",    subtitle: "Applications & approvals",      icon: CalendarCheck, color: "oklch(0.38 0.09 240)", bg: "oklch(0.55 0.09 240 / 10%)", path: "/company/leave",         stat: `${leaveRequests.filter((l) => l.status === "pending").length} pending` },
-  { id: "recruitment",   title: "Recruitment",         subtitle: "Talent pipeline & candidates",  icon: UserSearch,   color: "oklch(0.45 0.10 55)",  bg: "oklch(0.65 0.10 55 / 10%)",  path: "/company/recruitment",   stat: "5 candidates" },
-  { id: "kpi",           title: "KPI & Performance",   subtitle: "Monthly scores & reviews",      icon: BarChart3,    color: "oklch(0.38 0.09 145)", bg: "oklch(0.55 0.09 145 / 10%)", path: "/company/kpi",           stat: "Feb 2026" },
-  { id: "announcements", title: "Announcements",       subtitle: "Company news & updates",        icon: Megaphone,    color: "oklch(0.45 0.10 25)",  bg: "oklch(0.60 0.10 25 / 10%)",  path: "/company/announcements", stat: "3 posts" },
-];
 
 const deptColors: Record<string, { color: string; bg: string }> = {
   Design:     { color: "oklch(0.42 0.09 68)",  bg: "oklch(0.62 0.09 68 / 10%)" },
@@ -30,6 +31,28 @@ const deptColors: Record<string, { color: string; bg: string }> = {
 
 export default function Company() {
   const [, navigate] = useLocation();
+
+  const { data: staffMembers = [] } = useAllStaff();
+  const { data: leaveRequests = [] } = useLeaveRequests();
+  const { data: candidates = [] } = useCandidates();
+  const { data: announcements = [] } = useAnnouncements();
+  const { data: inquiries = [] } = useInquiries();
+  const { data: quotations = [] } = useQuotations();
+  const { data: targets = [] } = useSalesTargets();
+
+  const company = useMemo(() => {
+    const team = computeTeamPerformance(staffMembers, targets, inquiries);
+    return computeCompanyPerformance(team, targets, quotations);
+  }, [staffMembers, targets, inquiries, quotations]);
+
+  const modules = [
+    { id: "staff",         title: "Staff Directory",     subtitle: "Team profiles & roles",         icon: Users,        color: "oklch(0.42 0.09 68)",  bg: "oklch(0.62 0.09 68 / 10%)",  path: "/company/staff",         stat: `${staffMembers.length} member${staffMembers.length === 1 ? "" : "s"}` },
+    { id: "performance",   title: "Performance Report",  subtitle: "Sales · GP · Project timeline", icon: TrendingUp,   color: "oklch(0.50 0.10 25)",  bg: "oklch(0.60 0.10 25 / 10%)",  path: "/performance",            stat: `${formatRMCompact(company.awardedYTD)} YTD` },
+    { id: "leave",         title: "Leave Management",    subtitle: "Applications & approvals",      icon: CalendarCheck, color: "oklch(0.38 0.09 240)", bg: "oklch(0.55 0.09 240 / 10%)", path: "/company/leave",         stat: `${leaveRequests.filter((l) => l.status === "pending").length} pending` },
+    { id: "recruitment",   title: "Recruitment",         subtitle: "Talent pipeline & candidates",  icon: UserSearch,   color: "oklch(0.45 0.10 55)",  bg: "oklch(0.65 0.10 55 / 10%)",  path: "/company/recruitment",   stat: `${candidates.length} candidate${candidates.length === 1 ? "" : "s"}` },
+    { id: "kpi",           title: "KPI & Performance",   subtitle: "Monthly scores & reviews",      icon: BarChart3,    color: "oklch(0.38 0.09 145)", bg: "oklch(0.55 0.09 145 / 10%)", path: "/company/kpi",           stat: "Monthly review" },
+    { id: "announcements", title: "Announcements",       subtitle: "Company news & updates",        icon: Megaphone,    color: "oklch(0.45 0.10 25)",  bg: "oklch(0.60 0.10 25 / 10%)",  path: "/company/announcements", stat: `${announcements.length} post${announcements.length === 1 ? "" : "s"}` },
+  ];
 
   const byDept = staffMembers.reduce((acc, s) => {
     acc[s.dept] = (acc[s.dept] || 0) + 1;
@@ -111,11 +134,11 @@ export default function Company() {
                   className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
                   style={{ background: "oklch(0.60 0.10 25 / 12%)", color: "oklch(0.45 0.10 25)", border: "1.5px solid oklch(0.60 0.10 25 / 25%)" }}
                 >
-                  {s.avatar}
+                  {s.avatar_code}
                 </div>
                 <div className="flex-1">
                   <p className="text-sm font-medium" style={{ color: "oklch(0.14 0.008 65)" }}>{s.name}</p>
-                  <p className="text-xs" style={{ color: "oklch(0.52 0.010 68)" }}>{s.role}</p>
+                  <p className="text-xs" style={{ color: "oklch(0.52 0.010 68)" }}>{s.job_title}</p>
                 </div>
                 <span className="status-pill" style={{ background: "oklch(0.60 0.10 25 / 12%)", color: "oklch(0.45 0.10 25)" }}>On Leave</span>
               </div>

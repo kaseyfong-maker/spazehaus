@@ -1,0 +1,38 @@
+-- ============================================================================
+-- SPAZEHAUS — Phase 0E Real Staff Emails (TEMPLATE — review before applying)
+-- Generated: 2026-05-13
+--
+-- ⚠️  TEMPLATE FILE — DO NOT APPLY AS-IS.
+--
+-- The Phase 0A seed created 10 staff with placeholder @spazehaus.com.my emails.
+-- Before staff can log in via magic link, each row needs its real email address.
+-- Replace the placeholder values below with the actual addresses you collect
+-- from each team member, then paste this into the Supabase SQL editor.
+--
+-- After running these UPDATEs:
+--   1. Each staff member visits https://spazehaus.vercel.app/login
+--   2. Types their real email
+--   3. Receives a magic-link email from Supabase
+--   4. Clicks through → /auth/callback → auto-linked to their staff row
+--      (link_staff_to_auth_user trigger from 0B handles this)
+--
+-- Grace Tan (SH001) is already set to kaseyfong@saysheji.com from earlier
+-- testing — leave that one as-is unless you want a different address.
+-- ============================================================================
+
+-- ─── Confirmed addresses ────────────────────────────────────────────────────
+-- update staff set email = 'grace.tan@spazehaus.com'      where id = 'SH001';
+
+-- ─── TODO: replace placeholders before applying ─────────────────────────────
+-- update staff set email = 'wilson.lee@<real-domain>'     where id = 'SH002';   -- Wilson Lee     · Senior Designer
+-- update staff set email = 'jackson.low@<real-domain>'    where id = 'SH003';   -- Jackson Low    · Interior Designer
+-- update staff set email = 'wai.hong@<real-domain>'       where id = 'SH004';   -- Wai Hong       · Project Manager
+-- update staff set email = 'hong.li@<real-domain>'        where id = 'SH005';   -- Hong Li        · Sales Consultant
+-- update staff set email = 'darerca.chaw@<real-domain>'   where id = 'SH006';   -- Darerca Chaw   · 3D Visualizer
+-- update staff set email = 'denise.ng@<real-domain>'      where id = 'SH007';   -- Denise Ng      · Admin Executive
+-- update staff set email = 'vinson.tan@<real-domain>'     where id = 'SH008';   -- Vinson Tan     · Interior Designer
+-- update staff set email = 'leong.hui@<real-domain>'      where id = 'SH009';   -- Leong Hui      · Site Supervisor
+-- update staff set email = 'chiou.ying@<real-domain>'     where id = 'SH010';   -- Chiou Ying     · Sales Consultant
+
+-- ─── Sanity check after applying ────────────────────────────────────────────
+-- select id, name, email, role, status from staff order by id;

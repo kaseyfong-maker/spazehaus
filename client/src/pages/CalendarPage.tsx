@@ -5,7 +5,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import AppHeader from "@/components/AppHeader";
-import { calendarEvents } from "@/lib/mockData";
+import { useCalendarEvents } from "@/lib/queries";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const DAYS_OF_WEEK = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -27,9 +27,12 @@ const eventTypeLabels: Record<string, string> = {
 
 export default function CalendarPage() {
   const today = new Date();
+  // Default to the demo window — the seeded events cluster around May 2026.
   const [year, setYear] = useState(2026);
-  const [month, setMonth] = useState(1); // February = 1
-  const [selectedDate, setSelectedDate] = useState<string | null>("2026-02-24");
+  const [month, setMonth] = useState(4); // May = 4
+  const [selectedDate, setSelectedDate] = useState<string | null>("2026-05-12");
+
+  const { data: calendarEvents = [] } = useCalendarEvents();
 
   const daysInMonth = getDaysInMonth(year, month);
   const firstDay = getFirstDayOfMonth(year, month);
@@ -43,9 +46,15 @@ export default function CalendarPage() {
     else setMonth((m) => m + 1);
   };
 
-  const getEventsForDate = (dateStr: string) => calendarEvents.filter((e) => e.date === dateStr);
+  const getEventsForDate = (dateStr: string) => calendarEvents.filter((e) => e.event_date === dateStr);
 
   const selectedEvents = selectedDate ? getEventsForDate(selectedDate) : [];
+
+  // "Upcoming this week" — events on or after today, soonest first
+  const todayIso = today.toISOString().slice(0, 10);
+  const upcoming = [...calendarEvents]
+    .filter((e) => e.event_date >= todayIso)
+    .slice(0, 4);
 
   const cells = [];
   for (let i = 0; i < firstDay; i++) cells.push(null);
@@ -151,7 +160,7 @@ export default function CalendarPage() {
                     <div>
                       <p className="text-sm font-semibold text-neutral-900">{event.title}</p>
                       <p className="text-[10px] mt-0.5 font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.04em" }}>
-                        {eventTypeLabels[event.type] || event.type}
+                        {eventTypeLabels[event.event_type] || event.event_type}
                       </p>
                     </div>
                   </motion.div>
@@ -163,9 +172,14 @@ export default function CalendarPage() {
 
         {/* Upcoming events */}
         <div>
-          <p className="text-xs font-label mb-3" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.08em" }}>UPCOMING THIS WEEK</p>
+          <p className="text-xs font-label mb-3" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.08em" }}>UPCOMING</p>
           <div className="space-y-2">
-            {calendarEvents.slice(0, 4).map((event, i) => (
+            {upcoming.length === 0 && (
+              <div className="rounded-xl p-4 text-center" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
+                <p className="text-sm" style={{ color: "oklch(0.52 0.010 68)" }}>Nothing on the horizon</p>
+              </div>
+            )}
+            {upcoming.map((event, i) => (
               <motion.div
                 key={event.id}
                 initial={{ opacity: 0, x: -8 }}
@@ -176,13 +190,13 @@ export default function CalendarPage() {
               >
                 <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${event.color}22` }}>
                   <span className="text-xs font-bold" style={{ color: event.color }}>
-                    {new Date(event.date + "T00:00:00").getDate()}
+                    {new Date(event.event_date + "T00:00:00").getDate()}
                   </span>
                 </div>
                 <div className="flex-1">
                   <p className="text-sm text-neutral-900">{event.title}</p>
                   <p className="text-[10px] mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>
-                    {new Date(event.date + "T00:00:00").toLocaleDateString("en-MY", { weekday: "short", day: "numeric", month: "short" })}
+                    {new Date(event.event_date + "T00:00:00").toLocaleDateString("en-MY", { weekday: "short", day: "numeric", month: "short" })}
                   </p>
                 </div>
                 <div className="w-2 h-2 rounded-full shrink-0" style={{ background: event.color }} />

@@ -5,7 +5,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import AppHeader from "@/components/AppHeader";
-import { announcements } from "@/lib/mockData";
+import { useAnnouncements } from "@/lib/queries";
 import { toast } from "sonner";
 import { Plus, Megaphone } from "lucide-react";
 
@@ -17,12 +17,18 @@ const priorityConfig = {
 
 export default function Announcements() {
   const [expanded, setExpanded] = useState<string | null>(null);
+  const { data: announcements = [] } = useAnnouncements();
 
   return (
     <div className="mobile-container">
       <AppHeader title="Announcements" subtitle="COMPANY UPDATES" showBack compact />
 
       <div className="px-4 py-4 pb-24 space-y-3">
+        {announcements.length === 0 && (
+          <div className="rounded-2xl p-6 text-center" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
+            <p className="text-sm" style={{ color: "oklch(0.52 0.010 68)" }}>No announcements yet</p>
+          </div>
+        )}
         {announcements.map((ann, i) => {
           const pc = priorityConfig[ann.priority as keyof typeof priorityConfig];
           const isExpanded = expanded === ann.id;
@@ -49,7 +55,7 @@ export default function Announcements() {
                       <p className="text-sm font-semibold text-neutral-900 leading-snug">{ann.title}</p>
                       <span className="status-pill shrink-0" style={{ background: pc.bg, color: pc.color }}>{pc.label}</span>
                     </div>
-                    <p className="text-xs mt-1" style={{ color: "oklch(0.52 0.010 68)" }}>{ann.date} · {ann.author}</p>
+                    <p className="text-xs mt-1" style={{ color: "oklch(0.52 0.010 68)" }}>{ann.publishedDateLabel} · {ann.authorName}</p>
                     {!isExpanded && (
                       <p className="text-xs mt-1.5 line-clamp-2" style={{ color: "oklch(0.52 0.010 68)" }}>{ann.content}</p>
                     )}

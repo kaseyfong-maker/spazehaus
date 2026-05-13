@@ -5,9 +5,10 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useParams } from "wouter";
-import { Phone, Mail, Calendar, Award } from "lucide-react";
+import { Phone, Mail, Calendar, Award, Loader2 } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
-import { staffMembers, leaveRequests, kpiData, statusConfig } from "@/lib/mockData";
+import { useStaffById, useLeaveRequests, useStaffKpiRecords } from "@/lib/queries";
+import { statusConfig } from "@/lib/mockData";
 
 const tabs = ["Profile", "Leave", "KPI"];
 
@@ -15,9 +16,31 @@ export default function StaffProfile() {
   const { id } = useParams<{ id: string }>();
   const [activeTab, setActiveTab] = useState("Profile");
 
-  const staff = staffMembers.find((s) => s.id === id) || staffMembers[0];
+  const { data: staff, isLoading } = useStaffById(id);
+  const { data: allLeave = [] } = useLeaveRequests();
+  const { data: kpiRecords = [] } = useStaffKpiRecords(id);
+
+  if (isLoading) {
+    return (
+      <div className="mobile-container flex items-center justify-center min-h-screen">
+        <Loader2 size={20} className="animate-spin" style={{ color: "oklch(0.52 0.010 68)" }} />
+      </div>
+    );
+  }
+  if (!staff) {
+    return (
+      <div className="mobile-container flex items-center justify-center min-h-screen">
+        <p style={{ color: "oklch(0.52 0.010 68)" }}>Staff member not found</p>
+      </div>
+    );
+  }
   const sc = statusConfig[staff.status as keyof typeof statusConfig];
-  const staffLeave = leaveRequests.filter((l) => l.staffId === staff.id);
+  const staffLeave = allLeave.filter((l) => l.staff_id === staff.id);
+
+  // Pick the most-recent month for the KPI tab "current rating" widget
+  const latestKpi = kpiRecords[0]; // already sorted desc by year/month
+  const currentRating: string = latestKpi?.rating ?? staff.kpi_grade ?? "—";
+  const currentScore = latestKpi?.total_score;
 
   return (
     <div className="mobile-container">
@@ -49,16 +72,18 @@ export default function StaffProfile() {
               border: "2px solid oklch(0.62 0.09 68 / 25%)",
             }}
           >
-            {staff.avatar}
+            {staff.avatar_code}
           </div>
           <div>
             <h2 className="font-display text-2xl font-semibold text-neutral-900">{staff.name}</h2>
-            <p className="text-sm mt-0.5" style={{ color: "oklch(0.52 0.09 68)" }}>{staff.role}</p>
+            <p className="text-sm mt-0.5" style={{ color: "oklch(0.52 0.09 68)" }}>{staff.job_title}</p>
             <div className="flex items-center gap-2 mt-2">
               <span className="status-pill" style={{ background: sc.bg, color: sc.color }}>{sc.label}</span>
-              <span className="text-xs font-label px-2 py-0.5 rounded-full" style={{ background: "oklch(0.62 0.09 68 / 10%)", color: "oklch(0.52 0.09 68)" }}>
-                KPI: {staff.kpi}
-              </span>
+              {currentRating !== "—" && (
+                <span className="text-xs font-label px-2 py-0.5 rounded-full" style={{ background: "oklch(0.62 0.09 68 / 10%)", color: "oklch(0.52 0.09 68)" }}>
+                  KPI: {currentRating}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -66,9 +91,9 @@ export default function StaffProfile() {
         {/* Quick stats */}
         <div className="grid grid-cols-3 gap-2 mt-5">
           {[
-            { label: "Annual Leave", value: staff.leaveBalance.annual, unit: "days" },
-            { label: "Medical Leave", value: staff.leaveBalance.medical, unit: "days" },
-            { label: "Service", value: "5+", unit: "years" },
+            { label: "Annual Leave", value: staff.leave_balance_annual, unit: "days" },
+            { label: "Medical Leave", value: staff.leave_balance_medical, unit: "days" },
+            { label: "Service", value: serviceYears(staff.join_date), unit: "years" },
           ].map((s) => (
             <div key={s.label} className="rounded-xl p-3 text-center" style={{ background: "oklch(0.93 0.008 75)" }}>
               <p className="text-lg font-display font-semibold text-neutral-900">{s.value}</p>
@@ -112,7 +137,7 @@ export default function StaffProfile() {
               {[
                 { label: "Staff ID", value: staff.id, icon: Award },
                 { label: "Department", value: staff.dept, icon: null },
-                { label: "Join Date", value: staff.joinDate, icon: Calendar },
+                { label: "Join Date", value: formatJoinDate(staff.join_date), icon: Calendar },
               ].map((item) => (
                 <div key={item.label} className="flex items-center justify-between py-1" style={{ borderBottom: "1px solid oklch(0.93 0.008 75)" }}>
                   <span className="text-xs" style={{ color: "oklch(0.52 0.010 68)" }}>{item.label}</span>
@@ -130,7 +155,7 @@ export default function StaffProfile() {
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "oklch(0.62 0.09 68 / 12%)" }}>
                   <Phone size={14} style={{ color: "oklch(0.52 0.09 68)" }} />
                 </div>
-                <span className="text-sm" style={{ color: "oklch(0.25 0.008 65)" }}>+60 12-345 6789</span>
+                <span className="text-sm" style={{ color: "oklch(0.25 0.008 65)" }}>{staff.phone ?? "—"}</span>
               </motion.button>
               <motion.button
                 whileTap={{ scale: 0.97 }}
@@ -139,7 +164,7 @@ export default function StaffProfile() {
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "oklch(0.70 0.09 240 / 15%)" }}>
                   <Mail size={14} style={{ color: "oklch(0.70 0.09 240)" }} />
                 </div>
-                <span className="text-sm" style={{ color: "oklch(0.25 0.008 65)" }}>{staff.name.toLowerCase().replace(" ", ".")}@spazehaus.com</span>
+                <span className="text-sm" style={{ color: "oklch(0.25 0.008 65)" }}>{staff.email}</span>
               </motion.button>
             </div>
           </div>
@@ -151,8 +176,8 @@ export default function StaffProfile() {
             <div className="rounded-2xl p-4" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
               <h4 className="font-display text-base font-semibold text-neutral-900 mb-3">Leave Balance 2026</h4>
               {[
-                { type: "Annual Leave", used: 16 - staff.leaveBalance.annual, total: 16, color: "oklch(0.70 0.09 240)" },
-                { type: "Medical Leave", used: 14 - staff.leaveBalance.medical, total: 14, color: "oklch(0.68 0.12 25)" },
+                { type: "Annual Leave", used: 16 - staff.leave_balance_annual, total: 16, color: "oklch(0.70 0.09 240)" },
+                { type: "Medical Leave", used: 14 - staff.leave_balance_medical, total: 14, color: "oklch(0.68 0.12 25)" },
                 { type: "Replacement Leave", used: 0, total: 3, color: "oklch(0.80 0.12 68)" },
               ].map((lb) => (
                 <div key={lb.type} className="mb-3">
@@ -183,8 +208,8 @@ export default function StaffProfile() {
                   >
                     <div className="flex items-start justify-between">
                       <div>
-                        <p className="text-sm font-semibold text-neutral-900">{leave.type}</p>
-                        <p className="text-xs mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>{leave.startDate} — {leave.endDate} ({leave.days}d)</p>
+                        <p className="text-sm font-semibold text-neutral-900">{leave.leave_type}</p>
+                        <p className="text-xs mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>{leave.startDateLabel} — {leave.endDateLabel} ({leave.days}d)</p>
                         <p className="text-xs mt-1" style={{ color: "oklch(0.52 0.010 68)" }}>{leave.reason}</p>
                       </div>
                       <span className="status-pill" style={{ background: lsc.bg, color: lsc.color }}>{lsc.label}</span>
@@ -208,48 +233,58 @@ export default function StaffProfile() {
               style={{ background: "linear-gradient(135deg, oklch(0.62 0.09 68 / 12%), oklch(0.55 0.08 65 / 10%))", border: "1px solid oklch(0.62 0.09 68 / 15%)" }}
             >
               <p className="text-xs font-label mb-1" style={{ color: "oklch(0.52 0.09 68)", letterSpacing: "0.08em" }}>CURRENT RATING</p>
-              <p className="text-6xl font-display font-semibold" style={{ color: "oklch(0.52 0.09 68)" }}>{kpiData.rating}</p>
-              <p className="text-sm mt-1" style={{ color: "oklch(0.52 0.010 68)" }}>Score: 89/100</p>
+              <p className="text-6xl font-display font-semibold" style={{ color: "oklch(0.52 0.09 68)" }}>{currentRating}</p>
+              <p className="text-sm mt-1" style={{ color: "oklch(0.52 0.010 68)" }}>
+                {currentScore !== undefined ? `Score: ${currentScore}/100` : "Not yet rated"}
+              </p>
             </div>
 
-            {/* KPI breakdown */}
-            <div className="rounded-2xl p-4" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
-              <h4 className="font-display text-base font-semibold text-neutral-900 mb-3">Score Breakdown</h4>
-              {kpiData.parts.map((part) => (
-                <div key={part.name} className="mb-3">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs" style={{ color: "oklch(0.52 0.010 68)" }}>{part.name}</span>
-                    <span className="text-xs font-semibold" style={{ color: "oklch(0.52 0.09 68)" }}>{part.score}/{part.max}</span>
+            {/* KPI breakdown — most recent month's parts */}
+            {latestKpi && (
+              <div className="rounded-2xl p-4" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
+                <h4 className="font-display text-base font-semibold text-neutral-900 mb-3">
+                  Score Breakdown — {MONTHS_SHORT[latestKpi.month - 1]} {latestKpi.year}
+                </h4>
+                {[
+                  { name: "Part A — Attendance & Leave", score: latestKpi.part_a_score, max: 30 },
+                  { name: "Part B — Task Performance", score: latestKpi.part_b_score, max: 50 },
+                  { name: "Part C — Attitude & Initiative", score: latestKpi.part_c_score, max: 20 },
+                ].map((part) => (
+                  <div key={part.name} className="mb-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs" style={{ color: "oklch(0.52 0.010 68)" }}>{part.name}</span>
+                      <span className="text-xs font-semibold" style={{ color: "oklch(0.52 0.09 68)" }}>{part.score}/{part.max}</span>
+                    </div>
+                    <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "oklch(0.90 0.010 75)" }}>
+                      <div
+                        className="h-full rounded-full"
+                        style={{ width: `${(part.score / part.max) * 100}%`, background: "linear-gradient(90deg, oklch(0.72 0.09 68), oklch(0.82 0.07 68))" }}
+                      />
+                    </div>
                   </div>
-                  <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "oklch(0.90 0.010 75)" }}>
-                    <div
-                      className="h-full rounded-full"
-                      style={{ width: `${(part.score / part.max) * 100}%`, background: "linear-gradient(90deg, oklch(0.72 0.09 68), oklch(0.82 0.07 68))" }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
 
             {/* Monthly grid */}
             <div className="rounded-2xl p-4" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
-              <h4 className="font-display text-base font-semibold text-neutral-900 mb-3">Monthly Scores 2026</h4>
+              <h4 className="font-display text-base font-semibold text-neutral-900 mb-3">Monthly Scores {new Date().getFullYear()}</h4>
               <div className="grid grid-cols-6 gap-2">
-                {kpiData.months.map((month, i) => {
-                  const score = kpiData.scores[i];
-                  const rating = score === null ? null : score >= 81 ? "A" : score >= 61 ? "B" : "C";
+                {MONTHS_SHORT.map((month, i) => {
+                  const rec = kpiRecords.find((k) => k.year === new Date().getFullYear() && k.month === i + 1);
+                  const rating = rec?.rating ?? null;
                   return (
                     <div
                       key={month}
                       className="rounded-lg p-2 text-center"
                       style={{
-                        background: score === null ? "oklch(0.96 0.006 75)" : rating === "A" ? "oklch(0.62 0.09 68 / 15%)" : rating === "B" ? "oklch(0.70 0.09 240 / 20%)" : "oklch(0.68 0.12 25 / 20%)",
-                        border: score === null ? "1px solid oklch(0.93 0.008 75)" : "none",
+                        background: rating === null ? "oklch(0.96 0.006 75)" : rating === "A" ? "oklch(0.62 0.09 68 / 15%)" : rating === "B" ? "oklch(0.70 0.09 240 / 20%)" : "oklch(0.68 0.12 25 / 20%)",
+                        border: rating === null ? "1px solid oklch(0.93 0.008 75)" : "none",
                       }}
                     >
                       <p className="text-[9px] font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.04em" }}>{month}</p>
-                      <p className="text-sm font-semibold mt-0.5" style={{ color: score === null ? "oklch(0.52 0.010 68)" : rating === "A" ? "oklch(0.72 0.09 68)" : rating === "B" ? "oklch(0.70 0.09 240)" : "oklch(0.68 0.12 25)" }}>
-                        {score === null ? "—" : rating}
+                      <p className="text-sm font-semibold mt-0.5" style={{ color: rating === null ? "oklch(0.52 0.010 68)" : rating === "A" ? "oklch(0.72 0.09 68)" : rating === "B" ? "oklch(0.70 0.09 240)" : "oklch(0.68 0.12 25)" }}>
+                        {rating ?? "—"}
                       </p>
                     </div>
                   );
@@ -261,4 +296,27 @@ export default function StaffProfile() {
       </div>
     </div>
   );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────────────────────
+
+const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+function formatJoinDate(iso: string): string {
+  // join_date comes back as YYYY-MM-DD; render it DD/MM/YYYY
+  const [y, m, d] = iso.split("-");
+  if (!y || !m || !d) return iso;
+  return `${d}/${m}/${y}`;
+}
+
+function serviceYears(joinIso: string): string {
+  const join = new Date(joinIso);
+  if (Number.isNaN(join.getTime())) return "—";
+  const today = new Date();
+  let years = today.getFullYear() - join.getFullYear();
+  const m = today.getMonth() - join.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < join.getDate())) years -= 1;
+  return years <= 0 ? "<1" : `${years}+`;
 }

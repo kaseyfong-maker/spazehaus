@@ -5,7 +5,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
-import { kpiData } from "@/lib/mockData";
+import { useStaffKpiRecords } from "@/lib/queries";
 import { useAuth } from "@/contexts/AuthContext";
 import { ChevronRight, Bell, Shield, HelpCircle, LogOut, Moon, Globe } from "lucide-react";
 import { toast } from "sonner";
@@ -21,10 +21,15 @@ const menuItems = [
 export default function Profile() {
   const [, navigate] = useLocation();
   const { staff, signOut } = useAuth();
+  const { data: kpiRecords = [] } = useStaffKpiRecords(staff?.id);
   const [signingOut, setSigningOut] = useState(false);
 
   // Auth gate guarantees staff is non-null in this view, but TS doesn't know
   if (!staff) return null;
+
+  // Most-recent KPI rating (defaults to staff.kpi_grade if no records yet)
+  const currentRating: string = kpiRecords[0]?.rating ?? staff.kpi_grade ?? "—";
+  const currentScore = kpiRecords[0]?.total_score;
 
   async function handleSignOut() {
     setSigningOut(true);
@@ -59,13 +64,15 @@ export default function Profile() {
           <p className="text-xs mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>{staff.dept} Department · {staff.id}</p>
 
           {/* KPI badge */}
-          <div
-            className="mt-3 px-4 py-1.5 rounded-full flex items-center gap-2"
-            style={{ background: "oklch(0.62 0.09 68 / 12%)", border: "1px solid oklch(0.62 0.09 68 / 20%)" }}
-          >
-            <span className="text-xs font-label" style={{ color: "oklch(0.52 0.09 68)", letterSpacing: "0.04em" }}>KPI RATING</span>
-            <span className="text-sm font-display font-bold" style={{ color: "oklch(0.52 0.09 68)" }}>{kpiData.rating}</span>
-          </div>
+          {currentRating !== "—" && (
+            <div
+              className="mt-3 px-4 py-1.5 rounded-full flex items-center gap-2"
+              style={{ background: "oklch(0.62 0.09 68 / 12%)", border: "1px solid oklch(0.62 0.09 68 / 20%)" }}
+            >
+              <span className="text-xs font-label" style={{ color: "oklch(0.52 0.09 68)", letterSpacing: "0.04em" }}>KPI RATING</span>
+              <span className="text-sm font-display font-bold" style={{ color: "oklch(0.52 0.09 68)" }}>{currentRating}</span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -88,9 +95,9 @@ export default function Profile() {
         {/* Quick stats */}
         <div className="grid grid-cols-3 gap-2">
           {[
-            { label: "Projects", value: "4", color: "oklch(0.52 0.09 68)" },
-            { label: "Annual Leave", value: "12d", color: "oklch(0.70 0.09 240)" },
-            { label: "Score", value: "89", color: "oklch(0.60 0.07 145)" },
+            { label: "Annual Leave", value: `${staff.leave_balance_annual}d`, color: "oklch(0.70 0.09 240)" },
+            { label: "Medical Leave", value: `${staff.leave_balance_medical}d`, color: "oklch(0.52 0.09 68)" },
+            { label: "Score", value: currentScore !== undefined ? String(currentScore) : "—", color: "oklch(0.60 0.07 145)" },
           ].map((s) => (
             <div key={s.label} className="rounded-xl p-3 text-center" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
               <p className="text-xl font-display font-semibold" style={{ color: s.color }}>{s.value}</p>

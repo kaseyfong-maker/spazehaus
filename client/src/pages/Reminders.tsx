@@ -6,29 +6,35 @@
  *   • Weekly payment review
  *   • Weekly site report (per active project)
  *
- * The page is anchored to MOCK_TODAY (2026-05-10) so missed/upcoming buckets
- * are deterministic in the demo.
+ * Phase 0C.2 — all data now reads from Supabase via TanStack Query.
+ * Photo uploads write to the `site-photos` Storage bucket + `site_photos` table.
+ * The MOCK_TODAY anchor stays in lifecycleData.ts so the demo timeline keeps
+ * its deterministic buckets.
  */
+import { useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
 import {
   Camera, Coins, FileText, Check, Clock, AlertCircle, Calendar,
-  Flame, ChevronRight, Upload
+  Flame, ChevronRight, Upload, X, Loader2
 } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import { toast } from "sonner";
 import {
-  getReminders,
+  useProjects,
+  useAllStaff,
+  useSitePhotos,
+  useUploadSitePhoto,
+  buildSitePhotoMaps,
+  buildReminders,
   reminderSummary,
-  sitePhotoLogs,
   lastNDays,
-  reminderTypeConfig,
-  reminderStatusConfig,
+  MOCK_TODAY,
   type Reminder,
   type ReminderType,
-} from "@/lib/reminderData";
-import { projects, staffMembers } from "@/lib/mockData";
-import { MOCK_TODAY } from "@/lib/lifecycleData";
+} from "@/lib/queries";
+import { useAuth } from "@/contexts/AuthContext";
+import { reminderTypeConfig, reminderStatusConfig } from "@/lib/reminderData";
 
 const HERO_BG = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296470877/AuQSChINbJLLhITo.jpg";
 
@@ -46,13 +52,57 @@ const typeIcon: Record<ReminderType, typeof Camera> = {
 
 export default function Reminders() {
   const [, navigate] = useLocation();
+  const { staff: me } = useAuth();
   const today = fmtToday();
-  const all = getReminders();
-  const summary = reminderSummary();
+
+  const { data: projects = [] } = useProjects();
+  const { data: staff = [] } = useAllStaff();
+  const { data: sitePhotos = [] } = useSitePhotos();
+  const uploadPhoto = useUploadSitePhoto();
+
+  // Build the working set: photo maps for every project currently in build phase
+  // (active or assigned status). PRJ004 (completed) and PRJ002 (under-review,
+  // pre-handover) are filtered out — they no longer require daily site photos.
+  const activeProjectIds = projects
+    .filter((p) => p.status === "active" || p.status === "assigned")
+    .map((p) => p.id);
+
+  const photoMaps = buildSitePhotoMaps(activeProjectIds, sitePhotos, staff);
+  const all = buildReminders(projects, photoMaps);
+  const summary = reminderSummary(all, photoMaps);
 
   const todayItems = all.filter((r) => r.dueDate === today);
   const overdueItems = all.filter((r) => r.status === "overdue");
   const upcomingItems = all.filter((r) => r.status === "upcoming");
+
+  // Photo upload state
+  const [uploadFor, setUploadFor] = useState<{ projectId: string; projectName: string; date: string } | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function openUpload(projectId: string, projectName: string, date: string) {
+    setUploadFor({ projectId, projectName, date });
+    // Open the native file picker right away
+    setTimeout(() => fileInputRef.current?.click(), 0);
+  }
+
+  async function onFilePicked(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // reset so the same file can be re-picked later
+    if (!file || !uploadFor) return;
+    try {
+      await uploadPhoto.mutateAsync({
+        projectId: uploadFor.projectId,
+        photoDate: uploadFor.date,
+        file,
+        uploadedById: me?.id,
+      });
+      toast.success(`Photo uploaded for ${uploadFor.projectName}`);
+    } catch (err) {
+      toast.error(`Upload failed: ${err instanceof Error ? err.message : "unknown error"}`);
+    } finally {
+      setUploadFor(null);
+    }
+  }
 
   return (
     <div className="mobile-container" style={{ background: "oklch(0.985 0.004 80)" }}>
@@ -107,12 +157,15 @@ export default function Reminders() {
                 <ReminderItem
                   key={r.id}
                   reminder={r}
+                  staff={staff}
                   isLast={i === todayItems.length - 1}
                   onAction={() => {
                     if (r.status === "completed") {
                       toast.success(`Already uploaded${r.completedAt ? ` at ${r.completedAt}` : ""}`);
+                    } else if (r.type === "daily-site-photo" && r.projectId) {
+                      openUpload(r.projectId, r.projectName ?? "site", r.dueDate);
                     } else {
-                      toast.info(`Opening camera for ${r.projectName}…`);
+                      toast.info(`Opening: ${r.title}`);
                     }
                   }}
                   onCardClick={() => r.projectId && navigate(`/projects/${r.projectId}`)}
@@ -137,8 +190,15 @@ export default function Reminders() {
                 <ReminderItem
                   key={r.id}
                   reminder={r}
+                  staff={staff}
                   isLast={i === overdueItems.length - 1}
-                  onAction={() => toast.info(`Logging late entry for ${r.dueDate}…`)}
+                  onAction={() => {
+                    if (r.type === "daily-site-photo" && r.projectId) {
+                      openUpload(r.projectId, r.projectName ?? "site", r.dueDate);
+                    } else {
+                      toast.info(`Logging late entry for ${r.dueDate}…`);
+                    }
+                  }}
                   onCardClick={() => r.projectId && navigate(`/projects/${r.projectId}`)}
                 />
               ))}
@@ -157,6 +217,7 @@ export default function Reminders() {
                 <ReminderItem
                   key={r.id}
                   reminder={r}
+                  staff={staff}
                   isLast={i === upcomingItems.length - 1}
                   onAction={() => toast.info(`Opening: ${r.title}`)}
                   onCardClick={() => r.projectId && navigate(`/projects/${r.projectId}`)}
@@ -170,14 +231,19 @@ export default function Reminders() {
         <section>
           <SectionHeader title="14-DAY SITE PHOTO GRID" subtitle="Per active site · green = uploaded" icon={Camera} />
           <div className="rounded-2xl p-4 space-y-4" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}>
-            {sitePhotoLogs.map((log) => {
-              const project = projects.find((p) => p.id === log.projectId);
+            {photoMaps.length === 0 && (
+              <p className="text-xs text-center py-3" style={{ color: "oklch(0.52 0.010 68)" }}>
+                No active sites — photo SOP only applies during BUILD phase.
+              </p>
+            )}
+            {photoMaps.map((map) => {
+              const project = projects.find((p) => p.id === map.projectId);
               if (!project) return null;
               const days = lastNDays(14);
-              const uploaded = days.filter((d) => log.photos[d]?.uploaded).length;
+              const uploaded = days.filter((d) => map.photos[d]?.uploaded).length;
               const pct = (uploaded / days.length) * 100;
               return (
-                <div key={log.projectId}>
+                <div key={map.projectId}>
                   <div className="flex items-center justify-between mb-1.5">
                     <p className="text-xs font-semibold" style={{ color: "oklch(0.20 0.008 65)" }}>
                       {project.name}
@@ -188,14 +254,16 @@ export default function Reminders() {
                   </div>
                   <div className="grid grid-cols-14 gap-1" style={{ gridTemplateColumns: "repeat(14, minmax(0, 1fr))" }}>
                     {days.map((d) => {
-                      const photo = log.photos[d];
+                      const photo = map.photos[d];
                       const isToday = d === today;
                       const dayNum = d.split("/")[0];
                       return (
-                        <div
+                        <button
+                          type="button"
                           key={d}
+                          onClick={() => openUpload(map.projectId, project.name, d)}
                           className="aspect-square rounded-md flex items-center justify-center"
-                          title={`${d}${photo?.uploaded ? ` · uploaded ${photo.uploadedAt} by ${photo.by}` : " · missed"}`}
+                          title={`${d}${photo?.uploaded ? ` · uploaded ${photo.uploadedAt}${photo.by ? ` by ${photo.by}` : ""}` : " · click to upload"}`}
                           style={{
                             background: photo?.uploaded
                               ? "oklch(0.55 0.09 145 / 80%)"
@@ -207,7 +275,7 @@ export default function Reminders() {
                           }}
                         >
                           {photo?.uploaded ? <Check size={8} strokeWidth={4} /> : dayNum}
-                        </div>
+                        </button>
                       );
                     })}
                   </div>
@@ -226,6 +294,46 @@ export default function Reminders() {
           SPAZEHAUS · DAILY + WEEKLY REMINDER SOP · 2026 ANNUAL MEETING
         </p>
       </div>
+
+      {/* Hidden file picker used by all upload buttons + photo grid taps */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={onFilePicked}
+      />
+
+      {/* Upload-in-progress overlay */}
+      {uploadPhoto.isPending && uploadFor && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ background: "oklch(0.10 0.004 285 / 0.55)", backdropFilter: "blur(6px)" }}
+        >
+          <div
+            className="rounded-2xl px-6 py-5 flex items-center gap-3 shadow-2xl"
+            style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}
+          >
+            <Loader2 size={18} className="animate-spin" style={{ color: "oklch(0.42 0.09 68)" }} />
+            <div>
+              <p className="text-sm font-semibold" style={{ color: "oklch(0.14 0.008 65)" }}>
+                Uploading photo…
+              </p>
+              <p className="text-xs mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>
+                {uploadFor.projectName} · {uploadFor.date}
+              </p>
+            </div>
+            <button
+              onClick={() => setUploadFor(null)}
+              className="ml-3"
+              aria-label="Dismiss"
+            >
+              <X size={14} style={{ color: "oklch(0.52 0.010 68)" }} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -320,11 +428,13 @@ function Empty({ message }: { message: string }) {
 
 function ReminderItem({
   reminder,
+  staff,
   isLast,
   onAction,
   onCardClick,
 }: {
   reminder: Reminder;
+  staff: { id: string; name: string; avatar_code: string }[];
   isLast: boolean;
   onAction: () => void;
   onCardClick?: () => void;
@@ -332,7 +442,7 @@ function ReminderItem({
   const tc = reminderTypeConfig[reminder.type];
   const sc = reminderStatusConfig[reminder.status];
   const Icon = typeIcon[reminder.type];
-  const assignee = staffMembers.find((s) => s.avatar === reminder.assignee);
+  const assignee = staff.find((s) => s.avatar_code === reminder.assignee);
 
   return (
     <div

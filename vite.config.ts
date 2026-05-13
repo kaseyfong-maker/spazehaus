@@ -6,6 +6,17 @@ import path from "node:path";
 import { defineConfig, type Plugin, type ViteDevServer } from "vite";
 import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
 
+// The Manus runtime + debug collector are useful in the Manus dev sandbox but
+// inline ~100kb into index.html and have no role in production. Off by default
+// in production builds; on for local dev unless explicitly disabled.
+//
+//   Production build:  MANUS_RUNTIME=1 to opt back in (default: off)
+//   Local dev:         MANUS_RUNTIME=0 to opt out  (default: on)
+const isProd = process.env.NODE_ENV === "production";
+const MANUS_RUNTIME_ENABLED = isProd
+  ? process.env.MANUS_RUNTIME === "1"
+  : process.env.MANUS_RUNTIME !== "0";
+
 // =============================================================================
 // Manus Debug Collector - Vite Plugin
 // Writes browser logs directly to files, trimmed when exceeding size limit
@@ -150,7 +161,12 @@ function vitePluginManusDebugCollector(): Plugin {
   };
 }
 
-const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector()];
+const plugins = [
+  react(),
+  tailwindcss(),
+  jsxLocPlugin(),
+  ...(MANUS_RUNTIME_ENABLED ? [vitePluginManusRuntime(), vitePluginManusDebugCollector()] : []),
+];
 
 export default defineConfig({
   plugins,

@@ -7,7 +7,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
 import { Search, Plus } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
-import { staffMembers, statusConfig } from "@/lib/mockData";
+import { useAllStaff } from "@/lib/queries";
+import { statusConfig } from "@/lib/mockData";
 import { toast } from "sonner";
 
 const deptFilters = ["All", "Design", "Operations", "Sales", "Admin"];
@@ -24,9 +25,11 @@ export default function StaffDirectory() {
   const [deptFilter, setDeptFilter] = useState("All");
   const [search, setSearch] = useState("");
 
+  const { data: staffMembers = [] } = useAllStaff();
+
   const filtered = staffMembers.filter((s) => {
     const matchDept = deptFilter === "All" || s.dept === deptFilter;
-    const matchSearch = s.name.toLowerCase().includes(search.toLowerCase()) || s.role.toLowerCase().includes(search.toLowerCase());
+    const matchSearch = s.name.toLowerCase().includes(search.toLowerCase()) || s.job_title.toLowerCase().includes(search.toLowerCase());
     return matchDept && matchSearch;
   });
 
@@ -98,11 +101,11 @@ export default function StaffDirectory() {
                       border: "1px solid oklch(0.62 0.09 68 / 20%)",
                     }}
                   >
-                    {staff.avatar}
+                    {staff.avatar_code}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-neutral-900">{staff.name}</p>
-                    <p className="text-xs mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>{staff.role}</p>
+                    <p className="text-xs mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>{staff.job_title}</p>
                     <div className="flex items-center gap-2 mt-1">
                       <span
                         className="text-[10px] font-label px-2 py-0.5 rounded-full"
@@ -114,7 +117,9 @@ export default function StaffDirectory() {
                       >
                         {staff.dept}
                       </span>
-                      <span className="text-[10px]" style={{ color: "oklch(0.52 0.010 68)" }}>KPI: {staff.kpi}</span>
+                      {staff.kpi_grade && (
+                        <span className="text-[10px]" style={{ color: "oklch(0.52 0.010 68)" }}>KPI: {staff.kpi_grade}</span>
+                      )}
                     </div>
                   </div>
                   <span className="status-pill shrink-0" style={{ background: sc.bg, color: sc.color }}>{sc.label}</span>
