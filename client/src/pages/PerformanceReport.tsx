@@ -26,7 +26,7 @@ import {
   timelineBounds,
   timelinePos,
   formatRMCompact,
-  MOCK_TODAY,
+  getToday,
   type StaffPerformance,
 } from "@/lib/queries";
 import { useAuth } from "@/contexts/AuthContext";
@@ -126,7 +126,7 @@ export default function PerformanceReport() {
         </motion.button>
 
         <p className="text-[10px] text-center font-label pt-2" style={{ color: "oklch(0.65 0.008 68)", letterSpacing: "0.06em" }}>
-          SPAZEHAUS · PERFORMANCE REPORT · {monthLabel(MOCK_TODAY)}
+          SPAZEHAUS · PERFORMANCE REPORT · {monthLabel(getToday())}
         </p>
       </div>
     </div>
@@ -535,7 +535,7 @@ function StaffRow({ perf, rank }: { perf: StaffPerformance; rank: number }) {
 
 function ProjectGantt({ rows }: { rows: ReturnType<typeof buildProjectTimeline> }) {
   const bounds = timelineBounds(rows);
-  const todayPos = timelinePos(MOCK_TODAY, bounds);
+  const todayPos = timelinePos(getToday(), bounds);
 
   // Build a few month-tick labels along the timeline
   const tickMonths = [];

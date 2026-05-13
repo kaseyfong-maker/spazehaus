@@ -916,7 +916,7 @@ export type CheckpointSummary = {
 export function computeCheckpointSummary(
   payments: OpenPaymentRow[],
   signatures: OpenSignatureRow[],
-  today: Date = MOCK_TODAY,
+  today: Date = getToday(),
 ): CheckpointSummary {
   const outstandingRM = payments.reduce((s, p) => s + p.amount, 0);
   const overdue = payments.filter((p) => bucketDate(p.dueDate, today) === "overdue");
@@ -1460,11 +1460,11 @@ export async function getSitePhotoUrl(storagePath: string, expiresInSec = 3600):
 // no implicit dependency on mock arrays.
 
 import {
-  MOCK_TODAY,
+  getToday,
   daysFromToday as _daysFromToday,
 } from "@/lib/lifecycleData";
 
-export { MOCK_TODAY };
+export { getToday };
 export { _daysFromToday as daysFromToday };
 
 function startOfMonth(d: Date): Date { return new Date(d.getFullYear(), d.getMonth(), 1); }
@@ -1500,7 +1500,7 @@ export function computeStaffPerformance(
   staff: StaffRow,
   target: SalesTargetRow,
   inquiries: Inquiry[],
-  today: Date = MOCK_TODAY,
+  today: Date = getToday(),
 ): StaffPerformance {
   const sMonth = startOfMonth(today);
   const sYear = startOfYear(today);
@@ -1547,7 +1547,7 @@ export function computeTeamPerformance(
   staffList: StaffRow[],
   targets: SalesTargetRow[],
   inquiries: Inquiry[],
-  today: Date = MOCK_TODAY,
+  today: Date = getToday(),
 ): StaffPerformance[] {
   const staffById = new Map(staffList.map((s) => [s.id, s]));
   return targets
@@ -1645,7 +1645,7 @@ function fmtDDMM(d: Date): string {
   return `${dd}/${mm}/${d.getFullYear()}`;
 }
 
-export function lastNDays(n: number, today: Date = MOCK_TODAY): string[] {
+export function lastNDays(n: number, today: Date = getToday()): string[] {
   const out: string[] = [];
   for (let i = n - 1; i >= 0; i--) {
     const d = new Date(today);
@@ -1660,7 +1660,7 @@ export function buildSitePhotoMaps(
   activeProjectIds: string[],
   photos: SitePhotoRow[],
   staff: StaffRow[],
-  today: Date = MOCK_TODAY,
+  today: Date = getToday(),
 ): SitePhotoMap[] {
   const staffById = new Map(staff.map((s) => [s.id, s]));
   const days = lastNDays(14, today);
@@ -1699,7 +1699,7 @@ function upcomingFriday(today: Date): Date {
 export function buildReminders(
   projects: Project[],
   photoMaps: SitePhotoMap[],
-  today: Date = MOCK_TODAY,
+  today: Date = getToday(),
   paymentAdminAvatar = "DN",      // Denise Ng (Admin Exec) handles weekly payment review
 ): Reminder[] {
   const todayStr = fmtDDMM(today);
@@ -1796,7 +1796,7 @@ export type ReminderSummary = {
 export function reminderSummary(
   reminders: Reminder[],
   photoMaps: SitePhotoMap[],
-  today: Date = MOCK_TODAY,
+  today: Date = getToday(),
 ): ReminderSummary {
   const todayStr = fmtDDMM(today);
   const todayItems = reminders.filter((r) => r.dueDate === todayStr);

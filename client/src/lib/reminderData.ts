@@ -10,7 +10,7 @@
  * still referenced by the Reminders page for badge rendering.
  */
 
-import { MOCK_TODAY } from "./lifecycleData";
+import { getToday } from "./lifecycleData";
 
 export type ReminderType = "daily-site-photo" | "weekly-payment-review" | "weekly-site-report";
 
@@ -37,7 +37,7 @@ function fmt(d: Date): string {
 }
 
 /** Generate the past N days as DD/MM/YYYY strings (most recent last). */
-export function lastNDays(n: number, today: Date = MOCK_TODAY): string[] {
+export function lastNDays(n: number, today: Date = getToday()): string[] {
   const out: string[] = [];
   for (let i = n - 1; i >= 0; i--) {
     const d = new Date(today);

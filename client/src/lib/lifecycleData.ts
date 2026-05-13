@@ -15,7 +15,7 @@
  *
  * What remains here is pure: the 29-stage catalogue, the in-app TypeScript
  * shapes for a lifecycle / payment / signature, palette tokens, and a small
- * set of date helpers (`MOCK_TODAY`, `daysFromToday`, `bucketDate`, etc.)
+ * set of date helpers (`getToday`, `daysFromToday`, `bucketDate`, etc.)
  * plus the summary helpers consumed by the ProjectDetail Lifecycle tab.
  */
 
@@ -203,13 +203,22 @@ export function stageStatus(stage: LifecycleStage, currentStageId: string): Chec
 // —————————————————————————————————————————————————————————————
 
 /**
- * Mock "today" for the demo. The mock data was crafted around 2026-05-10
- * (the date in the 2026 Annual Meeting context). Using a fixed date keeps
- * the overdue/due-this-week buckets meaningful regardless of when the app runs.
+ * "Today" anchor for all relative-date logic (overdue / due-this-week buckets,
+ * gantt today-line, photo grids).
  *
- * Replace with `new Date()` once the relative-date buckets should track real time.
+ * Returns the current Date on every call so a long-running SPA tab stays
+ * accurate across midnight. Override via `VITE_TODAY_OVERRIDE=YYYY-MM-DD`
+ * (build-time) for screenshots, demos, or deterministic tests — when unset,
+ * tracks real wall-clock time.
  */
-export const MOCK_TODAY = new Date(2026, 4, 10); // May = month index 4
+export function getToday(): Date {
+  const override = import.meta.env?.VITE_TODAY_OVERRIDE;
+  if (typeof override === "string" && /^\d{4}-\d{2}-\d{2}$/.test(override)) {
+    const [y, m, d] = override.split("-").map(Number);
+    return new Date(y, m - 1, d);
+  }
+  return new Date();
+}
 
 /** Parse a Spazehaus DD/MM/YYYY date string into a Date. Returns null for "TBD" / invalid. */
 function parseDDMMYYYY(s: string | undefined): Date | null {
@@ -221,7 +230,7 @@ function parseDDMMYYYY(s: string | undefined): Date | null {
 }
 
 /** Days from today to a date string. Negative = overdue. Null if undated. */
-export function daysFromToday(dateStr: string | undefined, today: Date = MOCK_TODAY): number | null {
+export function daysFromToday(dateStr: string | undefined, today: Date = getToday()): number | null {
   const d = parseDDMMYYYY(dateStr);
   if (!d) return null;
   const ms = d.getTime() - today.getTime();
@@ -231,7 +240,7 @@ export function daysFromToday(dateStr: string | undefined, today: Date = MOCK_TO
 export type DueBucket = "overdue" | "this-week" | "this-month" | "later" | "no-date";
 
 /** Bucket a due date relative to today. */
-export function bucketDate(dateStr: string | undefined, today: Date = MOCK_TODAY): DueBucket {
+export function bucketDate(dateStr: string | undefined, today: Date = getToday()): DueBucket {
   const days = daysFromToday(dateStr, today);
   if (days === null) return "no-date";
   if (days < 0) return "overdue";
@@ -241,7 +250,7 @@ export function bucketDate(dateStr: string | undefined, today: Date = MOCK_TODAY
 }
 
 /** Compute the effective status — promotes "pending"/"in-progress" to "overdue" if the date has passed. */
-export function effectivePaymentStatus(p: PaymentRecord, today: Date = MOCK_TODAY): CheckpointStatus {
+export function effectivePaymentStatus(p: PaymentRecord, today: Date = getToday()): CheckpointStatus {
   if (p.status === "completed" || p.status === "skipped" || p.status === "overdue") return p.status;
   const days = daysFromToday(p.dueDate, today);
   if (days !== null && days < 0) return "overdue";

@@ -8,8 +8,8 @@
  *
  * Phase 0C.2 — all data now reads from Supabase via TanStack Query.
  * Photo uploads write to the `site-photos` Storage bucket + `site_photos` table.
- * The MOCK_TODAY anchor stays in lifecycleData.ts so the demo timeline keeps
- * its deterministic buckets.
+ * The `getToday()` helper lives in lifecycleData.ts and returns the current
+ * Date on every call (overridable via VITE_TODAY_OVERRIDE for demos).
  */
 import { useRef, useState } from "react";
 import { motion } from "framer-motion";
@@ -29,7 +29,7 @@ import {
   buildReminders,
   reminderSummary,
   lastNDays,
-  MOCK_TODAY,
+  getToday,
   type Reminder,
   type ReminderType,
 } from "@/lib/queries";
@@ -39,9 +39,10 @@ import { reminderTypeConfig, reminderStatusConfig } from "@/lib/reminderData";
 const HERO_BG = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296470877/AuQSChINbJLLhITo.jpg";
 
 function fmtToday(): string {
-  const dd = String(MOCK_TODAY.getDate()).padStart(2, "0");
-  const mm = String(MOCK_TODAY.getMonth() + 1).padStart(2, "0");
-  return `${dd}/${mm}/${MOCK_TODAY.getFullYear()}`;
+  const t = getToday();
+  const dd = String(t.getDate()).padStart(2, "0");
+  const mm = String(t.getMonth() + 1).padStart(2, "0");
+  return `${dd}/${mm}/${t.getFullYear()}`;
 }
 
 const typeIcon: Record<ReminderType, typeof Camera> = {
