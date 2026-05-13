@@ -519,6 +519,7 @@ export type Database = {
         Row: {
           areas: string[]
           budget: number
+          client_access_token: string
           client_address: string | null
           client_contact: string | null
           client_email: string | null
@@ -550,6 +551,7 @@ export type Database = {
         Insert: {
           areas?: string[]
           budget: number
+          client_access_token?: string
           client_address?: string | null
           client_contact?: string | null
           client_email?: string | null
@@ -581,6 +583,7 @@ export type Database = {
         Update: {
           areas?: string[]
           budget?: number
+          client_access_token?: string
           client_address?: string | null
           client_contact?: string | null
           client_email?: string | null
@@ -998,6 +1001,10 @@ export type Database = {
       maybe_advance_project_stage: {
         Args: { p_project_id: string }
         Returns: string
+      }
+      get_client_portal_data: {
+        Args: { p_token: string }
+        Returns: Json
       }
     }
     Enums: {

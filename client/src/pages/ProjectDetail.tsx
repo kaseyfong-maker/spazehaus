@@ -10,7 +10,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useParams, useLocation } from "wouter";
-import { Upload, UserPlus, CheckSquare, MapPin, Maximize2, Phone, FileText, Receipt, Coins, PenSquare, Check, Clock, AlertCircle } from "lucide-react";
+import { Upload, UserPlus, CheckSquare, MapPin, Maximize2, Phone, FileText, Receipt, Coins, PenSquare, Check, Clock, AlertCircle, Share2 } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import MarkCollectedSheet, { type MarkCollectedTarget } from "@/components/MarkCollectedSheet";
 import SignDocumentSheet, { type SignDocumentTarget } from "@/components/SignDocumentSheet";
@@ -264,6 +264,10 @@ export default function ProjectDetail() {
                   <Phone size={15} style={{ color: "oklch(0.52 0.09 68)" }} />
                 </div>
               </motion.button>
+
+              {/* Share client portal — copies the unauthenticated /portal/:token
+                  link so staff can WhatsApp / email it to the client. */}
+              <SharePortalButton token={project.clientAccessToken} clientName={project.client} />
             </div>
           )}
 
@@ -964,5 +968,67 @@ function SignatureRow({
         )}
       </div>
     </div>
+  );
+}
+
+// ─── SharePortalButton ────────────────────────────────────────────────────
+// Copies the read-only /portal/:token URL to the clipboard so staff can
+// WhatsApp / email it to the client. Falls back to a toast that shows the
+// URL when clipboard API isn't available (e.g. older browsers, http://).
+function SharePortalButton({ token, clientName }: { token: string; clientName: string }) {
+  const [copied, setCopied] = useState(false);
+  const url = `${window.location.origin}/portal/${token}`;
+
+  const handleCopy = async () => {
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(url);
+        setCopied(true);
+        toast.success(`Portal link copied — share with ${clientName}`);
+        setTimeout(() => setCopied(false), 2000);
+      } else {
+        toast.info(`Copy this link manually: ${url}`);
+      }
+    } catch {
+      toast.error("Couldn't copy automatically — try long-pressing the URL");
+    }
+  };
+
+  return (
+    <motion.button
+      whileTap={{ scale: 0.97 }}
+      onClick={handleCopy}
+      className="w-full rounded-2xl p-4 flex items-center justify-between"
+      style={{
+        background: copied
+          ? "linear-gradient(135deg, oklch(0.55 0.09 145 / 8%), oklch(1 0 0))"
+          : "linear-gradient(135deg, oklch(0.62 0.09 68 / 6%), oklch(1 0 0))",
+        border: copied
+          ? "1px solid oklch(0.55 0.09 145 / 30%)"
+          : "1px solid oklch(0.62 0.09 68 / 25%)",
+        boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)",
+      }}
+    >
+      <div className="text-left min-w-0 flex-1 pr-3">
+        <p className="text-sm font-semibold" style={{ color: "oklch(0.14 0.008 65)" }}>
+          Share client portal
+        </p>
+        <p className="text-[11px] mt-0.5 truncate" style={{ color: "oklch(0.52 0.010 68)" }}>
+          {copied ? "Link copied to clipboard" : "Read-only progress view — no login needed"}
+        </p>
+      </div>
+      <div
+        className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
+        style={{
+          background: copied ? "oklch(0.55 0.09 145 / 12%)" : "oklch(0.62 0.09 68 / 12%)",
+        }}
+      >
+        {copied ? (
+          <Check size={15} style={{ color: "oklch(0.38 0.09 145)" }} />
+        ) : (
+          <Share2 size={15} style={{ color: "oklch(0.52 0.09 68)" }} />
+        )}
+      </div>
+    </motion.button>
   );
 }

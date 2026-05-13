@@ -54,6 +54,8 @@ const CustomerDatabase = lazy(() => import("./pages/CustomerDatabase"));
 const CustomerDetail   = lazy(() => import("./pages/CustomerDetail"));
 const RemindersPage    = lazy(() => import("./pages/Reminders"));
 const PerformanceReport = lazy(() => import("./pages/PerformanceReport"));
+// Public — reachable without a Supabase Auth session via /portal/:token.
+const ClientPortal     = lazy(() => import("./pages/ClientPortal"));
 
 // Pages that show bottom nav
 const BOTTOM_NAV_PATHS = ["/", "/projects", "/company", "/calendar", "/profile"];
@@ -139,8 +141,12 @@ function AppLayout() {
 
 /**
  * AuthGate — splits the route tree:
- *   • /login + /auth/callback are public (anyone can reach them)
- *   • Everything else requires an authenticated staff session.
+ *   • /portal/:token         — purely public (client portal), no auth, no
+ *                              redirect to /login. Bypasses the entire auth
+ *                              state machine.
+ *   • /login + /auth/callback — public for unauthenticated visitors,
+ *                              redirect authed visitors to dashboard.
+ *   • Everything else        — requires an authenticated staff session.
  *
  * Unauthenticated visitors hitting a protected URL are bounced to /login.
  * Authenticated visitors hitting /login are bounced to the dashboard.
@@ -148,6 +154,19 @@ function AppLayout() {
 function AuthGate() {
   const [location, navigate] = useLocation();
   const { state } = useAuth();
+
+  // Client portal is FULLY public — short-circuit before any auth state
+  // matters, so the page loads immediately regardless of session status
+  // (no "loading" flicker, no redirects, no auth side effects).
+  if (location.startsWith("/portal/")) {
+    return (
+      <Suspense fallback={<RouteFallback />}>
+        <Switch>
+          <Route path="/portal/:token" component={ClientPortal} />
+        </Switch>
+      </Suspense>
+    );
+  }
 
   const isPublic = location === "/login" || location.startsWith("/auth/callback");
 

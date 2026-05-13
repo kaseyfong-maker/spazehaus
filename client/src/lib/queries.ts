@@ -84,6 +84,7 @@ export type Project = {
   description: string;
   currentStageId: string | null;
   lifecycleStartedAt: string | null;
+  clientAccessToken: string;   // UUID for the read-only /portal/:token route
 };
 
 export type PaymentRecord = {
@@ -177,6 +178,7 @@ function mapProject(row: ProjectWithStaffJoin): Project {
     description: row.description ?? "",
     currentStageId: row.current_stage_id,
     lifecycleStartedAt: row.lifecycle_started_at,
+    clientAccessToken: row.client_access_token,
   };
 }
 
