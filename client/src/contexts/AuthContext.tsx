@@ -47,10 +47,14 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 async function fetchStaffByEmail(email: string): Promise<StaffRow | null> {
+  // Use ilike for case-insensitive match — auth.users.email is always lowercased
+  // by Supabase but staff.email may have been seeded with mixed case.
+  // The DB-side auth trigger also uses lower(email) = lower(new.email), so this
+  // keeps the client lookup consistent with the linking logic.
   const { data, error } = await supabase
     .from("staff")
     .select("*")
-    .eq("email", email.toLowerCase())
+    .ilike("email", email)
     .maybeSingle();
   if (error) {
     console.warn("[auth] fetchStaffByEmail error:", error.message);
