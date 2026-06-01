@@ -41,8 +41,8 @@ export default function Profile() {
     <div className="mobile-container">
       {/* Hero header */}
       <div
-        className="relative pt-12 pb-6 px-4"
-        style={{ background: "linear-gradient(135deg, oklch(1 0 0) 0%, oklch(0.18 0.006 65) 100%)" }}
+        className="relative pt-12 pb-6 px-4 lg:pt-14 lg:pb-10"
+        style={{ background: "linear-gradient(135deg, oklch(0.23 0.018 65) 0%, oklch(0.12 0.006 285) 100%)" }}
       >
         <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg, transparent, oklch(0.72 0.09 68), transparent)" }} />
 
@@ -52,31 +52,33 @@ export default function Profile() {
             animate={{ scale: 1, opacity: 1 }}
             className="w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-bold mb-3"
             style={{
-              background: "linear-gradient(135deg, oklch(0.62 0.09 68 / 25%), oklch(0.55 0.08 65 / 20%))",
-              color: "oklch(0.52 0.09 68)",
-              border: "2px solid oklch(0.62 0.09 68 / 25%)",
+              background: "linear-gradient(135deg, oklch(0.62 0.09 68 / 35%), oklch(0.55 0.08 65 / 28%))",
+              color: "oklch(0.82 0.09 68)",
+              border: "2px solid oklch(0.72 0.09 68 / 35%)",
             }}
           >
             {staff.avatar_code}
           </motion.div>
-          <h2 className="font-display text-2xl font-semibold text-neutral-900">{staff.name}</h2>
-          <p className="text-sm mt-1" style={{ color: "oklch(0.52 0.09 68)" }}>{staff.job_title}</p>
-          <p className="text-xs mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>{staff.dept} Department · {staff.id}</p>
+          <h2 className="font-display text-2xl font-semibold text-white">{staff.name}</h2>
+          <p className="text-sm mt-1" style={{ color: "oklch(0.78 0.09 68)" }}>{staff.job_title}</p>
+          <p className="text-xs mt-0.5" style={{ color: "oklch(0.74 0.012 68)" }}>{staff.dept} Department · {staff.id}</p>
 
           {/* KPI badge */}
           {currentRating !== "—" && (
             <div
               className="mt-3 px-4 py-1.5 rounded-full flex items-center gap-2"
-              style={{ background: "oklch(0.62 0.09 68 / 12%)", border: "1px solid oklch(0.62 0.09 68 / 20%)" }}
+              style={{ background: "oklch(0.72 0.09 68 / 18%)", border: "1px solid oklch(0.72 0.09 68 / 30%)" }}
             >
-              <span className="text-xs font-label" style={{ color: "oklch(0.52 0.09 68)", letterSpacing: "0.04em" }}>KPI RATING</span>
-              <span className="text-sm font-display font-bold" style={{ color: "oklch(0.52 0.09 68)" }}>{currentRating}</span>
+              <span className="text-xs font-label" style={{ color: "oklch(0.82 0.09 68)", letterSpacing: "0.04em" }}>KPI RATING</span>
+              <span className="text-sm font-display font-bold" style={{ color: "oklch(0.82 0.09 68)" }}>{currentRating}</span>
             </div>
           )}
         </div>
       </div>
 
-      <div className="px-4 py-4 pb-24 space-y-5">
+      <div className="px-4 py-4 pb-24 space-y-5 lg:px-8 lg:py-7 lg:grid lg:grid-cols-2 lg:gap-6 lg:space-y-0 lg:items-start">
+        {/* Left column — identity & stats */}
+        <div className="space-y-5">
         {/* Contact info */}
         <div className="rounded-2xl p-4 space-y-2" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
           {[
@@ -105,7 +107,10 @@ export default function Profile() {
             </div>
           ))}
         </div>
+        </div>
 
+        {/* Right column — settings & account */}
+        <div className="space-y-5">
         {/* Settings menu */}
         <div className="rounded-2xl overflow-hidden" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
           {menuItems.map((item, i) => {
@@ -150,6 +155,7 @@ export default function Profile() {
         </motion.button>
 
         <p className="text-center text-[10px] font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.06em" }}>SPAZEHAUS MANAGEMENT APP v1.0.0</p>
+        </div>
       </div>
     </div>
   );
