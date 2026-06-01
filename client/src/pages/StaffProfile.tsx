@@ -46,9 +46,9 @@ export default function StaffProfile() {
     <div className="mobile-container">
       {/* Hero header with gradient */}
       <div
-        className="relative pt-12 pb-6 px-4"
+        className="relative pt-12 pb-6 px-4 lg:px-8"
         style={{
-          background: "linear-gradient(135deg, oklch(1 0 0) 0%, oklch(0.18 0.006 65) 100%)",
+          background: "linear-gradient(135deg, oklch(0.23 0.018 65) 0%, oklch(0.12 0.006 285) 100%)",
         }}
       >
         <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg, transparent, oklch(0.72 0.09 68), transparent)" }} />
@@ -57,9 +57,9 @@ export default function StaffProfile() {
             whileTap={{ scale: 0.9 }}
             onClick={() => window.history.back()}
             className="w-9 h-9 flex items-center justify-center rounded-full mr-2"
-            style={{ background: "oklch(0.90 0.010 75)", border: "1px solid oklch(0.90 0.010 75)" }}
+            style={{ background: "oklch(1 0 0 / 15%)", border: "1px solid oklch(1 0 0 / 20%)" }}
           >
-            <span style={{ color: "oklch(0.52 0.09 68)", fontSize: "18px" }}>‹</span>
+            <span style={{ color: "oklch(0.78 0.09 68)", fontSize: "18px" }}>‹</span>
           </motion.button>
         </div>
 
@@ -67,20 +67,20 @@ export default function StaffProfile() {
           <div
             className="w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-bold shrink-0"
             style={{
-              background: "linear-gradient(135deg, oklch(0.62 0.09 68 / 25%), oklch(0.55 0.08 65 / 20%))",
-              color: "oklch(0.52 0.09 68)",
-              border: "2px solid oklch(0.62 0.09 68 / 25%)",
+              background: "linear-gradient(135deg, oklch(0.62 0.09 68 / 35%), oklch(0.55 0.08 65 / 28%))",
+              color: "oklch(0.82 0.09 68)",
+              border: "2px solid oklch(0.72 0.09 68 / 35%)",
             }}
           >
             {staff.avatar_code}
           </div>
           <div>
-            <h2 className="font-display text-2xl font-semibold text-neutral-900">{staff.name}</h2>
-            <p className="text-sm mt-0.5" style={{ color: "oklch(0.52 0.09 68)" }}>{staff.job_title}</p>
+            <h2 className="font-display text-2xl font-semibold text-white">{staff.name}</h2>
+            <p className="text-sm mt-0.5" style={{ color: "oklch(0.78 0.09 68)" }}>{staff.job_title}</p>
             <div className="flex items-center gap-2 mt-2">
               <span className="status-pill" style={{ background: sc.bg, color: sc.color }}>{sc.label}</span>
               {currentRating !== "—" && (
-                <span className="text-xs font-label px-2 py-0.5 rounded-full" style={{ background: "oklch(0.62 0.09 68 / 10%)", color: "oklch(0.52 0.09 68)" }}>
+                <span className="text-xs font-label px-2 py-0.5 rounded-full" style={{ background: "oklch(0.72 0.09 68 / 18%)", color: "oklch(0.82 0.09 68)" }}>
                   KPI: {currentRating}
                 </span>
               )}

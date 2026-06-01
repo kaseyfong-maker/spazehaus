@@ -53,7 +53,7 @@ export default function QuotationList() {
     <div className="mobile-container">
       <AppHeader title="Quotations" subtitle="& INVOICES" showBack compact />
 
-      <div className="px-4 py-4 space-y-4 pb-24">
+      <div className="px-4 py-4 space-y-4 pb-24 lg:px-8 lg:py-7">
         {/* Summary cards */}
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-2xl p-4" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
@@ -125,7 +125,7 @@ export default function QuotationList() {
 
         {/* Quotation cards */}
         <AnimatePresence mode="popLayout">
-          <div className="space-y-3">
+          <div className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-3 lg:items-start">
             {filtered.length === 0 && (
               <div className="rounded-2xl p-8 text-center" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
                 <p className="text-sm" style={{ color: "oklch(0.52 0.010 68)" }}>No documents found</p>

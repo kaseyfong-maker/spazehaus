@@ -315,7 +315,7 @@ export default function QuotationDetail() {
 
       {/* Action bar */}
       <div
-        className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] px-4 py-4 space-y-2"
+        className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] px-4 py-4 space-y-2 lg:static lg:translate-x-0 lg:max-w-none"
         style={{ background: "oklch(0.985 0.004 80)", borderTop: "1px solid oklch(0.90 0.010 75)", backdropFilter: "blur(16px)" }}
       >
         {/* Status actions */}

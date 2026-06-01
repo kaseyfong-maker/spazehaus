@@ -55,7 +55,7 @@ export default function Recruitment() {
     <div className="mobile-container">
       <AppHeader title="Recruitment" subtitle="TALENT PIPELINE" showBack compact />
 
-      <div className="px-4 py-4 pb-24 space-y-4">
+      <div className="px-4 py-4 pb-24 space-y-4 lg:px-8 lg:py-7">
         {/* Pipeline summary */}
         <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4">
           {["All", ...stages].map((stage) => {
@@ -92,7 +92,7 @@ export default function Recruitment() {
 
         {/* Candidate cards */}
         <AnimatePresence mode="popLayout">
-          <div className="space-y-3">
+          <div className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-3 lg:items-start">
             {filtered.map((candidate, i) => {
               const sc = stageColors[candidate.stage] || stageColors.Sourced;
               return (

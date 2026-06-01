@@ -37,7 +37,7 @@ export default function StaffDirectory() {
     <div className="mobile-container">
       <AppHeader title="Staff Directory" subtitle="TEAM MEMBERS" showBack compact />
 
-      <div className="px-4 py-4 space-y-4 pb-24">
+      <div className="px-4 py-4 space-y-4 pb-24 lg:px-8 lg:py-7">
         {/* Search */}
         <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
           <Search size={14} style={{ color: "oklch(0.52 0.010 68)" }} />
@@ -78,7 +78,7 @@ export default function StaffDirectory() {
 
         {/* Staff list */}
         <AnimatePresence mode="popLayout">
-          <div className="space-y-2">
+          <div className="space-y-2 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-3 lg:items-start">
             {filtered.map((staff, i) => {
               const sc = statusConfig[staff.status as keyof typeof statusConfig];
               return (

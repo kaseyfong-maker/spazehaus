@@ -65,7 +65,7 @@ export default function Projects() {
     <div className="mobile-container" style={{ background: "oklch(0.985 0.004 80)" }}>
       <AppHeader title="Projects" subtitle="DESIGN PORTFOLIO" bgImage={HERO_BG} showNotification />
 
-      <div className="px-4 py-4 space-y-4 pb-24">
+      <div className="px-4 py-4 space-y-4 pb-24 lg:px-8 lg:py-7 lg:space-y-6">
         {/* Quotations + Checkpoints shortcuts (Phase 2) */}
         <div className="grid grid-cols-2 gap-2.5">
           <motion.button
@@ -225,7 +225,7 @@ export default function Projects() {
 
         {/* Project cards */}
         <AnimatePresence mode="popLayout">
-          <div className="space-y-3">
+          <div className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-3 lg:items-start">
             {filtered.map((project, i) => {
               const ls = lightStatus[project.status] || lightStatus["on-hold"];
               const pc = priorityConfig[project.priority as keyof typeof priorityConfig];
