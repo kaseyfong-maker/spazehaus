@@ -23,7 +23,7 @@ export default function Announcements() {
     <div className="mobile-container">
       <AppHeader title="Announcements" subtitle="COMPANY UPDATES" showBack compact />
 
-      <div className="px-4 py-4 pb-24 space-y-3">
+      <div className="px-4 py-4 pb-24 space-y-3 lg:px-8 lg:py-7 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-3 lg:items-start">
         {announcements.length === 0 && (
           <div className="rounded-2xl p-6 text-center" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
             <p className="text-sm" style={{ color: "oklch(0.52 0.010 68)" }}>No announcements yet</p>

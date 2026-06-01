@@ -153,10 +153,10 @@ export default function LeaveManagement() {
         ))}
       </div>
 
-      <div className="px-4 py-4 pb-24">
+      <div className="px-4 py-4 pb-24 lg:px-8 lg:py-7">
         <AnimatePresence mode="wait">
           {activeTab === "Pending" && (
-            <motion.div key="pending" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3">
+            <motion.div key="pending" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-3 lg:items-start">
               {pending.length === 0 ? (
                 <div className="rounded-2xl p-8 text-center" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
                   <p className="text-sm" style={{ color: "oklch(0.52 0.010 68)" }}>No pending approvals</p>
@@ -212,7 +212,7 @@ export default function LeaveManagement() {
           )}
 
           {activeTab === "All Requests" && (
-            <motion.div key="all" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-2">
+            <motion.div key="all" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-2 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-3 lg:items-start">
               {requests.map((req, i) => {
                 const sc = statusConfig[req.status as keyof typeof statusConfig];
                 return (

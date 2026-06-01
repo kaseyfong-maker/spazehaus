@@ -66,7 +66,7 @@ export default function KPIPerformance() {
     <div className="mobile-container">
       <AppHeader title="KPI & Performance" subtitle="MONTHLY REVIEW" showBack compact />
 
-      <div className="px-4 py-4 pb-24 space-y-5">
+      <div className="px-4 py-4 pb-24 space-y-5 lg:px-8 lg:py-7">
         {/* Summary cards */}
         <div className="grid grid-cols-3 gap-2">
           {[
@@ -110,7 +110,7 @@ export default function KPIPerformance() {
         {/* Staff KPI list */}
         <div>
           <p className="text-xs font-label mb-3" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.08em" }}>STAFF RATINGS — FEB 2026</p>
-          <div className="space-y-2">
+          <div className="space-y-2 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-3 lg:items-start">
             {staffMembers.map((staff, i) => {
               const ratingKey = rating(staff.id);
               const rc = ratingColors[ratingKey] || ratingColors.B;

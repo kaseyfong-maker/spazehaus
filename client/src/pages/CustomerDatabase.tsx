@@ -72,7 +72,7 @@ export default function CustomerDatabase() {
     <div className="mobile-container" style={{ background: "oklch(0.985 0.004 80)" }}>
       <AppHeader title="Customers" subtitle="DATABASE · CRM" bgImage={HERO_BG} showBack showNotification />
 
-      <div className="px-4 py-4 space-y-5 pb-24">
+      <div className="px-4 py-4 space-y-5 pb-24 lg:px-8 lg:py-7">
         {/* KPI strip */}
         <div className="grid grid-cols-2 gap-3">
           <KpiCard
@@ -249,7 +249,7 @@ export default function CustomerDatabase() {
             <p className="text-xs" style={{ color: "oklch(0.52 0.010 68)" }}>Try a different filter or search term</p>
           </div>
         ) : (
-          <div className="space-y-2.5">
+          <div className="space-y-2.5 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-3 lg:items-start">
             {filtered.map((inq, i) => {
               const sc = stageConfig[inq.stage];
               const cc = categoryConfig[inq.category];

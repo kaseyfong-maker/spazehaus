@@ -70,11 +70,11 @@ export default function Company() {
     <div className="mobile-container" style={{ background: "oklch(0.985 0.004 80)" }}>
       <AppHeader title="Company" subtitle="MANAGEMENT" bgImage={HERO_BG} showNotification />
 
-      <div className="px-4 py-4 space-y-5 pb-24">
+      <div className="px-4 py-4 space-y-5 pb-24 lg:px-8 lg:py-7 lg:space-y-8">
         {/* Department summary */}
         <div>
           <p className="sz-label mb-3">TEAM OVERVIEW</p>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-4 lg:grid-cols-5 gap-2 lg:gap-3">
             {Object.entries(byDept).map(([dept, count]) => {
               const dc = deptColors[dept] || { color: "oklch(0.42 0.09 68)", bg: "oklch(0.62 0.09 68 / 10%)" };
               return (
@@ -94,7 +94,7 @@ export default function Company() {
         {/* Module cards */}
         <div>
           <p className="sz-label mb-3">MODULES</p>
-          <div className="space-y-3">
+          <div className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-3">
             {modules.map((mod, i) => {
               const Icon = mod.icon;
               return (
@@ -105,7 +105,7 @@ export default function Company() {
                   transition={{ delay: i * 0.07 }}
                   whileTap={{ scale: 0.97 }}
                   onClick={() => navigate(mod.path)}
-                  className="w-full rounded-2xl p-4 flex items-center gap-4 text-left"
+                  className="relative w-full rounded-2xl p-4 flex items-center gap-4 text-left overflow-hidden"
                   style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
                 >
                   {/* Gold left accent bar */}
