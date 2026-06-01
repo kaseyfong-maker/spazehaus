@@ -133,7 +133,7 @@ export default function AuditLog() {
     <div className="mobile-container" style={{ background: "oklch(0.985 0.004 80)" }}>
       <AppHeader title="Audit Log" subtitle="SYSTEM ACTIVITY" bgImage={HERO_BG} showBack showNotification />
 
-      <div className="px-4 py-4 space-y-5 pb-24">
+      <div className="px-4 py-4 space-y-5 pb-24 lg:px-8 lg:py-7 lg:space-y-6">
         {/* Admin badge */}
         <div
           className="rounded-xl px-3 py-2 flex items-center gap-2"
@@ -167,9 +167,9 @@ export default function AuditLog() {
             </p>
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-2 lg:grid lg:grid-cols-2 lg:gap-x-6 lg:gap-y-3 lg:space-y-0">
             <FilterRow label="TABLE">
-              <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-3 px-3">
+              <div className="flex gap-1.5 overflow-x-auto pb-1 -mx-3 px-3 lg:mx-0 lg:px-0 lg:flex-wrap lg:overflow-visible lg:pb-0">
                 {TABLE_OPTIONS.map((opt) => (
                   <Chip
                     key={opt.value}
@@ -281,7 +281,7 @@ export default function AuditLog() {
           )}
 
           {!isLoading && entries.length > 0 && (
-            <div className="space-y-2">
+            <div className="space-y-2 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-2 lg:items-start xl:grid-cols-3">
               {entries.map((entry) => (
                 <AuditEventCard key={entry.id} entry={entry} />
               ))}
@@ -360,8 +360,9 @@ function AuditEventCard({ entry }: { entry: AuditEntry }) {
     >
       <button
         onClick={() => setExpanded((v) => !v)}
-        className="w-full px-3 py-3 flex items-start gap-3 text-left"
+        className="w-full px-3 py-3 flex items-start gap-3 text-left lg:items-center"
       >
+        {/* Action icon */}
         <div
           className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
           style={{ background: visual.bg, border: `1px solid ${visual.border}` }}
@@ -369,8 +370,10 @@ function AuditEventCard({ entry }: { entry: AuditEntry }) {
           <Icon size={14} style={{ color: visual.tint }} />
         </div>
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
+        {/* On mobile: stacked; on lg: flex row with fixed column widths */}
+        <div className="flex-1 min-w-0 lg:flex lg:items-center lg:gap-4">
+          {/* Action badge + table — fixed width column on lg */}
+          <div className="flex items-center gap-2 flex-wrap lg:flex-nowrap lg:w-36 lg:shrink-0">
             <span
               className="text-[9px] font-label px-1.5 py-0.5 rounded-md"
               style={{ background: visual.bg, color: visual.tint, border: `1px solid ${visual.border}`, letterSpacing: "0.04em", fontWeight: 700 }}
@@ -380,19 +383,26 @@ function AuditEventCard({ entry }: { entry: AuditEntry }) {
             <span className="text-[10px] font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.04em" }}>
               {tableLabel.toUpperCase()}
             </span>
-            <span className="text-[10px]" style={{ color: "oklch(0.52 0.010 68)" }}>· {rel}</span>
           </div>
-          <p className="text-sm font-semibold mt-1 leading-snug" style={{ color: "oklch(0.14 0.008 65)" }}>
+
+          {/* Summary — flex-grows to fill available space */}
+          <p className="text-sm font-semibold mt-1 leading-snug lg:mt-0 lg:flex-1 lg:min-w-0 lg:truncate" style={{ color: "oklch(0.14 0.008 65)" }}>
             {summary}
           </p>
-          <div className="flex items-center gap-2 mt-1 flex-wrap">
+
+          {/* Row ID + actor + timestamp — right-aligned metadata on lg */}
+          <div className="flex items-center gap-2 mt-1 flex-wrap lg:mt-0 lg:flex-nowrap lg:shrink-0 lg:gap-3">
             <span className="text-[10px]" style={{ color: "oklch(0.55 0.008 65)" }}>
               {entry.row_id || "—"}
             </span>
-            <span className="text-[10px]" style={{ color: "oklch(0.55 0.008 65)" }}>·</span>
+            <span className="text-[10px] hidden lg:inline" style={{ color: "oklch(0.75 0.008 68)" }}>·</span>
             <span className="text-[10px]" style={{ color: "oklch(0.55 0.008 65)" }}>
-              by {entry.actor?.name ?? (entry.changed_by ? "Unknown user" : "System")}
+              {entry.actor?.name ?? (entry.changed_by ? "Unknown user" : "System")}
             </span>
+            <span className="text-[10px] hidden lg:inline" style={{ color: "oklch(0.75 0.008 68)" }}>·</span>
+            <span className="text-[10px] hidden lg:inline" style={{ color: "oklch(0.55 0.008 65)" }}>{rel}</span>
+            {/* Mobile: show rel inline */}
+            <span className="text-[10px] lg:hidden" style={{ color: "oklch(0.52 0.010 68)" }}>· {rel}</span>
           </div>
         </div>
 

@@ -85,7 +85,7 @@ export default function CustomerDetail() {
 
       <div className="pb-24">
         {/* Hero card */}
-        <div className="px-4 pt-4">
+        <div className="px-4 pt-4 lg:px-8 lg:pt-7">
           <div
             className="rounded-2xl p-4 flex items-center gap-3"
             style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 12px oklch(0 0 0 / 0.04)" }}
@@ -137,7 +137,11 @@ export default function CustomerDetail() {
           </div>
         </div>
 
-        <div className="px-4 py-4 space-y-4">
+        {/* Two-column layout on lg+: primary (left) + side rail (right) */}
+        <div className="px-4 py-4 space-y-4 lg:px-8 lg:py-6 lg:space-y-0 lg:grid lg:grid-cols-[1fr_360px] lg:gap-6 lg:items-start">
+
+          {/* PRIMARY COLUMN */}
+          <div className="space-y-4 lg:space-y-6">
           {/* Pipeline timeline */}
           <SectionCard title="PIPELINE STAGE">
             {isRejected ? (
@@ -272,6 +276,66 @@ export default function CustomerDetail() {
             </motion.button>
           )}
 
+          {/* Contact log timeline */}
+          {inq.contactLog && inq.contactLog.length > 0 && (
+            <SectionCard title={`CONTACT LOG (${inq.contactLog.length})`}>
+              <div className="space-y-3">
+                {inq.contactLog.slice().reverse().map((entry, i) => {
+                  const cfg = contactIconConfig[entry.type];
+                  const Icon = cfg.icon;
+                  return (
+                    <div key={i} className="flex gap-3">
+                      <div className="flex flex-col items-center shrink-0">
+                        <div
+                          className="w-7 h-7 rounded-lg flex items-center justify-center"
+                          style={{ background: cfg.bg }}
+                        >
+                          <Icon size={12} style={{ color: cfg.color }} />
+                        </div>
+                        {i < inq.contactLog!.length - 1 && (
+                          <div
+                            className="w-0.5 flex-1 mt-1"
+                            style={{ background: "oklch(0.92 0.008 75)", minHeight: 16 }}
+                          />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0 pb-1">
+                        <div className="flex items-center justify-between gap-2 mb-0.5">
+                          <span
+                            className="text-[10px] font-label"
+                            style={{ color: cfg.color, letterSpacing: "0.06em", fontWeight: 700 }}
+                          >
+                            {entry.type.toUpperCase().replace("-", " ")}
+                          </span>
+                          <span className="text-[10px]" style={{ color: "oklch(0.55 0.008 65)" }}>
+                            {entry.date} · {entry.by}
+                          </span>
+                        </div>
+                        <p className="text-[12px] leading-snug" style={{ color: "oklch(0.30 0.008 65)" }}>
+                          {entry.note}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </SectionCard>
+          )}
+
+          {/* Notes */}
+          {inq.notes && (
+            <SectionCard title="NOTES">
+              <p className="text-sm leading-relaxed" style={{ color: "oklch(0.30 0.008 65)" }}>
+                {inq.notes}
+              </p>
+            </SectionCard>
+          )}
+          </div>
+          {/* END PRIMARY COLUMN */}
+
+          {/* SECONDARY RAIL — contact, opportunity, actions (stacked on mobile, right rail on lg+) */}
+          <div className="space-y-4 lg:space-y-6">
+
           {/* Contact info */}
           <SectionCard title="CONTACT">
             <ContactRow icon={Phone} label="Phone" value={inq.contact ?? "—"} onClick={() => toast.info(`Calling ${inq.client}…`)} />
@@ -324,61 +388,6 @@ export default function CustomerDetail() {
             <DetailRow icon={MapPin} label="Source" value={inq.source} />
           </SectionCard>
 
-          {/* Notes */}
-          {inq.notes && (
-            <SectionCard title="NOTES">
-              <p className="text-sm leading-relaxed" style={{ color: "oklch(0.30 0.008 65)" }}>
-                {inq.notes}
-              </p>
-            </SectionCard>
-          )}
-
-          {/* Contact log timeline */}
-          {inq.contactLog && inq.contactLog.length > 0 && (
-            <SectionCard title={`CONTACT LOG (${inq.contactLog.length})`}>
-              <div className="space-y-3">
-                {inq.contactLog.slice().reverse().map((entry, i) => {
-                  const cfg = contactIconConfig[entry.type];
-                  const Icon = cfg.icon;
-                  return (
-                    <div key={i} className="flex gap-3">
-                      <div className="flex flex-col items-center shrink-0">
-                        <div
-                          className="w-7 h-7 rounded-lg flex items-center justify-center"
-                          style={{ background: cfg.bg }}
-                        >
-                          <Icon size={12} style={{ color: cfg.color }} />
-                        </div>
-                        {i < inq.contactLog!.length - 1 && (
-                          <div
-                            className="w-0.5 flex-1 mt-1"
-                            style={{ background: "oklch(0.92 0.008 75)", minHeight: 16 }}
-                          />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0 pb-1">
-                        <div className="flex items-center justify-between gap-2 mb-0.5">
-                          <span
-                            className="text-[10px] font-label"
-                            style={{ color: cfg.color, letterSpacing: "0.06em", fontWeight: 700 }}
-                          >
-                            {entry.type.toUpperCase().replace("-", " ")}
-                          </span>
-                          <span className="text-[10px]" style={{ color: "oklch(0.55 0.008 65)" }}>
-                            {entry.date} · {entry.by}
-                          </span>
-                        </div>
-                        <p className="text-[12px] leading-snug" style={{ color: "oklch(0.30 0.008 65)" }}>
-                          {entry.note}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </SectionCard>
-          )}
-
           {/* Convert to Project — primary CTA when inquiry is in pipeline */}
           {(inq.stage === "new-inquiry" || inq.stage === "showroom-meet") && (
             <motion.button
@@ -405,7 +414,11 @@ export default function CustomerDetail() {
               <ActionButton icon={Mail} label="Email" onClick={() => toast.info(`Email to ${inq.client}…`)} />
             </div>
           )}
+          </div>
+          {/* END SECONDARY RAIL */}
+
         </div>
+        {/* END TWO-COLUMN GRID */}
       </div>
 
       {/* Conversion modal */}

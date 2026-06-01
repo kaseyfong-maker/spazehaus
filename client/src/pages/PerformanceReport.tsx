@@ -71,7 +71,7 @@ export default function PerformanceReport() {
     <div className="mobile-container" style={{ background: "oklch(0.985 0.004 80)" }}>
       <AppHeader title="Performance" subtitle="REPORT · TARGETS" bgImage={HERO_BG} showBack showNotification />
 
-      <div className="px-4 py-4 space-y-5 pb-24">
+      <div className="px-4 py-4 space-y-5 pb-24 lg:px-8 lg:py-7 lg:space-y-6">
         {/* View toggle */}
         <div
           className="flex rounded-xl p-1"
@@ -149,7 +149,7 @@ function TeamView({
   return (
     <>
       {/* Company KPI strip */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <KpiCard
           icon={TrendingUp}
           label="YTD Revenue"
@@ -186,50 +186,53 @@ function TeamView({
         />
       </div>
 
-      {/* Cash flow snapshot */}
-      <div
-        className="rounded-2xl p-4"
-        style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
-      >
-        <p className="font-label text-xs mb-3" style={{ color: "oklch(0.20 0.008 65)", letterSpacing: "0.10em", fontWeight: 700 }}>
-          CASH FLOW
-        </p>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <p className="text-[10px] font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.06em" }}>INVOICED</p>
-            <p className="font-display text-base font-semibold" style={{ color: "oklch(0.42 0.09 68)" }}>
-              {formatRM(company.invoicedRM)}
-            </p>
+      {/* Cash flow + Leaderboard — side-by-side on desktop */}
+      <div className="space-y-5 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-3 lg:items-start">
+        {/* Cash flow snapshot */}
+        <div
+          className="rounded-2xl p-4"
+          style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
+        >
+          <p className="font-label text-xs mb-3" style={{ color: "oklch(0.20 0.008 65)", letterSpacing: "0.10em", fontWeight: 700 }}>
+            CASH FLOW
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <p className="text-[10px] font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.06em" }}>INVOICED</p>
+              <p className="font-display text-base font-semibold" style={{ color: "oklch(0.42 0.09 68)" }}>
+                {formatRM(company.invoicedRM)}
+              </p>
+            </div>
+            <div>
+              <p className="text-[10px] font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.06em" }}>COLLECTED</p>
+              <p className="font-display text-base font-semibold" style={{ color: "oklch(0.38 0.09 145)" }}>
+                {formatRM(company.collectedRM)}
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-[10px] font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.06em" }}>COLLECTED</p>
-            <p className="font-display text-base font-semibold" style={{ color: "oklch(0.38 0.09 145)" }}>
-              {formatRM(company.collectedRM)}
-            </p>
+          <div className="mt-2.5 h-2 rounded-full overflow-hidden" style={{ background: "oklch(0.92 0.008 75)" }}>
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${company.invoicedRM === 0 ? 0 : (company.collectedRM / company.invoicedRM) * 100}%` }}
+              transition={{ duration: 1 }}
+              className="h-full rounded-full"
+              style={{ background: "linear-gradient(90deg, oklch(0.55 0.09 145), oklch(0.65 0.09 145))" }}
+            />
           </div>
+          <p className="text-[10px] mt-1.5" style={{ color: "oklch(0.52 0.010 68)" }}>
+            {company.invoicedRM === 0 ? 0 : ((company.collectedRM / company.invoicedRM) * 100).toFixed(0)}% of invoiced is in the bank
+          </p>
         </div>
-        <div className="mt-2.5 h-2 rounded-full overflow-hidden" style={{ background: "oklch(0.92 0.008 75)" }}>
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: `${company.invoicedRM === 0 ? 0 : (company.collectedRM / company.invoicedRM) * 100}%` }}
-            transition={{ duration: 1 }}
-            className="h-full rounded-full"
-            style={{ background: "linear-gradient(90deg, oklch(0.55 0.09 145), oklch(0.65 0.09 145))" }}
-          />
-        </div>
-        <p className="text-[10px] mt-1.5" style={{ color: "oklch(0.52 0.010 68)" }}>
-          {company.invoicedRM === 0 ? 0 : ((company.collectedRM / company.invoicedRM) * 100).toFixed(0)}% of invoiced is in the bank
-        </p>
-      </div>
 
-      {/* Sales leaderboard */}
-      <Section title="SALES LEADERBOARD" subtitle="YTD awarded vs target">
-        <div className="space-y-3">
-          {team.map((p, i) => (
-            <StaffRow key={p.staffId} perf={p} rank={i + 1} />
-          ))}
-        </div>
-      </Section>
+        {/* Sales leaderboard */}
+        <Section title="SALES LEADERBOARD" subtitle="YTD awarded vs target">
+          <div className="space-y-3">
+            {team.map((p, i) => (
+              <StaffRow key={p.staffId} perf={p} rank={i + 1} />
+            ))}
+          </div>
+        </Section>
+      </div>
     </>
   );
 }
@@ -288,50 +291,56 @@ function PersonalView({ staff }: { staff: StaffPerformance | undefined }) {
         )}
       </div>
 
-      {/* Big gauges — YTD + Month */}
-      <div className="grid grid-cols-2 gap-3">
-        <Gauge
-          label="YTD ACHIEVEMENT"
-          pct={ytdAch}
-          primary={formatRMCompact(staff.awardedYTD)}
-          secondary={`/ ${formatRMCompact(staff.ytdTarget)}`}
-        />
-        <Gauge
-          label="THIS MONTH"
-          pct={monthAch}
-          primary={formatRMCompact(staff.awardedThisMonth)}
-          secondary={`/ ${formatRMCompact(staff.monthlyTarget)}`}
-        />
-      </div>
+      {/* Gauges + stats + variance — two-column on desktop */}
+      <div className="space-y-4 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-3 lg:items-start">
+        {/* Left col: gauges + stats */}
+        <div className="space-y-3">
+          {/* Big gauges — YTD + Month */}
+          <div className="grid grid-cols-2 gap-3">
+            <Gauge
+              label="YTD ACHIEVEMENT"
+              pct={ytdAch}
+              primary={formatRMCompact(staff.awardedYTD)}
+              secondary={`/ ${formatRMCompact(staff.ytdTarget)}`}
+            />
+            <Gauge
+              label="THIS MONTH"
+              pct={monthAch}
+              primary={formatRMCompact(staff.awardedThisMonth)}
+              secondary={`/ ${formatRMCompact(staff.monthlyTarget)}`}
+            />
+          </div>
 
-      {/* Stats row */}
-      <div className="grid grid-cols-3 gap-2">
-        <MiniStat icon={Award} label="DEALS WON" value={String(staff.awardedCount)} tint="oklch(0.38 0.09 145)" />
-        <MiniStat icon={Briefcase} label="PIPELINE" value={String(staff.pipelineCount)} sub={formatRMCompact(staff.pipelineRM)} tint="oklch(0.38 0.09 240)" />
-        <MiniStat icon={Coins} label="GP @ TARGET" value={formatRMCompact(staff.projectedGP)} sub={`${staff.gpTargetPct}%`} tint="oklch(0.42 0.09 68)" />
-      </div>
+          {/* Stats row */}
+          <div className="grid grid-cols-3 gap-2">
+            <MiniStat icon={Award} label="DEALS WON" value={String(staff.awardedCount)} tint="oklch(0.38 0.09 145)" />
+            <MiniStat icon={Briefcase} label="PIPELINE" value={String(staff.pipelineCount)} sub={formatRMCompact(staff.pipelineRM)} tint="oklch(0.38 0.09 240)" />
+            <MiniStat icon={Coins} label="GP @ TARGET" value={formatRMCompact(staff.projectedGP)} sub={`${staff.gpTargetPct}%`} tint="oklch(0.42 0.09 68)" />
+          </div>
+        </div>
 
-      {/* Variance summary */}
-      <div
-        className="rounded-2xl p-4"
-        style={{
-          background: ytdAch >= 1 ? "oklch(0.55 0.09 145 / 6%)" : ytdAch >= 0.7 ? "oklch(0.65 0.10 55 / 6%)" : "oklch(0.60 0.12 25 / 6%)",
-          border: `1px solid ${ytdAch >= 1 ? "oklch(0.55 0.09 145 / 30%)" : ytdAch >= 0.7 ? "oklch(0.65 0.10 55 / 30%)" : "oklch(0.60 0.12 25 / 30%)"}`,
-        }}
-      >
-        <p className="font-label text-xs mb-2" style={{ color: "oklch(0.20 0.008 65)", letterSpacing: "0.10em", fontWeight: 700 }}>
-          VARIANCE TO TARGET
-        </p>
-        <p className="text-sm font-semibold" style={{ color: "oklch(0.20 0.008 65)" }}>
-          {ytdAch >= 1
-            ? `On track — exceeded YTD by ${formatRMCompact(staff.awardedYTD - staff.ytdTarget)} (${((ytdAch - 1) * 100).toFixed(0)}%)`
-            : ytdAch >= 0.7
-            ? `Behind by ${formatRMCompact(staff.ytdTarget - staff.awardedYTD)} — recoverable with current pipeline`
-            : `Significantly behind — ${formatRMCompact(staff.ytdTarget - staff.awardedYTD)} gap to close`}
-        </p>
-        <p className="text-[11px] mt-1" style={{ color: "oklch(0.52 0.010 68)" }}>
-          Pipeline coverage: {staff.ytdTarget === 0 ? "—" : `${((staff.pipelineRM / Math.max(staff.ytdTarget - staff.awardedYTD, 1)) * 100).toFixed(0)}% of remaining gap`}
-        </p>
+        {/* Right col: variance summary */}
+        <div
+          className="rounded-2xl p-4"
+          style={{
+            background: ytdAch >= 1 ? "oklch(0.55 0.09 145 / 6%)" : ytdAch >= 0.7 ? "oklch(0.65 0.10 55 / 6%)" : "oklch(0.60 0.12 25 / 6%)",
+            border: `1px solid ${ytdAch >= 1 ? "oklch(0.55 0.09 145 / 30%)" : ytdAch >= 0.7 ? "oklch(0.65 0.10 55 / 30%)" : "oklch(0.60 0.12 25 / 30%)"}`,
+          }}
+        >
+          <p className="font-label text-xs mb-2" style={{ color: "oklch(0.20 0.008 65)", letterSpacing: "0.10em", fontWeight: 700 }}>
+            VARIANCE TO TARGET
+          </p>
+          <p className="text-sm font-semibold" style={{ color: "oklch(0.20 0.008 65)" }}>
+            {ytdAch >= 1
+              ? `On track — exceeded YTD by ${formatRMCompact(staff.awardedYTD - staff.ytdTarget)} (${((ytdAch - 1) * 100).toFixed(0)}%)`
+              : ytdAch >= 0.7
+              ? `Behind by ${formatRMCompact(staff.ytdTarget - staff.awardedYTD)} — recoverable with current pipeline`
+              : `Significantly behind — ${formatRMCompact(staff.ytdTarget - staff.awardedYTD)} gap to close`}
+          </p>
+          <p className="text-[11px] mt-1" style={{ color: "oklch(0.52 0.010 68)" }}>
+            Pipeline coverage: {staff.ytdTarget === 0 ? "—" : `${((staff.pipelineRM / Math.max(staff.ytdTarget - staff.awardedYTD, 1)) * 100).toFixed(0)}% of remaining gap`}
+          </p>
+        </div>
       </div>
     </>
   );

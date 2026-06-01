@@ -78,9 +78,9 @@ export default function Checkpoints() {
     <div className="mobile-container" style={{ background: "oklch(0.985 0.004 80)" }}>
       <AppHeader title="Checkpoints" subtitle="IMPORTANT · SOP" bgImage={HERO_BG} showBack showNotification />
 
-      <div className="px-4 py-4 space-y-5 pb-24">
+      <div className="px-4 py-4 space-y-5 pb-24 lg:px-8 lg:py-7 lg:space-y-6">
         {/* KPI strip */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <KpiCard
             icon={Coins}
             label="Outstanding"
@@ -143,112 +143,116 @@ export default function Checkpoints() {
 
         {/* Payment Collection sections */}
         {(filter === "All" || filter === "Payments") && (
-          <div className="space-y-4">
+          <div className="space-y-4 lg:space-y-6">
             <SectionHeader icon={Coins} title="PAYMENT COLLECTION" subtitle="5-gate SOP across all projects" />
 
             {paymentsByBucket.length === 0 ? (
               <EmptyCard icon={Coins} title="All payments collected" subtitle="No open invoices across any project" />
             ) : (
-              paymentsByBucket.map((group) => {
-                const tone = bucketTone[group.bucket];
-                return (
-                  <div key={group.bucket}>
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="h-0.5 w-5 rounded-full" style={{ background: tone.color, opacity: 0.6 }} />
-                      <p className="font-label text-[10px]" style={{ color: tone.color, letterSpacing: "0.12em" }}>
-                        {bucketLabel[group.bucket]} ({group.rows.length})
-                      </p>
-                      <div className="flex-1 h-px" style={{ background: "oklch(0.92 0.008 75)" }} />
+              <div className="space-y-4 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-3 lg:items-start">
+                {paymentsByBucket.map((group) => {
+                  const tone = bucketTone[group.bucket];
+                  return (
+                    <div key={group.bucket}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="h-0.5 w-5 rounded-full" style={{ background: tone.color, opacity: 0.6 }} />
+                        <p className="font-label text-[10px]" style={{ color: tone.color, letterSpacing: "0.12em" }}>
+                          {bucketLabel[group.bucket]} ({group.rows.length})
+                        </p>
+                        <div className="flex-1 h-px" style={{ background: "oklch(0.92 0.008 75)" }} />
+                      </div>
+                      <div
+                        className="rounded-2xl overflow-hidden"
+                        style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
+                      >
+                        {group.rows.map((row, i) => (
+                          <PaymentItem
+                            key={`${row.projectId}-${row.gate}-${i}`}
+                            row={row}
+                            isLast={i === group.rows.length - 1}
+                            canCollect={canCollect}
+                            onClick={() => navigate(`/projects/${row.projectId}?tab=Lifecycle`)}
+                            onCollect={() =>
+                              setCollectTarget({
+                                id: row.id,
+                                projectId: row.projectId,
+                                projectName: row.projectName,
+                                label: row.label,
+                                amount: row.amount,
+                                gate: row.gate,
+                                reference: row.reference,
+                                notes: row.notes,
+                              })
+                            }
+                          />
+                        ))}
+                      </div>
                     </div>
-                    <div
-                      className="rounded-2xl overflow-hidden"
-                      style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
-                    >
-                      {group.rows.map((row, i) => (
-                        <PaymentItem
-                          key={`${row.projectId}-${row.gate}-${i}`}
-                          row={row}
-                          isLast={i === group.rows.length - 1}
-                          canCollect={canCollect}
-                          onClick={() => navigate(`/projects/${row.projectId}?tab=Lifecycle`)}
-                          onCollect={() =>
-                            setCollectTarget({
-                              id: row.id,
-                              projectId: row.projectId,
-                              projectName: row.projectName,
-                              label: row.label,
-                              amount: row.amount,
-                              gate: row.gate,
-                              reference: row.reference,
-                              notes: row.notes,
-                            })
-                          }
-                        />
-                      ))}
-                    </div>
-                  </div>
-                );
-              })
+                  );
+                })}
+              </div>
             )}
           </div>
         )}
 
         {/* Document Sign sections */}
         {(filter === "All" || filter === "Documents") && (
-          <div className="space-y-4">
+          <div className="space-y-4 lg:space-y-6">
             <SectionHeader icon={PenSquare} title="DOCUMENT SIGN" subtitle="6-checkpoint SOP — 3 contracts + 3 drawings" />
 
-            <SignatureGroup
-              title="CONTRACT SIGNS"
-              icon={FileText}
-              tint="oklch(0.50 0.10 25)"
-              tintBg="oklch(0.60 0.10 25 / 12%)"
-              rows={contracts}
-              canSign={canSign}
-              onRowClick={(r) => navigate(`/projects/${r.projectId}?tab=Lifecycle`)}
-              onSign={(r) =>
-                setSignTarget({
-                  id: r.id,
-                  projectId: r.projectId,
-                  projectName: r.projectName,
-                  signatureKey: r.key,
-                  label: r.label,
-                  group: r.group,
-                  status: r.status,
-                  documentRef: r.documentRef,
-                  signedDate: r.signedDate,
-                  signedBy: r.signedBy,
-                  notes: r.notes,
-                  defaultSignedBy: r.client,
-                })
-              }
-            />
+            <div className="space-y-4 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-3 lg:items-start">
+              <SignatureGroup
+                title="CONTRACT SIGNS"
+                icon={FileText}
+                tint="oklch(0.50 0.10 25)"
+                tintBg="oklch(0.60 0.10 25 / 12%)"
+                rows={contracts}
+                canSign={canSign}
+                onRowClick={(r) => navigate(`/projects/${r.projectId}?tab=Lifecycle`)}
+                onSign={(r) =>
+                  setSignTarget({
+                    id: r.id,
+                    projectId: r.projectId,
+                    projectName: r.projectName,
+                    signatureKey: r.key,
+                    label: r.label,
+                    group: r.group,
+                    status: r.status,
+                    documentRef: r.documentRef,
+                    signedDate: r.signedDate,
+                    signedBy: r.signedBy,
+                    notes: r.notes,
+                    defaultSignedBy: r.client,
+                  })
+                }
+              />
 
-            <SignatureGroup
-              title="DRAWING SIGN-OFFS"
-              icon={Receipt}
-              tint="oklch(0.38 0.09 240)"
-              tintBg="oklch(0.55 0.09 240 / 12%)"
-              rows={drawings}
-              canSign={canSign}
-              onRowClick={(r) => navigate(`/projects/${r.projectId}?tab=Lifecycle`)}
-              onSign={(r) =>
-                setSignTarget({
-                  id: r.id,
-                  projectId: r.projectId,
-                  projectName: r.projectName,
-                  signatureKey: r.key,
-                  label: r.label,
-                  group: r.group,
-                  status: r.status,
-                  documentRef: r.documentRef,
-                  signedDate: r.signedDate,
-                  signedBy: r.signedBy,
-                  notes: r.notes,
-                  defaultSignedBy: r.client,
-                })
-              }
-            />
+              <SignatureGroup
+                title="DRAWING SIGN-OFFS"
+                icon={Receipt}
+                tint="oklch(0.38 0.09 240)"
+                tintBg="oklch(0.55 0.09 240 / 12%)"
+                rows={drawings}
+                canSign={canSign}
+                onRowClick={(r) => navigate(`/projects/${r.projectId}?tab=Lifecycle`)}
+                onSign={(r) =>
+                  setSignTarget({
+                    id: r.id,
+                    projectId: r.projectId,
+                    projectName: r.projectName,
+                    signatureKey: r.key,
+                    label: r.label,
+                    group: r.group,
+                    status: r.status,
+                    documentRef: r.documentRef,
+                    signedDate: r.signedDate,
+                    signedBy: r.signedBy,
+                    notes: r.notes,
+                    defaultSignedBy: r.client,
+                  })
+                }
+              />
+            </div>
           </div>
         )}
 

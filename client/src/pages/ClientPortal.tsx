@@ -81,7 +81,7 @@ export default function ClientPortal() {
   return (
     <Frame>
       <HeroBanner project={data.project} />
-      <div className="px-4 py-5 space-y-6 pb-24">
+      <div className="px-4 py-5 space-y-6 pb-24 lg:px-8 lg:py-7 lg:space-y-8">
         <ProjectMetaCard project={data.project} />
         <ProgressSection project={data.project} lifecycle={data.lifecycle} />
         <PaymentsSection payments={data.payments} budget={data.project.budget} />
@@ -99,11 +99,11 @@ export default function ClientPortal() {
 function Frame({ children }: { children: React.ReactNode }) {
   return (
     <div
-      className="min-h-screen flex items-center justify-center"
+      className="min-h-screen flex items-start justify-center lg:py-8"
       style={{ background: "oklch(0.93 0.008 75)" }}
     >
       <div
-        className="w-full max-w-[430px] min-h-screen relative"
+        className="w-full max-w-[430px] min-h-screen relative lg:max-w-[900px] xl:max-w-[1100px] lg:min-h-0 lg:rounded-2xl lg:overflow-hidden lg:shadow-xl"
         style={{ background: "oklch(0.985 0.004 80)" }}
       >
         {children}
@@ -115,7 +115,7 @@ function Frame({ children }: { children: React.ReactNode }) {
 function HeroBanner({ project }: { project: ClientPortalData["project"] }) {
   return (
     <div
-      className="relative h-44 flex flex-col justify-end px-5 py-4"
+      className="relative h-44 flex flex-col justify-end px-5 py-4 lg:h-64 lg:px-8 lg:py-7"
       style={{
         backgroundImage: `linear-gradient(180deg, oklch(0.14 0.008 65 / 30%), oklch(0.14 0.008 65 / 85%)), url(${HERO_BG})`,
         backgroundSize: "cover",
@@ -129,7 +129,7 @@ function HeroBanner({ project }: { project: ClientPortalData["project"] }) {
         SPAZEHAUS · CLIENT PORTAL
       </p>
       <h1
-        className="font-display text-2xl font-semibold leading-tight"
+        className="font-display text-2xl font-semibold leading-tight lg:text-4xl"
         style={{ color: "oklch(1 0 0)" }}
       >
         {project.name}
@@ -145,49 +145,51 @@ function ProjectMetaCard({ project }: { project: ClientPortalData["project"] }) 
   return (
     <Section title="PROJECT" icon={Building2}>
       <div
-        className="rounded-2xl p-4 space-y-3"
+        className="rounded-2xl p-4 space-y-3 lg:p-5"
         style={{
           background: "oklch(1 0 0)",
           border: "1px solid oklch(0.90 0.010 75)",
           boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)",
         }}
       >
-        <MetaRow
-          icon={MapPin}
-          label="Location"
-          value={project.location}
-        />
-        <MetaRow
-          icon={Calendar}
-          label="Schedule"
-          value={`${formatDate(project.start_date)} → ${
-            project.target_date ? formatDate(project.target_date) : "TBD"
-          }`}
-        />
-        <MetaRow
-          icon={User}
-          label="Designer"
-          value={project.designer_name}
-        />
-        <MetaRow
-          icon={User}
-          label="Project Manager"
-          value={project.pm_name}
-        />
-        {project.size_sqft ? (
+        <div className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-x-6 lg:gap-y-4">
           <MetaRow
-            icon={Building2}
-            label="Floor area"
-            value={`${project.size_sqft.toLocaleString()} sqft`}
+            icon={MapPin}
+            label="Location"
+            value={project.location}
           />
-        ) : null}
-        {project.budget ? (
           <MetaRow
-            icon={Receipt}
-            label="Contract value"
-            value={`RM ${project.budget.toLocaleString("en-MY")}`}
+            icon={Calendar}
+            label="Schedule"
+            value={`${formatDate(project.start_date)} → ${
+              project.target_date ? formatDate(project.target_date) : "TBD"
+            }`}
           />
-        ) : null}
+          <MetaRow
+            icon={User}
+            label="Designer"
+            value={project.designer_name}
+          />
+          <MetaRow
+            icon={User}
+            label="Project Manager"
+            value={project.pm_name}
+          />
+          {project.size_sqft ? (
+            <MetaRow
+              icon={Building2}
+              label="Floor area"
+              value={`${project.size_sqft.toLocaleString()} sqft`}
+            />
+          ) : null}
+          {project.budget ? (
+            <MetaRow
+              icon={Receipt}
+              label="Contract value"
+              value={`RM ${project.budget.toLocaleString("en-MY")}`}
+            />
+          ) : null}
+        </div>
         {project.description ? (
           <div className="pt-2 mt-1" style={{ borderTop: "1px solid oklch(0.93 0.008 75)" }}>
             <p className="text-[10px] font-label mb-1" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.08em", fontWeight: 700 }}>
@@ -217,9 +219,10 @@ function ProgressSection({
 
   return (
     <Section title="PROGRESS" icon={CheckCircle2}>
+      <div className="lg:flex lg:gap-4 lg:items-start">
       {/* Progress meter */}
       <div
-        className="rounded-2xl p-4 mb-3"
+        className="rounded-2xl p-4 mb-3 lg:mb-0 lg:w-56 lg:shrink-0"
         style={{
           background: "oklch(1 0 0)",
           border: "1px solid oklch(0.90 0.010 75)",
@@ -261,7 +264,7 @@ function ProgressSection({
       </div>
 
       {/* Phase timeline */}
-      <div className="space-y-2">
+      <div className="space-y-2 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-2 lg:items-start">
         {phases.map((p) => {
           const phaseDone = p.stages.every((s) => s.order_index < currentOrder);
           const phaseActive = p.stages.some((s) => s.order_index === currentOrder);
@@ -321,6 +324,7 @@ function ProgressSection({
           );
         })}
       </div>
+      </div>
     </Section>
   );
 }
@@ -367,7 +371,7 @@ function PaymentsSection({
           />
         </div>
       </div>
-      <div className="space-y-2">
+      <div className="space-y-2 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-2 lg:items-start">
         {payments.map((p) => (
           <PaymentRow key={p.id} payment={p} />
         ))}
@@ -463,7 +467,7 @@ function SignaturesSection({
           Your designer will reach out when each document is ready to sign.
         </p>
       </div>
-      <div className="space-y-2">
+      <div className="space-y-2 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-2 lg:items-start">
         {signatures.map((s) => (
           <SignatureRow key={s.id} signature={s} />
         ))}
@@ -559,7 +563,7 @@ function PhotosSection({
       <p className="text-[11px] mb-2" style={{ color: "oklch(0.45 0.008 65)" }}>
         Daily close-door photos from your project site, last 14 days.
       </p>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-2 lg:grid-cols-4 xl:grid-cols-5">
         {photos.map((p) => (
           <PortalPhotoTile key={p.id} photo={p} token={token} />
         ))}
@@ -627,7 +631,7 @@ function SupportCard({
   return (
     <Section title="QUESTIONS?" icon={AlertCircle}>
       <div
-        className="rounded-2xl p-4 space-y-2.5"
+        className="rounded-2xl p-4 space-y-2.5 lg:p-5"
         style={{
           background: "linear-gradient(135deg, oklch(0.62 0.09 68 / 6%), oklch(1 0 0))",
           border: "1px solid oklch(0.62 0.09 68 / 25%)",
@@ -636,7 +640,7 @@ function SupportCard({
         <p className="text-xs leading-relaxed" style={{ color: "oklch(0.30 0.008 65)" }}>
           Reach out to your project team anytime. They'll get back to you within a working day.
         </p>
-        <div className="text-[11px] space-y-1.5 pt-1">
+        <div className="text-[11px] space-y-1.5 pt-1 lg:flex lg:gap-6 lg:space-y-0">
           <p style={{ color: "oklch(0.42 0.09 68)" }}>
             <strong className="font-semibold">{project.designer_name}</strong>
             {" · "}

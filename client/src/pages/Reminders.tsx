@@ -109,9 +109,9 @@ export default function Reminders() {
     <div className="mobile-container" style={{ background: "oklch(0.985 0.004 80)" }}>
       <AppHeader title="Reminders" subtitle="DAILY · WEEKLY SOP" bgImage={HERO_BG} showBack showNotification />
 
-      <div className="px-4 py-4 space-y-5 pb-24">
+      <div className="px-4 py-4 space-y-5 pb-24 lg:px-8 lg:py-7 lg:space-y-6">
         {/* KPI strip */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           <KpiCard
             icon={Calendar}
             label="Today"
@@ -153,24 +153,25 @@ export default function Reminders() {
           {todayItems.length === 0 ? (
             <Empty message="No daily reminders today." />
           ) : (
-            <div className="rounded-2xl overflow-hidden" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}>
+            <div className="space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-3 lg:items-start">
               {todayItems.map((r, i) => (
-                <ReminderItem
-                  key={r.id}
-                  reminder={r}
-                  staff={staff}
-                  isLast={i === todayItems.length - 1}
-                  onAction={() => {
-                    if (r.status === "completed") {
-                      toast.success(`Already uploaded${r.completedAt ? ` at ${r.completedAt}` : ""}`);
-                    } else if (r.type === "daily-site-photo" && r.projectId) {
-                      openUpload(r.projectId, r.projectName ?? "site", r.dueDate);
-                    } else {
-                      toast.info(`Opening: ${r.title}`);
-                    }
-                  }}
-                  onCardClick={() => r.projectId && navigate(`/projects/${r.projectId}`)}
-                />
+                <div key={r.id} className="rounded-2xl overflow-hidden" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}>
+                  <ReminderItem
+                    reminder={r}
+                    staff={staff}
+                    isLast={true}
+                    onAction={() => {
+                      if (r.status === "completed") {
+                        toast.success(`Already uploaded${r.completedAt ? ` at ${r.completedAt}` : ""}`);
+                      } else if (r.type === "daily-site-photo" && r.projectId) {
+                        openUpload(r.projectId, r.projectName ?? "site", r.dueDate);
+                      } else {
+                        toast.info(`Opening: ${r.title}`);
+                      }
+                    }}
+                    onCardClick={() => r.projectId && navigate(`/projects/${r.projectId}`)}
+                  />
+                </div>
               ))}
             </div>
           )}
@@ -186,22 +187,23 @@ export default function Reminders() {
               tint="oklch(0.50 0.12 25)"
               tintBg="oklch(0.60 0.12 25 / 12%)"
             />
-            <div className="rounded-2xl overflow-hidden" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.60 0.12 25 / 30%)", boxShadow: "0 1px 12px oklch(0.60 0.12 25 / 8%)" }}>
+            <div className="space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-3 lg:items-start">
               {overdueItems.map((r, i) => (
-                <ReminderItem
-                  key={r.id}
-                  reminder={r}
-                  staff={staff}
-                  isLast={i === overdueItems.length - 1}
-                  onAction={() => {
-                    if (r.type === "daily-site-photo" && r.projectId) {
-                      openUpload(r.projectId, r.projectName ?? "site", r.dueDate);
-                    } else {
-                      toast.info(`Logging late entry for ${r.dueDate}…`);
-                    }
-                  }}
-                  onCardClick={() => r.projectId && navigate(`/projects/${r.projectId}`)}
-                />
+                <div key={r.id} className="rounded-2xl overflow-hidden" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.60 0.12 25 / 30%)", boxShadow: "0 1px 12px oklch(0.60 0.12 25 / 8%)" }}>
+                  <ReminderItem
+                    reminder={r}
+                    staff={staff}
+                    isLast={true}
+                    onAction={() => {
+                      if (r.type === "daily-site-photo" && r.projectId) {
+                        openUpload(r.projectId, r.projectName ?? "site", r.dueDate);
+                      } else {
+                        toast.info(`Logging late entry for ${r.dueDate}…`);
+                      }
+                    }}
+                    onCardClick={() => r.projectId && navigate(`/projects/${r.projectId}`)}
+                  />
+                </div>
               ))}
             </div>
           </section>
@@ -213,16 +215,17 @@ export default function Reminders() {
           {upcomingItems.length === 0 ? (
             <Empty message="No weekly cadences scheduled." />
           ) : (
-            <div className="rounded-2xl overflow-hidden" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}>
+            <div className="space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-3 lg:items-start">
               {upcomingItems.map((r, i) => (
-                <ReminderItem
-                  key={r.id}
-                  reminder={r}
-                  staff={staff}
-                  isLast={i === upcomingItems.length - 1}
-                  onAction={() => toast.info(`Opening: ${r.title}`)}
-                  onCardClick={() => r.projectId && navigate(`/projects/${r.projectId}`)}
-                />
+                <div key={r.id} className="rounded-2xl overflow-hidden" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}>
+                  <ReminderItem
+                    reminder={r}
+                    staff={staff}
+                    isLast={true}
+                    onAction={() => toast.info(`Opening: ${r.title}`)}
+                    onCardClick={() => r.projectId && navigate(`/projects/${r.projectId}`)}
+                  />
+                </div>
               ))}
             </div>
           )}
@@ -231,64 +234,69 @@ export default function Reminders() {
         {/* 14-DAY PHOTO GRID */}
         <section>
           <SectionHeader title="14-DAY SITE PHOTO GRID" subtitle="Per active site · green = uploaded" icon={Camera} />
-          <div className="rounded-2xl p-4 space-y-4" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}>
-            {photoMaps.length === 0 && (
+          {photoMaps.length === 0 ? (
+            <div className="rounded-2xl p-4" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}>
               <p className="text-xs text-center py-3" style={{ color: "oklch(0.52 0.010 68)" }}>
                 No active sites — photo SOP only applies during BUILD phase.
               </p>
-            )}
-            {photoMaps.map((map) => {
-              const project = projects.find((p) => p.id === map.projectId);
-              if (!project) return null;
-              const days = lastNDays(14);
-              const uploaded = days.filter((d) => map.photos[d]?.uploaded).length;
-              const pct = (uploaded / days.length) * 100;
-              return (
-                <div key={map.projectId}>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <p className="text-xs font-semibold" style={{ color: "oklch(0.20 0.008 65)" }}>
-                      {project.name}
-                    </p>
-                    <span className="text-[10px] font-display font-semibold" style={{ color: "oklch(0.42 0.09 68)" }}>
-                      {uploaded}/{days.length} ({pct.toFixed(0)}%)
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-14 gap-1" style={{ gridTemplateColumns: "repeat(14, minmax(0, 1fr))" }}>
-                    {days.map((d) => {
-                      const photo = map.photos[d];
-                      const isToday = d === today;
-                      const dayNum = d.split("/")[0];
-                      return (
-                        <button
-                          type="button"
-                          key={d}
-                          onClick={() => openUpload(map.projectId, project.name, d)}
-                          className="aspect-square rounded-md flex items-center justify-center"
-                          title={`${d}${photo?.uploaded ? ` · uploaded ${photo.uploadedAt}${photo.by ? ` by ${photo.by}` : ""}` : " · click to upload"}`}
-                          style={{
-                            background: photo?.uploaded
-                              ? "oklch(0.55 0.09 145 / 80%)"
-                              : "oklch(0.60 0.12 25 / 60%)",
-                            border: isToday ? "1.5px solid oklch(0.42 0.09 68)" : "none",
-                            color: "white",
-                            fontSize: "8px",
-                            fontWeight: 600,
-                          }}
-                        >
-                          {photo?.uploaded ? <Check size={8} strokeWidth={4} /> : dayNum}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-            <div className="flex items-center gap-3 pt-2" style={{ borderTop: "1px solid oklch(0.93 0.008 75)" }}>
-              <LegendDot color="oklch(0.55 0.09 145 / 80%)" label="Uploaded" />
-              <LegendDot color="oklch(0.60 0.12 25 / 60%)" label="Missed" />
-              <LegendDot color="oklch(1 0 0)" border="oklch(0.42 0.09 68)" label="Today" />
             </div>
-          </div>
+          ) : (
+            <div className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-3 lg:items-start">
+              {photoMaps.map((map) => {
+                const project = projects.find((p) => p.id === map.projectId);
+                if (!project) return null;
+                const days = lastNDays(14);
+                const uploaded = days.filter((d) => map.photos[d]?.uploaded).length;
+                const pct = (uploaded / days.length) * 100;
+                return (
+                  <div key={map.projectId} className="rounded-2xl p-4 space-y-4" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}>
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <p className="text-xs font-semibold" style={{ color: "oklch(0.20 0.008 65)" }}>
+                          {project.name}
+                        </p>
+                        <span className="text-[10px] font-display font-semibold" style={{ color: "oklch(0.42 0.09 68)" }}>
+                          {uploaded}/{days.length} ({pct.toFixed(0)}%)
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-14 gap-1" style={{ gridTemplateColumns: "repeat(14, minmax(0, 1fr))" }}>
+                        {days.map((d) => {
+                          const photo = map.photos[d];
+                          const isToday = d === today;
+                          const dayNum = d.split("/")[0];
+                          return (
+                            <button
+                              type="button"
+                              key={d}
+                              onClick={() => openUpload(map.projectId, project.name, d)}
+                              className="aspect-square rounded-md flex items-center justify-center"
+                              title={`${d}${photo?.uploaded ? ` · uploaded ${photo.uploadedAt}${photo.by ? ` by ${photo.by}` : ""}` : " · click to upload"}`}
+                              style={{
+                                background: photo?.uploaded
+                                  ? "oklch(0.55 0.09 145 / 80%)"
+                                  : "oklch(0.60 0.12 25 / 60%)",
+                                border: isToday ? "1.5px solid oklch(0.42 0.09 68)" : "none",
+                                color: "white",
+                                fontSize: "8px",
+                                fontWeight: 600,
+                              }}
+                            >
+                              {photo?.uploaded ? <Check size={8} strokeWidth={4} /> : dayNum}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 pt-2" style={{ borderTop: "1px solid oklch(0.93 0.008 75)" }}>
+                      <LegendDot color="oklch(0.55 0.09 145 / 80%)" label="Uploaded" />
+                      <LegendDot color="oklch(0.60 0.12 25 / 60%)" label="Missed" />
+                      <LegendDot color="oklch(1 0 0)" border="oklch(0.42 0.09 68)" label="Today" />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </section>
 
         <p className="text-[10px] text-center font-label pt-2" style={{ color: "oklch(0.65 0.008 68)", letterSpacing: "0.06em" }}>

@@ -209,247 +209,332 @@ export default function ProjectDetail() {
           ))}
         </div>
 
-        {/* Tab content */}
-        <div className="px-4 py-4">
-          {activeTab === "Overview" && (
-            <div className="space-y-4">
+        {/* ── Desktop two-column split: main content left, side rail right ── */}
+        <div className="px-4 py-4 lg:px-8 lg:py-7 lg:grid lg:grid-cols-[1fr_360px] lg:gap-6 lg:items-start">
+
+          {/* ── PRIMARY COLUMN (left) ── */}
+          <div className="min-w-0">
+            {activeTab === "Overview" && (
+              <div className="space-y-4">
+                <div className="rounded-2xl p-4" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}>
+                  <h4 className="font-display text-base font-semibold mb-2" style={{ color: "oklch(0.14 0.008 65)" }}>Description</h4>
+                  <p className="text-sm leading-relaxed" style={{ color: "oklch(0.40 0.008 65)" }}>{project.description}</p>
+                </div>
+
+                <div className="rounded-2xl p-4" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}>
+                  <h4 className="font-display text-base font-semibold mb-3" style={{ color: "oklch(0.14 0.008 65)" }}>Project Areas</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {project.areas.map((area) => (
+                      <span
+                        key={area}
+                        className="px-3 py-1 rounded-full text-xs font-label"
+                        style={{ background: "oklch(0.62 0.09 68 / 10%)", color: "oklch(0.42 0.09 68)", border: "1px solid oklch(0.62 0.09 68 / 20%)", letterSpacing: "0.03em" }}
+                      >
+                        {area}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <motion.button
+                  whileTap={{ scale: 0.97 }}
+                  className="w-full rounded-2xl p-4 flex items-center justify-between"
+                  style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
+                  onClick={() => toast.info(`Calling ${project.client}...`)}
+                >
+                  <div>
+                    <p className="text-sm font-semibold text-left" style={{ color: "oklch(0.14 0.008 65)" }}>{project.client}</p>
+                    <p className="text-xs mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>{project.clientContact}</p>
+                  </div>
+                  <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: "oklch(0.62 0.09 68 / 12%)" }}>
+                    <Phone size={15} style={{ color: "oklch(0.52 0.09 68)" }} />
+                  </div>
+                </motion.button>
+
+                {/* Share client portal — copies the unauthenticated /portal/:token
+                    link so staff can WhatsApp / email it to the client. */}
+                <SharePortalButton token={project.clientAccessToken} clientName={project.client} />
+
+                {/* Project Details card — shown inline on mobile, moves to side rail on lg */}
+                <div className="rounded-2xl p-4 space-y-3 lg:hidden" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}>
+                  <h4 className="font-display text-base font-semibold" style={{ color: "oklch(0.14 0.008 65)" }}>Project Details</h4>
+                  {[
+                    { label: "Client", value: project.client },
+                    { label: "Type", value: `${project.type} · ${project.propertyType}` },
+                    { label: "Size", value: `${project.size.toLocaleString()} sqft` },
+                    { label: "Start Date", value: project.startDate },
+                    { label: "Target Completion", value: project.targetDate },
+                    { label: "Priority", value: pc.label, color: pc.color },
+                  ].map((item) => (
+                    <div key={item.label} className="flex items-center justify-between">
+                      <span className="text-xs" style={{ color: "oklch(0.52 0.010 68)" }}>{item.label}</span>
+                      <span className="text-xs font-medium" style={{ color: item.color || "oklch(0.25 0.008 65)" }}>{item.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {activeTab === "Lifecycle" && (
+              <LifecycleTab projectId={project.id} clientName={project.client} projectName={project.name} />
+            )}
+
+            {activeTab === "Tasks" && (
+              <div className="space-y-2 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-2 lg:items-start">
+                {sampleTasks.map((task, i) => {
+                  const ts = taskStatusConfig[task.status];
+                  return (
+                    <motion.div
+                      key={task.id}
+                      initial={{ opacity: 0, x: -8 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.04 }}
+                      className="rounded-xl p-3 flex items-start gap-3"
+                      style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}
+                    >
+                      <div
+                        className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5"
+                        style={{ background: ts.bg, border: `1.5px solid ${ts.color}` }}
+                      >
+                        {task.status === "completed" && <span className="text-[8px]" style={{ color: ts.color }}>✓</span>}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm leading-snug" style={{ color: "oklch(0.20 0.008 65)" }}>{task.name}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-[10px]" style={{ color: "oklch(0.52 0.010 68)" }}>{task.area}</span>
+                          <span className="text-[10px]" style={{ color: "oklch(0.65 0.008 68)" }}>· Due {task.dueDate}</span>
+                        </div>
+                      </div>
+                      <div className="flex flex-col items-end gap-1.5 shrink-0">
+                        <span className="status-pill" style={{ background: ts.bg, color: ts.color }}>{ts.label}</span>
+                        <div
+                          className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold"
+                          style={{ background: "oklch(0.62 0.09 68 / 12%)", color: "oklch(0.42 0.09 68)" }}
+                        >
+                          {task.assignee}
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            )}
+
+            {activeTab === "Quotations" && (
+              <div className="space-y-3">
+                {(() => {
+                  const projectQuotes = allQuotations.filter((q) => q.project_id === project.id);
+                  return (
+                    <>
+                      {projectQuotes.length === 0 ? (
+                        <div className="rounded-2xl p-8 text-center" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
+                          <FileText size={28} className="mx-auto mb-3" style={{ color: "oklch(0.75 0.008 68)" }} />
+                          <p className="text-sm font-semibold mb-1" style={{ color: "oklch(0.14 0.008 65)" }}>No documents yet</p>
+                          <p className="text-xs" style={{ color: "oklch(0.52 0.010 68)" }}>Create a quotation for this project</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-3 lg:items-start">
+                          {projectQuotes.map((q, i) => {
+                            const sc2 = qStatusConfig[q.status];
+                            const { total } = computeTotals(q.items, q.tax_rate);
+                            return (
+                              <motion.div
+                                key={q.id}
+                                initial={{ opacity: 0, y: 8 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: i * 0.06 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => navigate(`/quotations/${q.id}`)}
+                                className="rounded-2xl p-4 flex items-center gap-3"
+                                style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
+                              >
+                                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "oklch(0.62 0.09 68 / 12%)" }}>
+                                  <FileText size={17} style={{ color: "oklch(0.52 0.09 68)" }} />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-semibold" style={{ color: "oklch(0.14 0.008 65)" }}>{q.id}</p>
+                                  <p className="text-xs mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>{q.doc_type} · {q.issue_date}</p>
+                                </div>
+                                <div className="text-right shrink-0">
+                                  <p className="text-sm font-display font-semibold" style={{ color: "oklch(0.52 0.09 68)" }}>{formatRM(total)}</p>
+                                  <span className="status-pill" style={{ background: sc2.bg, color: sc2.color }}>{sc2.label}</span>
+                                </div>
+                              </motion.div>
+                            );
+                          })}
+                        </div>
+                      )}
+                      <motion.button
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => navigate("/quotations/new")}
+                        className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-dashed"
+                        style={{ borderColor: "oklch(0.62 0.09 68 / 35%)", color: "oklch(0.52 0.09 68)" }}
+                      >
+                        <FileText size={14} />
+                        <span className="text-sm font-label" style={{ letterSpacing: "0.04em" }}>New Quotation / Invoice</span>
+                      </motion.button>
+                    </>
+                  );
+                })()}
+              </div>
+            )}
+
+            {activeTab === "Photos" && (
+              <div className="space-y-4">
+                <div
+                  className="rounded-2xl p-6 flex flex-col items-center gap-3 border-2 border-dashed"
+                  style={{ borderColor: "oklch(0.62 0.09 68 / 30%)", background: "oklch(0.62 0.09 68 / 4%)" }}
+                  onClick={() => toast.info("Photo upload coming soon")}
+                >
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "oklch(0.62 0.09 68 / 12%)" }}>
+                    <Upload size={20} style={{ color: "oklch(0.52 0.09 68)" }} />
+                  </div>
+                  <div className="text-center">
+                    <p className="text-sm font-semibold" style={{ color: "oklch(0.14 0.008 65)" }}>Upload Photos</p>
+                    <p className="text-xs mt-1" style={{ color: "oklch(0.52 0.010 68)" }}>Before & After photos per area</p>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="sz-label mb-3">RECENT UPLOADS ({project.photoCount})</p>
+                  <div className="grid grid-cols-3 gap-2 lg:grid-cols-4 xl:grid-cols-5">
+                    {[CARD_BG1, CARD_BG2, CARD_BG1, CARD_BG2, CARD_BG1, CARD_BG2].map((img, i) => (
+                      <motion.div
+                        key={i}
+                        whileTap={{ scale: 0.95 }}
+                        className="aspect-square rounded-xl overflow-hidden relative"
+                        style={{ background: `url(${img}) center/cover no-repeat` }}
+                      >
+                        <div className="absolute inset-0" style={{ background: "oklch(0.11 0.004 285 / 0.2)" }} />
+                        <div className="absolute bottom-1 right-1">
+                          <Maximize2 size={10} className="text-white" />
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Team tab */}
+            {activeTab === "Team" && (
+              <div className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-3 lg:items-start">
+                {teamMembers.map((member, i) => (
+                  <motion.div
+                    key={member.id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.07 }}
+                    className="rounded-2xl p-4 flex items-center gap-3"
+                    style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
+                  >
+                    <div
+                      className="w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold shrink-0"
+                      style={{
+                        background: "linear-gradient(135deg, oklch(0.62 0.09 68 / 20%), oklch(0.52 0.08 65 / 20%))",
+                        color: "oklch(0.42 0.09 68)",
+                        border: "1.5px solid oklch(0.62 0.09 68 / 25%)",
+                      }}
+                    >
+                      {member.avatar_code}
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold" style={{ color: "oklch(0.14 0.008 65)" }}>{member.name}</p>
+                      <p className="text-xs mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>{member.job_title}</p>
+                    </div>
+                    <span
+                      className="text-xs font-label px-2 py-0.5 rounded-full"
+                      style={{
+                        background: member.name === project.designer ? "oklch(0.62 0.09 68 / 12%)" : "oklch(0.96 0.006 75)",
+                        color: member.name === project.designer ? "oklch(0.42 0.09 68)" : "oklch(0.52 0.010 68)",
+                        letterSpacing: "0.04em",
+                      }}
+                    >
+                      {member.name === project.designer ? "Lead" : member.name === project.pm ? "PM" : "Designer"}
+                    </span>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* ── SIDE RAIL (right column, desktop only) ── */}
+          <div className="hidden lg:flex lg:flex-col lg:gap-4">
+            {/* Project Details */}
+            <div className="rounded-2xl p-4 space-y-3" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}>
+              <h4 className="font-display text-base font-semibold" style={{ color: "oklch(0.14 0.008 65)" }}>Project Details</h4>
+              {[
+                { label: "Client", value: project.client },
+                { label: "Type", value: `${project.type} · ${project.propertyType}` },
+                { label: "Size", value: `${project.size.toLocaleString()} sqft` },
+                { label: "Start Date", value: project.startDate },
+                { label: "Target Completion", value: project.targetDate },
+                { label: "Priority", value: pc.label, color: pc.color },
+              ].map((item) => (
+                <div key={item.label} className="flex items-center justify-between">
+                  <span className="text-xs" style={{ color: "oklch(0.52 0.010 68)" }}>{item.label}</span>
+                  <span className="text-xs font-medium" style={{ color: item.color || "oklch(0.25 0.008 65)" }}>{item.value}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Team members */}
+            {teamMembers.length > 0 && (
               <div className="rounded-2xl p-4 space-y-3" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}>
-                <h4 className="font-display text-base font-semibold" style={{ color: "oklch(0.14 0.008 65)" }}>Project Details</h4>
-                {[
-                  { label: "Client", value: project.client },
-                  { label: "Type", value: `${project.type} · ${project.propertyType}` },
-                  { label: "Size", value: `${project.size.toLocaleString()} sqft` },
-                  { label: "Start Date", value: project.startDate },
-                  { label: "Target Completion", value: project.targetDate },
-                  { label: "Priority", value: pc.label, color: pc.color },
-                ].map((item) => (
-                  <div key={item.label} className="flex items-center justify-between">
-                    <span className="text-xs" style={{ color: "oklch(0.52 0.010 68)" }}>{item.label}</span>
-                    <span className="text-xs font-medium" style={{ color: item.color || "oklch(0.25 0.008 65)" }}>{item.value}</span>
+                <h4 className="font-display text-base font-semibold" style={{ color: "oklch(0.14 0.008 65)" }}>Team</h4>
+                {teamMembers.map((member) => (
+                  <div key={member.id} className="flex items-center gap-3">
+                    <div
+                      className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
+                      style={{
+                        background: "linear-gradient(135deg, oklch(0.62 0.09 68 / 20%), oklch(0.52 0.08 65 / 20%))",
+                        color: "oklch(0.42 0.09 68)",
+                        border: "1.5px solid oklch(0.62 0.09 68 / 25%)",
+                      }}
+                    >
+                      {member.avatar_code}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold truncate" style={{ color: "oklch(0.14 0.008 65)" }}>{member.name}</p>
+                      <p className="text-[10px] truncate" style={{ color: "oklch(0.52 0.010 68)" }}>{member.job_title}</p>
+                    </div>
+                    <span
+                      className="text-[10px] font-label px-2 py-0.5 rounded-full shrink-0"
+                      style={{
+                        background: member.name === project.designer ? "oklch(0.62 0.09 68 / 12%)" : "oklch(0.96 0.006 75)",
+                        color: member.name === project.designer ? "oklch(0.42 0.09 68)" : "oklch(0.52 0.010 68)",
+                        letterSpacing: "0.04em",
+                      }}
+                    >
+                      {member.name === project.designer ? "Lead" : member.name === project.pm ? "PM" : "Designer"}
+                    </span>
                   </div>
                 ))}
               </div>
+            )}
 
-              <div className="rounded-2xl p-4" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}>
-                <h4 className="font-display text-base font-semibold mb-2" style={{ color: "oklch(0.14 0.008 65)" }}>Description</h4>
-                <p className="text-sm leading-relaxed" style={{ color: "oklch(0.40 0.008 65)" }}>{project.description}</p>
-              </div>
-
-              <div className="rounded-2xl p-4" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}>
-                <h4 className="font-display text-base font-semibold mb-3" style={{ color: "oklch(0.14 0.008 65)" }}>Project Areas</h4>
-                <div className="flex flex-wrap gap-2">
-                  {project.areas.map((area) => (
-                    <span
-                      key={area}
-                      className="px-3 py-1 rounded-full text-xs font-label"
-                      style={{ background: "oklch(0.62 0.09 68 / 10%)", color: "oklch(0.42 0.09 68)", border: "1px solid oklch(0.62 0.09 68 / 20%)", letterSpacing: "0.03em" }}
-                    >
-                      {area}
-                    </span>
-                  ))}
-                </div>
-              </div>
-
-              <motion.button
-                whileTap={{ scale: 0.97 }}
-                className="w-full rounded-2xl p-4 flex items-center justify-between"
-                style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
-                onClick={() => toast.info(`Calling ${project.client}...`)}
-              >
-                <div>
-                  <p className="text-sm font-semibold text-left" style={{ color: "oklch(0.14 0.008 65)" }}>{project.client}</p>
-                  <p className="text-xs mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>{project.clientContact}</p>
-                </div>
-                <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{ background: "oklch(0.62 0.09 68 / 12%)" }}>
-                  <Phone size={15} style={{ color: "oklch(0.52 0.09 68)" }} />
-                </div>
-              </motion.button>
-
-              {/* Share client portal — copies the unauthenticated /portal/:token
-                  link so staff can WhatsApp / email it to the client. */}
-              <SharePortalButton token={project.clientAccessToken} clientName={project.client} />
-            </div>
-          )}
-
-          {activeTab === "Lifecycle" && (
-            <LifecycleTab projectId={project.id} clientName={project.client} projectName={project.name} />
-          )}
-
-          {activeTab === "Tasks" && (
-            <div className="space-y-2">
-              {sampleTasks.map((task, i) => {
-                const ts = taskStatusConfig[task.status];
-                return (
-                  <motion.div
-                    key={task.id}
-                    initial={{ opacity: 0, x: -8 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.04 }}
-                    className="rounded-xl p-3 flex items-start gap-3"
-                    style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}
-                  >
-                    <div
-                      className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5"
-                      style={{ background: ts.bg, border: `1.5px solid ${ts.color}` }}
-                    >
-                      {task.status === "completed" && <span className="text-[8px]" style={{ color: ts.color }}>✓</span>}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm leading-snug" style={{ color: "oklch(0.20 0.008 65)" }}>{task.name}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[10px]" style={{ color: "oklch(0.52 0.010 68)" }}>{task.area}</span>
-                        <span className="text-[10px]" style={{ color: "oklch(0.65 0.008 68)" }}>· Due {task.dueDate}</span>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end gap-1.5 shrink-0">
-                      <span className="status-pill" style={{ background: ts.bg, color: ts.color }}>{ts.label}</span>
-                      <div
-                        className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold"
-                        style={{ background: "oklch(0.62 0.09 68 / 12%)", color: "oklch(0.42 0.09 68)" }}
-                      >
-                        {task.assignee}
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          )}
-
-          {activeTab === "Quotations" && (
-            <div className="space-y-3">
-              {(() => {
-                const projectQuotes = allQuotations.filter((q) => q.project_id === project.id);
-                return (
-                  <>
-                    {projectQuotes.length === 0 ? (
-                      <div className="rounded-2xl p-8 text-center" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
-                        <FileText size={28} className="mx-auto mb-3" style={{ color: "oklch(0.75 0.008 68)" }} />
-                        <p className="text-sm font-semibold mb-1" style={{ color: "oklch(0.14 0.008 65)" }}>No documents yet</p>
-                        <p className="text-xs" style={{ color: "oklch(0.52 0.010 68)" }}>Create a quotation for this project</p>
-                      </div>
-                    ) : (
-                      projectQuotes.map((q, i) => {
-                        const sc2 = qStatusConfig[q.status];
-                        const { total } = computeTotals(q.items, q.tax_rate);
-                        return (
-                          <motion.div
-                            key={q.id}
-                            initial={{ opacity: 0, y: 8 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: i * 0.06 }}
-                            whileTap={{ scale: 0.98 }}
-                            onClick={() => navigate(`/quotations/${q.id}`)}
-                            className="rounded-2xl p-4 flex items-center gap-3"
-                            style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
-                          >
-                            <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "oklch(0.62 0.09 68 / 12%)" }}>
-                              <FileText size={17} style={{ color: "oklch(0.52 0.09 68)" }} />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-semibold" style={{ color: "oklch(0.14 0.008 65)" }}>{q.id}</p>
-                              <p className="text-xs mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>{q.doc_type} · {q.issue_date}</p>
-                            </div>
-                            <div className="text-right shrink-0">
-                              <p className="text-sm font-display font-semibold" style={{ color: "oklch(0.52 0.09 68)" }}>{formatRM(total)}</p>
-                              <span className="status-pill" style={{ background: sc2.bg, color: sc2.color }}>{sc2.label}</span>
-                            </div>
-                          </motion.div>
-                        );
-                      })
-                    )}
-                    <motion.button
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => navigate("/quotations/new")}
-                      className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-dashed"
-                      style={{ borderColor: "oklch(0.62 0.09 68 / 35%)", color: "oklch(0.52 0.09 68)" }}
-                    >
-                      <FileText size={14} />
-                      <span className="text-sm font-label" style={{ letterSpacing: "0.04em" }}>New Quotation / Invoice</span>
-                    </motion.button>
-                  </>
-                );
-              })()}
-            </div>
-          )}
-
-          {activeTab === "Photos" && (
-            <div className="space-y-4">
-              <div
-                className="rounded-2xl p-6 flex flex-col items-center gap-3 border-2 border-dashed"
-                style={{ borderColor: "oklch(0.62 0.09 68 / 30%)", background: "oklch(0.62 0.09 68 / 4%)" }}
-                onClick={() => toast.info("Photo upload coming soon")}
-              >
-                <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "oklch(0.62 0.09 68 / 12%)" }}>
-                  <Upload size={20} style={{ color: "oklch(0.52 0.09 68)" }} />
-                </div>
-                <div className="text-center">
-                  <p className="text-sm font-semibold" style={{ color: "oklch(0.14 0.008 65)" }}>Upload Photos</p>
-                  <p className="text-xs mt-1" style={{ color: "oklch(0.52 0.010 68)" }}>Before & After photos per area</p>
-                </div>
-              </div>
-
-              <div>
-                <p className="sz-label mb-3">RECENT UPLOADS ({project.photoCount})</p>
-                <div className="grid grid-cols-3 gap-2">
-                  {[CARD_BG1, CARD_BG2, CARD_BG1, CARD_BG2, CARD_BG1, CARD_BG2].map((img, i) => (
-                    <motion.div
-                      key={i}
-                      whileTap={{ scale: 0.95 }}
-                      className="aspect-square rounded-xl overflow-hidden relative"
-                      style={{ background: `url(${img}) center/cover no-repeat` }}
-                    >
-                      <div className="absolute inset-0" style={{ background: "oklch(0.11 0.004 285 / 0.2)" }} />
-                      <div className="absolute bottom-1 right-1">
-                        <Maximize2 size={10} className="text-white" />
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Lifecycle tab content rendered above; Team tab continues below */}
-          {activeTab === "Team" && (
-            <div className="space-y-3">
-              {teamMembers.map((member, i) => (
-                <motion.div
-                  key={member.id}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.07 }}
-                  className="rounded-2xl p-4 flex items-center gap-3"
-                  style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
-                >
+            {/* Quick stats */}
+            <div className="rounded-2xl p-4 space-y-3" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}>
+              <h4 className="font-display text-base font-semibold" style={{ color: "oklch(0.14 0.008 65)" }}>Quick Stats</h4>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { label: "Tasks Done", value: `${project.tasksCompleted}/${project.taskCount}` },
+                  { label: "Progress", value: `${project.progress}%` },
+                  { label: "Photos", value: `${project.photoCount}` },
+                  { label: "Budget", value: `RM ${(project.budget / 1000).toFixed(0)}k` },
+                ].map((stat) => (
                   <div
-                    className="w-11 h-11 rounded-full flex items-center justify-center text-sm font-bold shrink-0"
-                    style={{
-                      background: "linear-gradient(135deg, oklch(0.62 0.09 68 / 20%), oklch(0.52 0.08 65 / 20%))",
-                      color: "oklch(0.42 0.09 68)",
-                      border: "1.5px solid oklch(0.62 0.09 68 / 25%)",
-                    }}
+                    key={stat.label}
+                    className="rounded-xl p-2.5 text-center"
+                    style={{ background: "oklch(0.985 0.004 80)", border: "1px solid oklch(0.92 0.008 75)" }}
                   >
-                    {member.avatar_code}
+                    <p className="text-sm font-display font-semibold" style={{ color: "oklch(0.52 0.09 68)" }}>{stat.value}</p>
+                    <p className="text-[10px] font-label mt-0.5" style={{ color: "oklch(0.55 0.008 65)", letterSpacing: "0.04em" }}>{stat.label.toUpperCase()}</p>
                   </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-semibold" style={{ color: "oklch(0.14 0.008 65)" }}>{member.name}</p>
-                    <p className="text-xs mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>{member.job_title}</p>
-                  </div>
-                  <span
-                    className="text-xs font-label px-2 py-0.5 rounded-full"
-                    style={{
-                      background: member.name === project.designer ? "oklch(0.62 0.09 68 / 12%)" : "oklch(0.96 0.006 75)",
-                      color: member.name === project.designer ? "oklch(0.42 0.09 68)" : "oklch(0.52 0.010 68)",
-                      letterSpacing: "0.04em",
-                    }}
-                  >
-                    {member.name === project.designer ? "Lead" : member.name === project.pm ? "PM" : "Designer"}
-                  </span>
-                </motion.div>
-              ))}
+                ))}
+              </div>
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>
