@@ -54,8 +54,12 @@ comment on table public.whatsapp_log is
 -- Dedup index — the Edge Function queries this to skip staff/project pairs
 -- already pinged today (regardless of outcome — even failed attempts count
 -- so we don't retry indefinitely within a single day).
+-- NOTE: `sent_at::date` is only STABLE (depends on the session TimeZone), so
+-- Postgres rejects it in an index expression. Cast through an explicit UTC zone
+-- instead — that IS immutable, and it matches the Edge Function's dedup logic,
+-- which treats "today" as the UTC calendar day (todayIso = toISOString day).
 create index if not exists idx_whatsapp_log_dedup
-  on public.whatsapp_log (staff_id, project_id, reminder_type, (sent_at::date));
+  on public.whatsapp_log (staff_id, project_id, reminder_type, ((sent_at at time zone 'UTC')::date));
 
 create index if not exists idx_whatsapp_log_status
   on public.whatsapp_log (status, sent_at desc);
