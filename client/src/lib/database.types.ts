@@ -928,6 +928,7 @@ export type Database = {
           role: Database["public"]["Enums"]["staff_role"]
           status: Database["public"]["Enums"]["staff_status"]
           updated_at: string
+          whatsapp_opt_in: boolean
         }
         Insert: {
           auth_user_id?: string | null
@@ -946,6 +947,7 @@ export type Database = {
           role: Database["public"]["Enums"]["staff_role"]
           status?: Database["public"]["Enums"]["staff_status"]
           updated_at?: string
+          whatsapp_opt_in?: boolean
         }
         Update: {
           auth_user_id?: string | null
@@ -964,8 +966,72 @@ export type Database = {
           role?: Database["public"]["Enums"]["staff_role"]
           status?: Database["public"]["Enums"]["staff_status"]
           updated_at?: string
+          whatsapp_opt_in?: boolean
         }
         Relationships: []
+      }
+      whatsapp_log: {
+        Row: {
+          created_at: string
+          error_message: string | null
+          id: number
+          phone: string
+          project_id: string | null
+          provider: string
+          provider_message_id: string | null
+          reminder_type: string
+          sent_at: string
+          staff_id: string
+          status: string
+          template_name: string | null
+          template_variables: Json | null
+        }
+        Insert: {
+          created_at?: string
+          error_message?: string | null
+          id?: number
+          phone: string
+          project_id?: string | null
+          provider: string
+          provider_message_id?: string | null
+          reminder_type: string
+          sent_at?: string
+          staff_id: string
+          status: string
+          template_name?: string | null
+          template_variables?: Json | null
+        }
+        Update: {
+          created_at?: string
+          error_message?: string | null
+          id?: number
+          phone?: string
+          project_id?: string | null
+          provider?: string
+          provider_message_id?: string | null
+          reminder_type?: string
+          sent_at?: string
+          staff_id?: string
+          status?: string
+          template_name?: string | null
+          template_variables?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_log_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_log_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -996,15 +1062,12 @@ export type Database = {
         Args: never
         Returns: Database["public"]["Enums"]["staff_role"]
       }
+      get_client_portal_data: { Args: { p_token: string }; Returns: Json }
       is_admin_tier: { Args: never; Returns: boolean }
       is_ops_tier: { Args: never; Returns: boolean }
       maybe_advance_project_stage: {
         Args: { p_project_id: string }
         Returns: string
-      }
-      get_client_portal_data: {
-        Args: { p_token: string }
-        Returns: Json
       }
     }
     Enums: {
