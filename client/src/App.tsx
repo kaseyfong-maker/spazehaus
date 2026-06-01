@@ -26,6 +26,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import { queryClient } from "./lib/queryClient";
 import BottomNav from "./components/BottomNav";
+import Sidebar from "./components/Sidebar";
 import Login from "./pages/Login";
 import AuthCallback from "./pages/AuthCallback";
 
@@ -80,10 +81,17 @@ function AppLayout() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center"
+      className="min-h-screen flex lg:items-stretch items-center justify-center"
       style={{ background: "oklch(0.93 0.008 75)" }}
     >
-      <div className="w-full max-w-[430px] min-h-screen relative">
+      {/* Desktop/tablet left rail — hidden below lg, where BottomNav takes over */}
+      <Sidebar />
+
+      {/* Main content column. Mobile keeps the 430px app feel; lg+ widens into a
+          centered work area beside the sidebar. Dense pages can opt into a wider
+          frame per-page in later phases. */}
+      <div className="flex-1 min-w-0 flex justify-center">
+      <div className="w-full max-w-[430px] lg:max-w-[1100px] xl:max-w-[1440px] 2xl:max-w-[1760px] min-h-screen relative">
         <Suspense fallback={<RouteFallback />}>
           <Switch>
             {/* Main tabs */}
@@ -134,6 +142,7 @@ function AppLayout() {
         </Suspense>
 
         {showNav && <BottomNav />}
+      </div>
       </div>
     </div>
   );
