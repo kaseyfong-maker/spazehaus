@@ -24,6 +24,7 @@ import {
   getSignatureDocUrl,
   isStorageDocRef,
 } from "@/lib/queries";
+import { useIsDesktop } from "@/hooks/useMobile";
 
 function pad(n: number) { return String(n).padStart(2, "0"); }
 function isoToday(): string {
@@ -62,6 +63,7 @@ export default function SignDocumentSheet({
 }) {
   const uploadDoc = useUploadSignatureDoc();
   const updateSig = useUpdateSignature();
+  const isDesktop = useIsDesktop();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [pickedFile, setPickedFile] = useState<File | null>(null);
@@ -193,21 +195,20 @@ export default function SignDocumentSheet({
 
           {/* Bottom sheet */}
           <motion.div
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            exit={{ y: "100%" }}
-            transition={{ type: "spring", damping: 32, stiffness: 320 }}
-            className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-50 flex flex-col"
+            initial={isDesktop ? { opacity: 0, scale: 0.96 } : { y: "100%" }}
+            animate={isDesktop ? { opacity: 1, scale: 1 } : { y: 0 }}
+            exit={isDesktop ? { opacity: 0, scale: 0.96 } : { y: "100%" }}
+            transition={isDesktop ? { duration: 0.18 } : { type: "spring", damping: 32, stiffness: 320 }}
+            className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-50 flex flex-col lg:bottom-auto lg:top-1/2 lg:-translate-y-1/2 lg:max-w-[480px]"
             style={{
               maxHeight: "92vh",
               background: "oklch(1 0 0)",
-              borderTopLeftRadius: 28,
-              borderTopRightRadius: 28,
+              borderRadius: isDesktop ? 28 : "28px 28px 0 0",
               boxShadow: "0 -12px 48px oklch(0 0 0 / 0.18)",
             }}
           >
-            {/* Drag handle */}
-            <div className="flex justify-center pt-2.5 pb-1.5 shrink-0">
+            {/* Drag handle (mobile bottom-sheet affordance only) */}
+            <div className="flex justify-center pt-2.5 pb-1.5 shrink-0 lg:hidden">
               <div className="w-10 h-1 rounded-full" style={{ background: "oklch(0.85 0.008 75)" }} />
             </div>
 
