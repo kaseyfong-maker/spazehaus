@@ -161,13 +161,13 @@ export default function Dashboard() {
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="px-4 py-5 pb-28 space-y-6"
+        className="px-4 py-5 pb-28 space-y-6 lg:px-8 lg:py-7"
         style={{ background: "oklch(0.985 0.004 80)" }}
       >
         {/* Stats */}
         <motion.div variants={itemVariants}>
           <p className="sz-label mb-3">OVERVIEW</p>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
             {stats.map((s) => {
               const Icon = s.icon;
               return (
@@ -302,7 +302,7 @@ export default function Dashboard() {
         {/* Quick Actions */}
         <motion.div variants={itemVariants}>
           <p className="sz-label mb-3">QUICK ACTIONS</p>
-          <div className="grid grid-cols-3 gap-2.5">
+          <div className="grid grid-cols-3 lg:grid-cols-6 gap-2.5">
             {quickActions.map((action) => {
               const Icon = action.icon;
               return (
@@ -335,7 +335,7 @@ export default function Dashboard() {
               View All <ChevronRight size={12} />
             </button>
           </div>
-          <div className="space-y-2.5">
+          <div className="space-y-2.5 lg:space-y-0 lg:grid lg:grid-cols-3 lg:gap-3">
             {projects.slice(0, 3).map((project, i) => (
               <motion.div
                 key={project.id}
