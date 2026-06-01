@@ -10,7 +10,7 @@
     "preview": "vite preview --host",
     "check": "tsc --noEmit",
     "format": "prettier --write .",
-    "gen:types": "bun x supabase gen types typescript --project-id jifrzsvqdshjbqptubgz > /tmp/spazehaus.types.next.ts && mv /tmp/spazehaus.types.next.ts client/src/lib/database.types.ts"
+    "gen:types": ": \"${SUPABASE_PROJECT_REF:?Set SUPABASE_PROJECT_REF to your Supabase project ref}\" && bun x supabase gen types typescript --project-id \"$SUPABASE_PROJECT_REF\" > /tmp/spazehaus.types.next.ts && mv /tmp/spazehaus.types.next.ts client/src/lib/database.types.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
