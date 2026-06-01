@@ -12,12 +12,32 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/lib/database.types";
 
-const url = import.meta.env.VITE_SUPABASE_URL;
-const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Trim to defend against trailing whitespace/newlines pasted into a hosting
+// provider's env-var field — a common, hard-to-spot cause of bad values.
+const url = import.meta.env.VITE_SUPABASE_URL?.trim();
+const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
 
 if (!url || !anonKey) {
   throw new Error(
-    "Missing Supabase env vars. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env.local (dev) and in Vercel (prod).",
+    "Missing Supabase env vars. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env.local (dev) and in Vercel (prod). " +
+      "Remember: Vite bakes these in at BUILD time, so redeploy after changing them.",
+  );
+}
+
+// Validate the URL ourselves so a malformed value fails with an actionable
+// message naming the bad value — instead of the SDK's cryptic
+// "Invalid supabaseUrl: Must be a valid HTTP or HTTPS URL". The most common
+// mistake is omitting the https:// scheme or swapping the URL with the key.
+try {
+  const parsed = new URL(url);
+  if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+    throw new Error("not http/https");
+  }
+} catch {
+  throw new Error(
+    `Invalid VITE_SUPABASE_URL: "${url}". It must be the full project URL including the scheme, ` +
+      `e.g. https://<project-ref>.supabase.co (no quotes, no trailing spaces). ` +
+      `Check Vercel → Environment Variables, then redeploy.`,
   );
 }
 

@@ -11,9 +11,7 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
-    <script
-      defer
-      src="%VITE_ANALYTICS_ENDPOINT%/umami"
-      data-website-id="%VITE_ANALYTICS_WEBSITE_ID%"></script>
+    <!-- Analytics is injected conditionally from src/lib/analytics.ts so it
+         no-ops (no broken request) when the env vars are unset. -->
   </body>
 </html>
