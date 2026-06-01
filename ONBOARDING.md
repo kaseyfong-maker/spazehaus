@@ -46,15 +46,15 @@ bun run check        # runs tsc --noEmit, must exit 0
 
 ## 3. Tech stack & architecture
 
-| Layer | Tech |
-|---|---|
-| Frontend | React 19 + Vite + Tailwind v4 |
-| Routing | Wouter (lightweight SPA router) |
-| Data fetching | TanStack Query (React Query) |
-| Backend | Supabase (Postgres + Auth + Storage + Edge Functions) |
-| Auth | Supabase magic-link (passwordless email) |
-| Error tracking | Sentry (env-gated — no-op without DSN) |
-| Deploy | Vercel (auto-deploys `main` branch) |
+| Layer          | Tech                                                  |
+| -------------- | ----------------------------------------------------- |
+| Frontend       | React 19 + Vite + Tailwind v4                         |
+| Routing        | Wouter (lightweight SPA router)                       |
+| Data fetching  | TanStack Query (React Query)                          |
+| Backend        | Supabase (Postgres + Auth + Storage + Edge Functions) |
+| Auth           | Supabase magic-link (passwordless email)              |
+| Error tracking | Sentry (env-gated — no-op without DSN)               |
+| Deploy         | Vercel (auto-deploys `main` branch)                 |
 
 **Mobile-first** — designed around a 430px frame with a bottom nav (Home / Projects / Company / Calendar / Profile).
 
@@ -95,6 +95,7 @@ shared/          shared TypeScript types
 **`progress.md` at the repo root is the canonical project history and roadmap.** It documents every feature shipped (with commit hashes), the current state, verification commands, and the prioritized next-steps list. Read it after this guide.
 
 High-level status:
+
 - **Tier 0** (real backend): DONE — schema, auth, RLS, full data migration
 - **Tier 1** (user-facing features): DONE — payment collection, doc e-sign, stage auto-advance, audit viewer, Sentry, bundle optimization, WhatsApp reminder scaffold, read-only client portal
 - **Tier 1.5** (mop-up): IN PROGRESS — `MOCK_TODAY → getToday()` done; remaining: `HERO_BG` CDN swap, `updateStaff`/`updateProject` mutation hooks
@@ -107,22 +108,28 @@ There's also a deferred **PWA conversion decision** — research findings are do
 ## 5. Conventions (follow these)
 
 ### Commit style
+
 Look at `git log` for the house style. Format: `Tier N — Short summary` for features, `Fix: ...` for bugfixes. Bodies explain the *why*. Commits are co-authored with Claude.
 
 ### Keep `progress.md` current
+
 Every meaningful change updates `progress.md` — it's the team's source of truth. This is non-negotiable house discipline.
 
 ### Regenerating DB types after a migration
+
 ```bash
 export SUPABASE_ACCESS_TOKEN=sbp_…   # from supabase.com/dashboard/account/tokens
 bun run gen:types                     # regenerates client/src/lib/database.types.ts
 ```
+
 The script stages to `/tmp` first and only moves into place if the CLI exits 0 — a failed run can't empty the real file. If a regen surfaces new TS errors, that's usually a *real* bug the live schema just exposed — fix at the call site, don't paper over with casts.
 
 ### Applying migrations
+
 Migrations in `supabase/migrations/` are applied via the **Supabase SQL Editor** (paste + run) or the Supabase CLI. There is no automated migration runner in CI. Apply in filename order. After applying, run `bun run gen:types`.
 
 ### Verification before pushing
+
 ```bash
 bun run check                          # TypeScript — must exit 0
 NODE_ENV=production bun x vite build    # production build — must succeed
@@ -133,13 +140,16 @@ NODE_ENV=production bun x vite build    # production build — must succeed
 ## 6. Operations runbook
 
 ### Adding a new staff member (so they can log in)
+
 1. Insert/update their row in the `staff` table via Supabase SQL Editor. Pattern is in `supabase/migrations/20260518000001_add_test_login_emails.sql`.
 2. **Store the email in lowercase** — the auth lookup is case-insensitive now (uses `.ilike`), but lowercase is the house convention.
 3. Set their `role` (controls RLS tier): `principal`/`admin`/`admin_exec` = full access; `pm`/`site_supervisor` = operations; `designer`/`sales` = field.
 4. They visit https://spazehaus.vercel.app/login, enter their email, click the magic link. A DB trigger (`link_staff_to_auth_user`) auto-links their `auth.users` row to their `staff` row by email.
 
 ### Email delivery (magic links) — IMPORTANT
+
 Magic-link emails are sent via **SendGrid SMTP** (configured in Supabase → Authentication → Emails → SMTP Settings).
+
 - Sender: `kaseyfong@saysheji.com` (a verified SendGrid Single Sender)
 - SendGrid free tier: 100 emails/day
 - **Why not Resend?** Resend needs an MX record on a subdomain, which Wix DNS (where `saysheji.com` lives) can't host. SendGrid only needs a verified single sender — no DNS dependency.
@@ -147,15 +157,17 @@ Magic-link emails are sent via **SendGrid SMTP** (configured in Supabase → Aut
 - **If "Error sending magic link email":** check the SendGrid dashboard → Activity for the failure reason (usually sender not verified or API key scope).
 
 ### Monitoring
+
 - **Errors:** Sentry (if DSN configured) — captures runtime crashes with source maps
 - **Deploys:** Vercel dashboard — every push to `main` triggers a build
 - **DB / Auth logs:** Supabase dashboard → Logs
 - **Audit trail:** the app's own `/company/audit` page (admin login required)
 
 ### Edge Functions (deployed separately from the web app)
+
 - `client-portal-photo` — mints signed URLs for the public client portal's photo thumbnails
 - `send-daily-reminders` — WhatsApp daily-photo reminder dispatcher (SCAFFOLD — not yet activated; see its README)
-Deploy with: `bun x supabase functions deploy <name> --project-ref jifrzsvqdshjbqptubgz`
+  Deploy with: `bun x supabase functions deploy <name> --project-ref jifrzsvqdshjbqptubgz`
 
 ---
 
@@ -163,13 +175,13 @@ Deploy with: `bun x supabase functions deploy <name> --project-ref jifrzsvqdshjb
 
 Kasey will invite you to these. Confirm you can log into all of them:
 
-- [ ] **GitHub** — collaborator on `kaseyfong-maker/spazehaus` (accept the email invite, then `git clone`)
-- [ ] **Supabase** — member of the org / project `jifrzsvqdshjbqptubgz`
-- [ ] **Vercel** — member of the team / project hosting `spazehaus.vercel.app`
+- [X] **GitHub** — collaborator on `kaseyfong-maker/spazehaus` (accept the email invite, then `git clone`)
+- [X] **Supabase** — member of the org / project `jifrzsvqdshjbqptubgz`
+- [X] **Vercel** — member of the team / project hosting `spazehaus.vercel.app`
 - [ ] **SendGrid** — teammate on the SendGrid account (or shared API key for SMTP)
 - [ ] **Sentry** — member of the org (if error tracking is in use)
 - [ ] **Wix** — access to `saysheji.com` DNS (only if you'll change email/domain config)
-- [ ] **Env values** — the `VITE_SUPABASE_ANON_KEY` for local `.env.local` (from Supabase dashboard or Kasey)
+- [X] **Env values** — the `VITE_SUPABASE_ANON_KEY` for local `.env.local` (from Supabase dashboard or Kasey)
 
 Once GitHub + Supabase access works and `bun run dev` boots locally, you're unblocked.
 
@@ -178,6 +190,7 @@ Once GitHub + Supabase access works and `bun run dev` boots locally, you're unbl
 ## 8. First tasks to get your feet wet
 
 Good low-risk starters (all in `progress.md`'s Tier 1.5 / Tier 2 lists):
+
 1. **`HERO_BG` CDN swap** (~5 min) — `Reminders.tsx:39` and `PerformanceReport.tsx:35` reference an external Manus CDN image URL. Self-host it instead.
 2. **`updateStaff` / `updateProject` mutation hooks** (~1-2h) — add editable hooks to `queries.ts`; the staff directory + project header are currently read-only.
 3. Read `progress.md` "Next Steps" table and pick a Tier 2 feature with Kasey.
