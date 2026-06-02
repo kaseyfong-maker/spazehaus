@@ -14,7 +14,7 @@ This folder contains the SQL migrations that build the database schema, lock it 
 
 ### Easiest path — Supabase SQL Editor
 
-1. Open your project at https://supabase.com/dashboard/project/jifrzsvqdshjbqptubgz
+1. Open your project at https://supabase.com/dashboard/project/exajkbvaqjqdedqavbvs
 2. Left sidebar → **SQL Editor** → **New query**
 3. **Apply each file in order:**
    - Open `20260512000001_schema.sql` from this repo, copy the entire contents, paste into the editor, click **Run**. Wait for "Success".

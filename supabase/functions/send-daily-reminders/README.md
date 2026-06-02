@@ -66,7 +66,7 @@ From the project root (requires `supabase` CLI authenticated to your project):
 
 ```bash
 bun x supabase functions deploy send-daily-reminders \
-  --project-ref jifrzsvqdshjbqptubgz
+  --project-ref exajkbvaqjqdedqavbvs
 ```
 
 Verify by hitting the function URL with your service role key — it should
@@ -75,7 +75,7 @@ counts):
 
 ```bash
 curl -X POST \
-  "https://jifrzsvqdshjbqptubgz.supabase.co/functions/v1/send-daily-reminders" \
+  "https://exajkbvaqjqdedqavbvs.supabase.co/functions/v1/send-daily-reminders" \
   -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
   -H "Content-Type: application/json"
 ```
@@ -90,7 +90,7 @@ Easiest: **Supabase Dashboard → Database → Cron Jobs → Create a new cron j
 | Schedule | `0 9 * * *` (09:00 UTC = 5pm SGT, daily) |
 | Type | HTTP Request |
 | Method | POST |
-| URL | `https://jifrzsvqdshjbqptubgz.supabase.co/functions/v1/send-daily-reminders` |
+| URL | `https://exajkbvaqjqdedqavbvs.supabase.co/functions/v1/send-daily-reminders` |
 | Headers | `Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>` and `Content-Type: application/json` |
 | Body | `{}` (empty) |
 | Timeout | 60 seconds |
@@ -105,7 +105,7 @@ SELECT cron.schedule(
   '0 9 * * *',
   $$
   SELECT net.http_post(
-    url     := 'https://jifrzsvqdshjbqptubgz.supabase.co/functions/v1/send-daily-reminders',
+    url     := 'https://exajkbvaqjqdedqavbvs.supabase.co/functions/v1/send-daily-reminders',
     headers := jsonb_build_object(
       'Authorization', 'Bearer <SERVICE_ROLE_KEY>',
       'Content-Type', 'application/json'
@@ -183,7 +183,7 @@ a dedicated `WHATSAPP_DISPATCH_SECRET` and use that in the cron job's
 # Trigger a dispatch right now (will respect dedup; only sends if a
 # project is missing today's photo AND nobody's been pinged yet today)
 curl -sS -X POST \
-  "https://jifrzsvqdshjbqptubgz.supabase.co/functions/v1/send-daily-reminders" \
+  "https://exajkbvaqjqdedqavbvs.supabase.co/functions/v1/send-daily-reminders" \
   -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
   -H "Content-Type: application/json" \
   | jq .

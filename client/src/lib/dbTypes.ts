@@ -6,7 +6,7 @@
  * source of truth and is replaceable via:
  *
  *   export SUPABASE_ACCESS_TOKEN=...
- *   bun x supabase gen types typescript --project-id jifrzsvqdshjbqptubgz \
+ *   bun x supabase gen types typescript --project-id exajkbvaqjqdedqavbvs \
  *     > client/src/lib/database.types.ts
  *
  * Aliases below exist because the rest of the codebase imports `StaffRow`,

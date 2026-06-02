@@ -12,7 +12,7 @@ A production-deployed, auth-gated, fully database-backed internal management app
 
 - **Live app:** https://spazehaus.vercel.app
 - **Repo:** `git@github.com:kaseyfong-maker/spazehaus.git` (private)
-- **Database:** Supabase project `jifrzsvqdshjbqptubgz` (Singapore region, free tier)
+- **Database:** Supabase project `exajkbvaqjqdedqavbvs` (Singapore region, free tier)
 - **Hosting:** Vercel (free tier, auto-deploys `main`)
 
 ---
@@ -167,7 +167,7 @@ Magic-link emails are sent via **SendGrid SMTP** (configured in Supabase → Aut
 
 - `client-portal-photo` — mints signed URLs for the public client portal's photo thumbnails
 - `send-daily-reminders` — WhatsApp daily-photo reminder dispatcher (SCAFFOLD — not yet activated; see its README)
-  Deploy with: `bun x supabase functions deploy <name> --project-ref jifrzsvqdshjbqptubgz`
+  Deploy with: `bun x supabase functions deploy <name> --project-ref exajkbvaqjqdedqavbvs`
 
 ---
 
@@ -176,7 +176,7 @@ Magic-link emails are sent via **SendGrid SMTP** (configured in Supabase → Aut
 Kasey will invite you to these. Confirm you can log into all of them:
 
 - [X] **GitHub** — collaborator on `kaseyfong-maker/spazehaus` (accept the email invite, then `git clone`)
-- [X] **Supabase** — member of the org / project `jifrzsvqdshjbqptubgz`
+- [X] **Supabase** — member of the org / project `exajkbvaqjqdedqavbvs`
 - [X] **Vercel** — member of the team / project hosting `spazehaus.vercel.app`
 - [ ] **SendGrid** — teammate on the SendGrid account (or shared API key for SMTP)
 - [ ] **Sentry** — member of the org (if error tracking is in use)

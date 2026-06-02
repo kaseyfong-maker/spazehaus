@@ -3,7 +3,7 @@
 **Last updated:** 2026-06-02
 **Repository:** https://github.com/kaseyfong-maker/spazehaus (private)
 **Live URL:** https://spazehaus.vercel.app
-**Database:** Supabase project `jifrzsvqdshjbqptubgz` (Singapore region, free tier)
+**Database:** Supabase project `exajkbvaqjqdedqavbvs` (Singapore region, free tier)
 
 ---
 
@@ -200,7 +200,7 @@ Payment-collected mutations, document upload + e-sign, stage auto-advance, `/com
 
 | Feature | Effort | Why it matters |
 |---|---|---|
-| **Apply client-portal migration + deploy edge function** | 10 min | The portal is code-complete but inert until you (1) paste `20260513000008_client_portal.sql` into the Supabase SQL Editor (adds `projects.client_access_token` + the SECURITY DEFINER RPC), and (2) `bun x supabase functions deploy client-portal-photo --project-ref jifrzsvqdshjbqptubgz`. Then "Share client portal" buttons start producing working links. |
+| **Apply client-portal migration + deploy edge function** | 10 min | The portal is code-complete but inert until you (1) paste `20260513000008_client_portal.sql` into the Supabase SQL Editor (adds `projects.client_access_token` + the SECURITY DEFINER RPC), and (2) `bun x supabase functions deploy client-portal-photo --project-ref exajkbvaqjqdedqavbvs`. Then "Share client portal" buttons start producing working links. |
 | **Activate WhatsApp reminders** | 1–4 hours | The scaffold is complete + stub-only. To go live: (1) apply `20260513000007_whatsapp_reminders.sql`, (2) `bun x supabase functions deploy send-daily-reminders`, (3) populate `staff.phone` for site supervisors, (4) schedule via Supabase Dashboard → Database → Cron Jobs (`0 9 * * *` UTC), (5) optionally onboard Meta WhatsApp Cloud API or Twilio + create approved template, then flip `WHATSAPP_PROVIDER` env var. Step-by-step in `supabase/functions/send-daily-reminders/README.md`. |
 | **Client portal — signing flow (Phase 2)** | 1–2 days | Add email-OTP confirmation so clients can sign documents from the portal: enter registered email → 6-digit code via Supabase Auth email magic-link → server-side `signature_records.status = 'completed'` with audit trail (client name + IP + user-agent). Builds on the current scaffold. |
 | **Token-regeneration UI** | 30 min | If a portal link leaks, you currently need to `UPDATE projects SET client_access_token = gen_random_uuid()` via SQL. A small "Regenerate portal link" button in ProjectDetail → Overview would surface this — calls a new `useRegenerateClientToken()` mutation. |
