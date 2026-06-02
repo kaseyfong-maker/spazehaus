@@ -141,24 +141,25 @@ export default function ProjectDetail() {
       <div className="pb-24">
         {/* Hero image */}
         <div
-          className="h-44 relative overflow-hidden"
+          className="h-44 lg:h-96 xl:h-[28rem] 2xl:h-[32rem] relative overflow-hidden"
           style={{
             background: `linear-gradient(to bottom, oklch(0.11 0.004 285 / 0.3), oklch(0.11 0.004 285 / 0.75)), url(${project.type === "Residential" ? CARD_BG2 : CARD_BG1}) center/cover no-repeat`,
           }}
         >
-          <div className="absolute bottom-4 left-4 right-4">
+          <div className="absolute bottom-4 left-4 right-4 lg:bottom-6 lg:left-8 lg:right-8">
             <div className="flex items-end justify-between">
               <div>
                 <span className="status-pill" style={{ background: sc.bg, color: sc.color, border: `1px solid ${sc.border}` }}>{sc.label}</span>
-                <p className="text-white font-display text-lg font-semibold mt-1">{project.name}</p>
-                <div className="flex items-center gap-1 mt-0.5">
-                  <MapPin size={10} style={{ color: "oklch(0.82 0.09 68)" }} />
-                  <span className="text-xs" style={{ color: "oklch(0.82 0.09 68)" }}>{project.location}</span>
+                <p className="text-white font-display text-lg lg:text-3xl font-semibold mt-1">{project.name}</p>
+                <div className="flex items-center gap-1 mt-0.5 lg:mt-1.5">
+                  <MapPin size={10} className="lg:hidden" style={{ color: "oklch(0.82 0.09 68)" }} />
+                  <MapPin size={14} className="hidden lg:block" style={{ color: "oklch(0.82 0.09 68)" }} />
+                  <span className="text-xs lg:text-sm" style={{ color: "oklch(0.82 0.09 68)" }}>{project.location}</span>
                 </div>
               </div>
               <div className="text-right">
                 <p className="text-xs text-white/60">Budget</p>
-                <p className="text-white font-semibold text-sm">RM {project.budget.toLocaleString()}</p>
+                <p className="text-white font-semibold text-sm lg:text-xl">RM {project.budget.toLocaleString()}</p>
               </div>
             </div>
           </div>
