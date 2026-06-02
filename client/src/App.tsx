@@ -14,7 +14,7 @@
  * dynamic generatePDF import — those would otherwise be preloaded for
  * every visitor regardless of whether they ever open the page.
  */
-import { lazy, Suspense, useEffect } from "react";
+import { lazy, Suspense, useEffect, type ComponentType } from "react";
 import { Loader2 } from "lucide-react";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -37,26 +37,59 @@ import Company from "./pages/Company";
 import CalendarPage from "./pages/CalendarPage";
 import Profile from "./pages/Profile";
 
+/**
+ * Like `React.lazy`, but resilient to stale chunks after a deploy. When a new
+ * build ships, Vite rotates the hashed chunk filenames and deletes the old
+ * ones — so an already-open tab that navigates to a lazy route asks the server
+ * for a now-404 filename and throws "Failed to fetch dynamically imported
+ * module". Instead of crashing into the ErrorBoundary, we trigger ONE full
+ * reload (which re-fetches fresh HTML + current chunk names). A sessionStorage
+ * flag guards against reload loops: if the import still fails after the reload
+ * (a genuine error, not staleness), we rethrow and let the ErrorBoundary show.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- mirrors React.lazy's own ComponentType<any> signature
+function lazyWithReload<T extends ComponentType<any>>(
+  factory: () => Promise<{ default: T }>,
+) {
+  const RELOAD_FLAG = "spz:chunk-reloaded";
+  return lazy(async () => {
+    try {
+      const mod = await factory();
+      // Loaded fine — clear the guard so a future deploy can reload again.
+      sessionStorage.removeItem(RELOAD_FLAG);
+      return mod;
+    } catch (err) {
+      if (!sessionStorage.getItem(RELOAD_FLAG)) {
+        sessionStorage.setItem(RELOAD_FLAG, "1");
+        window.location.reload();
+        // Never resolve — keep React suspended while the page reloads.
+        return new Promise<{ default: T }>(() => {});
+      }
+      throw err;
+    }
+  });
+}
+
 // Sub-pages — lazy (each gets its own chunk, only fetched on navigation)
-const ProjectDetail    = lazy(() => import("./pages/ProjectDetail"));
-const CreateProject    = lazy(() => import("./pages/CreateProject"));
-const StaffDirectory   = lazy(() => import("./pages/StaffDirectory"));
-const StaffProfile     = lazy(() => import("./pages/StaffProfile"));
-const LeaveManagement  = lazy(() => import("./pages/LeaveManagement"));
-const Recruitment      = lazy(() => import("./pages/Recruitment"));
-const KPIPerformance   = lazy(() => import("./pages/KPIPerformance"));      // pulls in recharts
-const Announcements    = lazy(() => import("./pages/Announcements"));
-const AuditLog         = lazy(() => import("./pages/AuditLog"));
-const QuotationList    = lazy(() => import("./pages/QuotationList"));
-const QuotationDetail  = lazy(() => import("./pages/QuotationDetail"));     // root of the PDF lazy chain
-const CreateQuotation  = lazy(() => import("./pages/CreateQuotation"));
-const Checkpoints      = lazy(() => import("./pages/Checkpoints"));
-const CustomerDatabase = lazy(() => import("./pages/CustomerDatabase"));
-const CustomerDetail   = lazy(() => import("./pages/CustomerDetail"));
-const RemindersPage    = lazy(() => import("./pages/Reminders"));
-const PerformanceReport = lazy(() => import("./pages/PerformanceReport"));
+const ProjectDetail    = lazyWithReload(() => import("./pages/ProjectDetail"));
+const CreateProject    = lazyWithReload(() => import("./pages/CreateProject"));
+const StaffDirectory   = lazyWithReload(() => import("./pages/StaffDirectory"));
+const StaffProfile     = lazyWithReload(() => import("./pages/StaffProfile"));
+const LeaveManagement  = lazyWithReload(() => import("./pages/LeaveManagement"));
+const Recruitment      = lazyWithReload(() => import("./pages/Recruitment"));
+const KPIPerformance   = lazyWithReload(() => import("./pages/KPIPerformance"));      // pulls in recharts
+const Announcements    = lazyWithReload(() => import("./pages/Announcements"));
+const AuditLog         = lazyWithReload(() => import("./pages/AuditLog"));
+const QuotationList    = lazyWithReload(() => import("./pages/QuotationList"));
+const QuotationDetail  = lazyWithReload(() => import("./pages/QuotationDetail"));     // root of the PDF lazy chain
+const CreateQuotation  = lazyWithReload(() => import("./pages/CreateQuotation"));
+const Checkpoints      = lazyWithReload(() => import("./pages/Checkpoints"));
+const CustomerDatabase = lazyWithReload(() => import("./pages/CustomerDatabase"));
+const CustomerDetail   = lazyWithReload(() => import("./pages/CustomerDetail"));
+const RemindersPage    = lazyWithReload(() => import("./pages/Reminders"));
+const PerformanceReport = lazyWithReload(() => import("./pages/PerformanceReport"));
 // Public — reachable without a Supabase Auth session via /portal/:token.
-const ClientPortal     = lazy(() => import("./pages/ClientPortal"));
+const ClientPortal     = lazyWithReload(() => import("./pages/ClientPortal"));
 
 // Pages that show bottom nav
 const BOTTOM_NAV_PATHS = ["/", "/projects", "/company", "/calendar", "/profile"];
