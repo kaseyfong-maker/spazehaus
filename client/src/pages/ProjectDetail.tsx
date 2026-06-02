@@ -41,8 +41,8 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 
-const CARD_BG1 = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296470877/VpBogREhxCtoLqGD.jpg";
-const CARD_BG2 = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296470877/WVqmmFphKswecRCt.jpg";
+const CARD_BG1 = "/hero/card1.jpg";
+const CARD_BG2 = "/hero/card2.jpg";
 
 const tabs = ["Overview", "Lifecycle", "Tasks", "Quotations", "Photos", "Team"];
 

@@ -23,7 +23,7 @@ import type { InquiryStage } from "@/lib/dbTypes";
 import { useInquiry, useAllStaff } from "@/lib/queries";
 import { formatRM } from "@/lib/quotationData";
 
-const HERO_BG = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296470877/DEoUZCqpbvuNBJsc.jpg";
+const HERO_BG = "/hero/cool.jpg";
 
 const PIPELINE: { key: InquiryStage; label: string }[] = [
   { key: "new-inquiry",   label: "New Inquiry" },

@@ -67,7 +67,7 @@ const actionVisual: Record<AuditAction, { tint: string; bg: string; border: stri
   DELETE: { tint: "oklch(0.50 0.12 25)",  bg: "oklch(0.60 0.12 25 / 12%)",  border: "oklch(0.60 0.12 25 / 30%)",  icon: Trash2,     verb: "Deleted" },
 };
 
-const HERO_BG = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296470877/izBqEFfzzpfKonJn.jpg";
+const HERO_BG = "/hero/portfolio.jpg";
 
 // ─── Page ───────────────────────────────────────────────────────────────────
 

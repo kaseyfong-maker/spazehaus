@@ -12,7 +12,7 @@ import AppHeader from "@/components/AppHeader";
 import { statusConfig, priorityConfig } from "@/lib/mockData";
 import { useProjects, useOpenPayments, useOpenSignatures, useInquiries, useQuotations, computeCheckpointSummary, computeCustomerSummary } from "@/lib/queries";
 
-const HERO_BG = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296470877/izBqEFfzzpfKonJn.jpg";
+const HERO_BG = "/hero/portfolio.jpg";
 
 const statusFilters = [
   { key: "all", label: "All" },

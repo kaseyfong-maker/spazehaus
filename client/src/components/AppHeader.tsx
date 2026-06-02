@@ -41,7 +41,11 @@ export default function AppHeader({
       <div
         className={`relative overflow-hidden ${compact ? "pt-10 pb-5" : "pt-12 pb-7"}`}
         style={{
-          background: `linear-gradient(to bottom, oklch(0.11 0.004 285 / 0.55) 0%, oklch(0.11 0.004 285 / 0.80) 100%), url(${bgImage}) center/cover no-repeat`,
+          // Three layers, top→bottom: dark overlay (tints the image) · the hero
+          // image · a brand gradient fallback. The fallback matches the Profile
+          // header, so while the image is still downloading (or fails) the header
+          // shows the warm dark gradient instead of a flash of gray.
+          background: `linear-gradient(to bottom, oklch(0.11 0.004 285 / 0.55) 0%, oklch(0.11 0.004 285 / 0.80) 100%), url(${bgImage}) center/cover no-repeat, linear-gradient(135deg, oklch(0.23 0.018 65) 0%, oklch(0.12 0.006 285) 100%)`,
         }}
       >
         {/* Gold accent line at top */}

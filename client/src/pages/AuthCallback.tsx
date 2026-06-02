@@ -15,7 +15,7 @@ import { motion } from "framer-motion";
 import { Check, AlertCircle, Loader2 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 
-const HERO_BG = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296470877/AuQSChINbJLLhITo.jpg";
+const HERO_BG = "/hero/warm.jpg";
 
 export default function AuthCallback() {
   const [, navigate] = useLocation();

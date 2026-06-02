@@ -31,7 +31,7 @@ import {
 } from "@/lib/clientPortal";
 
 const HERO_BG =
-  "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296470877/izBqEFfzzpfKonJn.jpg";
+  "/hero/portfolio.jpg";
 
 // ─── Page ─────────────────────────────────────────────────────────────────
 

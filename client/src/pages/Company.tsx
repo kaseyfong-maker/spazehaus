@@ -22,7 +22,7 @@ import {
 } from "@/lib/queries";
 import { useAuth } from "@/contexts/AuthContext";
 
-const HERO_BG = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296470877/DEoUZCqpbvuNBJsc.jpg";
+const HERO_BG = "/hero/cool.jpg";
 
 const deptColors: Record<string, { color: string; bg: string }> = {
   Design:     { color: "oklch(0.42 0.09 68)",  bg: "oklch(0.62 0.09 68 / 10%)" },

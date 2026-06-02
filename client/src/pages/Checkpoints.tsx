@@ -33,7 +33,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { formatRM } from "@/lib/quotationData";
 
-const HERO_BG = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296470877/izBqEFfzzpfKonJn.jpg";
+const HERO_BG = "/hero/portfolio.jpg";
 
 type FilterTab = "All" | "Payments" | "Documents";
 const filterTabs: FilterTab[] = ["All", "Payments", "Documents"];

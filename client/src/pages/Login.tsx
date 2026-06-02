@@ -15,7 +15,7 @@ import { motion } from "framer-motion";
 import { Mail, AlertCircle, Check, ArrowRight } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
-const HERO_BG = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296470877/AuQSChINbJLLhITo.jpg";
+const HERO_BG = "/hero/warm.jpg";
 
 type LoginState =
   | { kind: "idle" }

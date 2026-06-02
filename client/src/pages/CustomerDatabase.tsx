@@ -20,7 +20,7 @@ import type { InquiryStage, CustomerCategory } from "@/lib/dbTypes";
 import { useInquiries, computeCustomerSummary } from "@/lib/queries";
 import { formatRM } from "@/lib/quotationData";
 
-const HERO_BG = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296470877/DEoUZCqpbvuNBJsc.jpg";
+const HERO_BG = "/hero/cool.jpg";
 
 type FilterTab = "All" | "Active" | "Awarded" | "Rejected";
 const filterTabs: FilterTab[] = ["All", "Active", "Awarded", "Rejected"];

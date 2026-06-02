@@ -36,7 +36,7 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import { reminderTypeConfig, reminderStatusConfig } from "@/lib/reminderData";
 
-const HERO_BG = "https://files.manuscdn.com/user_upload_by_module/session_file/310519663296470877/AuQSChINbJLLhITo.jpg";
+const HERO_BG = "/hero/warm.jpg";
 
 function fmtToday(): string {
   const t = getToday();
