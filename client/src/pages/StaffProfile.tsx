@@ -5,12 +5,19 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useParams } from "wouter";
-import { Phone, Mail, Calendar, Award, Loader2 } from "lucide-react";
+import { Phone, Mail, Calendar, Award, Loader2, Pencil, MessageCircle } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
-import { useStaffById, useLeaveRequests, useStaffKpiRecords } from "@/lib/queries";
+import { useStaffById, useLeaveRequests, useStaffKpiRecords, canEditStaffRow, isAdminTier } from "@/lib/queries";
 import { statusConfig } from "@/lib/mockData";
+import { useAuth } from "@/contexts/AuthContext";
+import EditStaffSheet from "@/components/EditStaffSheet";
 
 const tabs = ["Profile", "Leave", "KPI"];
+
+// Company leave entitlements (firm policy). The DB stores only the REMAINING
+// balance per staff (leave_balance_annual / _medical) — these totals are policy,
+// not per-staff data, so they live here rather than masquerading as DB fields.
+const LEAVE_ENTITLEMENT = { annual: 16, medical: 14 };
 
 export default function StaffProfile() {
   const { id } = useParams<{ id: string }>();
@@ -19,6 +26,8 @@ export default function StaffProfile() {
   const { data: staff, isLoading } = useStaffById(id);
   const { data: allLeave = [] } = useLeaveRequests();
   const { data: kpiRecords = [] } = useStaffKpiRecords(id);
+  const { staff: me } = useAuth();
+  const [editOpen, setEditOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -37,6 +46,11 @@ export default function StaffProfile() {
   const sc = statusConfig[staff.status as keyof typeof statusConfig];
   const staffLeave = allLeave.filter((l) => l.staff_id === staff.id);
 
+  // Editing: admins may edit anyone; a staff member may edit their own row.
+  const isOwnRow = !!me && me.id === staff.id;
+  const canEdit = canEditStaffRow(me?.role, isOwnRow);
+  const canEditAll = isAdminTier(me?.role);
+
   // Pick the most-recent month for the KPI tab "current rating" widget
   const latestKpi = kpiRecords[0]; // already sorted desc by year/month
   const currentRating: string = latestKpi?.rating ?? staff.kpi_grade ?? "—";
@@ -52,15 +66,26 @@ export default function StaffProfile() {
         }}
       >
         <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg, transparent, oklch(0.72 0.09 68), transparent)" }} />
-        <div className="flex items-start gap-1 mb-4">
+        <div className="flex items-start justify-between mb-4">
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={() => window.history.back()}
-            className="w-9 h-9 flex items-center justify-center rounded-full mr-2"
+            className="w-9 h-9 flex items-center justify-center rounded-full"
             style={{ background: "oklch(1 0 0 / 15%)", border: "1px solid oklch(1 0 0 / 20%)" }}
           >
             <span style={{ color: "oklch(0.78 0.09 68)", fontSize: "18px" }}>‹</span>
           </motion.button>
+          {canEdit && (
+            <motion.button
+              whileTap={{ scale: 0.92 }}
+              onClick={() => setEditOpen(true)}
+              className="flex items-center gap-1.5 h-9 px-3.5 rounded-full text-xs font-label"
+              style={{ background: "oklch(1 0 0 / 15%)", border: "1px solid oklch(1 0 0 / 20%)", color: "oklch(0.82 0.09 68)", letterSpacing: "0.04em" }}
+            >
+              <Pencil size={13} />
+              Edit
+            </motion.button>
+          )}
         </div>
 
         <div className="flex items-center gap-4">
@@ -136,6 +161,7 @@ export default function StaffProfile() {
               <h4 className="font-display text-base font-semibold text-neutral-900">Personal Information</h4>
               {[
                 { label: "Staff ID", value: staff.id, icon: Award },
+                { label: "Role", value: staff.role, icon: null },
                 { label: "Department", value: staff.dept, icon: null },
                 { label: "Join Date", value: formatJoinDate(staff.join_date), icon: Calendar },
               ].map((item) => (
@@ -166,6 +192,14 @@ export default function StaffProfile() {
                 </div>
                 <span className="text-sm" style={{ color: "oklch(0.25 0.008 65)" }}>{staff.email}</span>
               </motion.button>
+              <div className="w-full flex items-center gap-3 py-2">
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "oklch(0.55 0.09 145 / 15%)" }}>
+                  <MessageCircle size={14} style={{ color: "oklch(0.45 0.09 145)" }} />
+                </div>
+                <span className="text-sm" style={{ color: "oklch(0.25 0.008 65)" }}>
+                  WhatsApp reminders {staff.whatsapp_opt_in ? "on" : "off"}
+                </span>
+              </div>
             </div>
           </div>
         )}
@@ -176,19 +210,18 @@ export default function StaffProfile() {
             <div className="rounded-2xl p-4" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
               <h4 className="font-display text-base font-semibold text-neutral-900 mb-3">Leave Balance 2026</h4>
               {[
-                { type: "Annual Leave", used: 16 - staff.leave_balance_annual, total: 16, color: "oklch(0.70 0.09 240)" },
-                { type: "Medical Leave", used: 14 - staff.leave_balance_medical, total: 14, color: "oklch(0.68 0.12 25)" },
-                { type: "Replacement Leave", used: 0, total: 3, color: "oklch(0.80 0.12 68)" },
+                { type: "Annual Leave", remaining: staff.leave_balance_annual, total: LEAVE_ENTITLEMENT.annual, color: "oklch(0.70 0.09 240)" },
+                { type: "Medical Leave", remaining: staff.leave_balance_medical, total: LEAVE_ENTITLEMENT.medical, color: "oklch(0.68 0.12 25)" },
               ].map((lb) => (
                 <div key={lb.type} className="mb-3">
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-xs" style={{ color: "oklch(0.52 0.010 68)" }}>{lb.type}</span>
-                    <span className="text-xs font-semibold" style={{ color: lb.color }}>{lb.total - lb.used}/{lb.total} days</span>
+                    <span className="text-xs font-semibold" style={{ color: lb.color }}>{lb.remaining}/{lb.total} days left</span>
                   </div>
                   <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "oklch(0.90 0.010 75)" }}>
                     <div
                       className="h-full rounded-full"
-                      style={{ width: `${((lb.total - lb.used) / lb.total) * 100}%`, background: lb.color }}
+                      style={{ width: `${Math.max(0, Math.min(100, (lb.remaining / lb.total) * 100))}%`, background: lb.color }}
                     />
                   </div>
                 </div>
@@ -294,6 +327,13 @@ export default function StaffProfile() {
           </div>
         )}
       </div>
+
+      <EditStaffSheet
+        staff={staff}
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        canEditAll={canEditAll}
+      />
     </div>
   );
 }

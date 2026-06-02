@@ -338,6 +338,69 @@ export function useProject(id: string | undefined) {
   });
 }
 
+/** Editable project-metadata fields (camelCase, mirroring the app `Project` shape).
+ *  Only keys that are present are written — derived/system columns (progress,
+ *  counts, current_stage_id, client_access_token) are intentionally absent. */
+export type UpdateProjectArgs = {
+  id: string;
+  name?: string;
+  client?: string;                       // → client_name
+  clientContact?: string | null;         // → client_contact
+  clientEmail?: string | null;           // → client_email
+  location?: string;
+  size?: number;                         // → size_sqft
+  budget?: number;
+  status?: ProjectRow["status"];
+  priority?: ProjectRow["priority"];
+  type?: string;                         // → project_type
+  propertyType?: string;                 // → property_type
+  description?: string | null;
+  startDate?: string;                    // DD/MM/YYYY → start_date
+  targetDate?: string;                   // DD/MM/YYYY → target_date
+};
+
+/** Update editable project metadata. Gated server-side by the Phase 0D
+ *  `projects_write_ops` RLS policy to the OPS tier — see `canEditProject`. */
+export function useUpdateProject() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: UpdateProjectArgs): Promise<ProjectRow> => {
+      const payload: TablesUpdate<"projects"> = {};
+      if (args.name !== undefined) payload.name = args.name;
+      if (args.client !== undefined) payload.client_name = args.client;
+      if (args.clientContact !== undefined) payload.client_contact = args.clientContact;
+      if (args.clientEmail !== undefined) payload.client_email = args.clientEmail;
+      if (args.location !== undefined) payload.location = args.location;
+      if (args.size !== undefined) payload.size_sqft = args.size;
+      if (args.budget !== undefined) payload.budget = args.budget;
+      if (args.status !== undefined) payload.status = args.status;
+      if (args.priority !== undefined) payload.priority = args.priority;
+      if (args.type !== undefined) payload.project_type = args.type;
+      if (args.propertyType !== undefined) payload.property_type = args.propertyType;
+      if (args.description !== undefined) payload.description = args.description;
+      if (args.startDate !== undefined) payload.start_date = args.startDate ? ddmmyyyyToIso(args.startDate) : null;
+      if (args.targetDate !== undefined) payload.target_date = args.targetDate ? ddmmyyyyToIso(args.targetDate) : null;
+
+      const { data, error } = await supabase
+        .from("projects")
+        .update(payload)
+        .eq("id", args.id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data as ProjectRow;
+    },
+    onSuccess: (_row, args) => {
+      qc.invalidateQueries({ queryKey: qk.projects });
+      qc.invalidateQueries({ queryKey: qk.project(args.id) });
+    },
+  });
+}
+
+/** Returns true when the role may edit project metadata — OPS tier, same as
+ *  the payment/signature write gate (`canEditPayments`). */
+export const canEditProject = canEditPayments;
+
 // ─── LIFECYCLE (PAYMENTS + SIGNATURES PER PROJECT) ──────────────────────────
 
 export function useProjectLifecycle(projectId: string | undefined) {
@@ -552,6 +615,26 @@ export function canEditPayments(role: StaffRow["role"] | null | undefined): bool
 
 /** Same OPS-tier predicate, named for the signature/document flow. */
 export const canEditSignatures = canEditPayments;
+
+/** True for the ADMIN tier (principal / admin / admin_exec). */
+export function isAdminTier(role: StaffRow["role"] | null | undefined): boolean {
+  return role === "principal" || role === "admin" || role === "admin_exec";
+}
+
+/**
+ * Who may edit a given staff row. Mirrors the Phase 0D RLS:
+ *   • admin tier may edit ANY staff row (`staff_write_admin`)
+ *   • anyone may edit their OWN row (`staff_update_self`)
+ * Non-admins editing their own row are restricted to safe fields in the UI
+ * (phone / WhatsApp opt-in); the `guard_staff_sensitive_columns` trigger
+ * (migration 20260602000001) enforces that server-side.
+ */
+export function canEditStaffRow(
+  role: StaffRow["role"] | null | undefined,
+  isOwnRow: boolean,
+): boolean {
+  return isAdminTier(role) || isOwnRow;
+}
 
 /**
  * Returns true when the current staff role is allowed to view the cross-system
@@ -1352,6 +1435,53 @@ export function useStaffById(id: string | undefined) {
         .maybeSingle();
       if (error) throw error;
       return (data as StaffRow | null) ?? null;
+    },
+  });
+}
+
+/** Editable staff fields. `role` / `status` are admin-only (UI hides them for
+ *  self-editors; the `guard_staff_sensitive_columns` trigger also rejects them
+ *  server-side for non-admins). `email` is intentionally not editable here —
+ *  it's the magic-link auth key. */
+export type UpdateStaffArgs = {
+  id: string;
+  name?: string;
+  job_title?: string;
+  dept?: string;
+  phone?: string | null;
+  whatsapp_opt_in?: boolean;
+  role?: StaffRow["role"];
+  status?: StaffRow["status"];
+};
+
+/** Update an editable staff record. Server-side gating: `staff_write_admin`
+ *  (admin → any row) + `staff_update_self` (anyone → own row). See
+ *  `canEditStaffRow`. */
+export function useUpdateStaff() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: UpdateStaffArgs): Promise<StaffRow> => {
+      const payload: TablesUpdate<"staff"> = {};
+      if (args.name !== undefined) payload.name = args.name;
+      if (args.job_title !== undefined) payload.job_title = args.job_title;
+      if (args.dept !== undefined) payload.dept = args.dept;
+      if (args.phone !== undefined) payload.phone = args.phone;
+      if (args.whatsapp_opt_in !== undefined) payload.whatsapp_opt_in = args.whatsapp_opt_in;
+      if (args.role !== undefined) payload.role = args.role;
+      if (args.status !== undefined) payload.status = args.status;
+
+      const { data, error } = await supabase
+        .from("staff")
+        .update(payload)
+        .eq("id", args.id)
+        .select()
+        .single();
+      if (error) throw error;
+      return data as StaffRow;
+    },
+    onSuccess: (_row, args) => {
+      qc.invalidateQueries({ queryKey: qk.staff });
+      qc.invalidateQueries({ queryKey: qk.staffOne(args.id) });
     },
   });
 }

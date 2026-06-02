@@ -33,12 +33,14 @@ import {
   useProjectLifecycle,
   canEditPayments,
   canEditSignatures,
+  canEditProject,
   getSignatureDocUrl,
   isStorageDocRef,
   type PaymentRecord,
   type DocumentSignRecord,
 } from "@/lib/queries";
 import { useAuth } from "@/contexts/AuthContext";
+import EditProjectSheet from "@/components/EditProjectSheet";
 import { toast } from "sonner";
 
 const CARD_BG1 = "/hero/card1.jpg";
@@ -86,6 +88,8 @@ export default function ProjectDetail() {
   const { data: project, isLoading } = useProject(id);
   const { data: allStaff = [] } = useAllStaff();
   const { data: allQuotations = [] } = useQuotations();
+  const { staff: me } = useAuth();
+  const [editOpen, setEditOpen] = useState(false);
 
   if (isLoading) {
     return (
@@ -110,10 +114,29 @@ export default function ProjectDetail() {
   const sc = statusConfig[project.status as keyof typeof statusConfig];
   const pc = priorityConfig[project.priority as keyof typeof priorityConfig];
   const teamMembers = allStaff.filter((s) => project.team.includes(s.avatar_code));
+  const canEdit = canEditProject(me?.role);
 
   return (
     <div className="mobile-container" style={{ background: "oklch(0.985 0.004 80)" }}>
-      <AppHeader title={project.name} subtitle={project.type.toUpperCase()} showBack compact />
+      <AppHeader
+        title={project.name}
+        subtitle={project.type.toUpperCase()}
+        showBack
+        compact
+        rightAction={
+          canEdit ? (
+            <motion.button
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setEditOpen(true)}
+              className="flex items-center gap-1.5 h-9 px-3.5 rounded-full text-xs font-label"
+              style={{ background: "oklch(0.96 0.006 75)", border: "1px solid oklch(0.90 0.010 75)", color: "oklch(0.42 0.09 68)", letterSpacing: "0.04em" }}
+            >
+              <PenSquare size={13} />
+              Edit
+            </motion.button>
+          ) : undefined
+        }
+      />
 
       <div className="pb-24">
         {/* Hero image */}
@@ -537,6 +560,8 @@ export default function ProjectDetail() {
           </div>
         </div>
       </div>
+
+      <EditProjectSheet project={project} open={editOpen} onClose={() => setEditOpen(false)} />
     </div>
   );
 }
