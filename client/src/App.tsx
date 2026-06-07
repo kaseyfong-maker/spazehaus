@@ -29,6 +29,7 @@ import BottomNav from "./components/BottomNav";
 import Sidebar from "./components/Sidebar";
 import Login from "./pages/Login";
 import AuthCallback from "./pages/AuthCallback";
+import NoStaffProfile from "./pages/NoStaffProfile";
 
 // Main tabs — eager (likely first paint, already in initial chunk graph)
 import Dashboard from "./pages/Dashboard";
@@ -51,16 +52,21 @@ import Profile from "./pages/Profile";
 function lazyWithReload<T extends ComponentType<any>>(
   factory: () => Promise<{ default: T }>,
 ) {
-  const RELOAD_FLAG = "spz:chunk-reloaded";
+  const RELOAD_TS = "spz:chunk-reload-ts";
+  const COOLDOWN_MS = 10_000;
   return lazy(async () => {
     try {
-      const mod = await factory();
-      // Loaded fine — clear the guard so a future deploy can reload again.
-      sessionStorage.removeItem(RELOAD_FLAG);
-      return mod;
+      return await factory();
     } catch (err) {
-      if (!sessionStorage.getItem(RELOAD_FLAG)) {
-        sessionStorage.setItem(RELOAD_FLAG, "1");
+      // Auto-reload once to recover from a stale chunk after a deploy — but only
+      // if we haven't just reloaded. A stale-deploy failure happens long after
+      // any prior reload so it still self-heals; repeated failures within the
+      // cooldown (a genuinely flaky network) fall through to the ErrorBoundary
+      // instead of reload-looping.
+      const last = Number(sessionStorage.getItem(RELOAD_TS) || 0);
+      const now = Date.now();
+      if (now - last > COOLDOWN_MS) {
+        sessionStorage.setItem(RELOAD_TS, String(now));
         window.location.reload();
         // Never resolve — keep React suspended while the page reloads.
         return new Promise<{ default: T }>(() => {});
@@ -88,6 +94,7 @@ const CustomerDatabase = lazyWithReload(() => import("./pages/CustomerDatabase")
 const CustomerDetail   = lazyWithReload(() => import("./pages/CustomerDetail"));
 const RemindersPage    = lazyWithReload(() => import("./pages/Reminders"));
 const PerformanceReport = lazyWithReload(() => import("./pages/PerformanceReport"));
+const CreateStaff      = lazyWithReload(() => import("./pages/CreateStaff"));
 // Public — reachable without a Supabase Auth session via /portal/:token.
 const ClientPortal     = lazyWithReload(() => import("./pages/ClientPortal"));
 
@@ -140,9 +147,7 @@ function AppLayout() {
 
             {/* Company sub-pages */}
             <Route path="/company/staff" component={StaffDirectory} />
-            <Route path="/company/staff/new">
-              {() => { window.history.back(); return null; }}
-            </Route>
+            <Route path="/company/staff/new" component={CreateStaff} />
             <Route path="/company/staff/:id" component={StaffProfile} />
             <Route path="/company/leave" component={LeaveManagement} />
             <Route path="/company/recruitment" component={Recruitment} />
@@ -241,6 +246,12 @@ function AuthGate() {
         <Route path="/auth/callback" component={AuthCallback} />
       </Switch>
     );
+  }
+
+  // Authenticated session but no matching staff row → dedicated screen with a
+  // way out, instead of a blank page (e.g. persisted session on a private path).
+  if (state.status === "authenticated-no-staff") {
+    return <NoStaffProfile />;
   }
 
   // Unauthenticated + private path → we're mid-redirect; render nothing briefly

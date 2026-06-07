@@ -5,13 +5,16 @@
  * → clicking the link redirects to /auth/callback where the SDK parses the
  * tokens from the URL fragment and creates the session.
  *
- * Only staff with an email present in the `staff` table can sign in
- * (enforced by Supabase's "Confirm email" requirement + the auth-link trigger
- * that maps the auth user back to a staff row). Users without a matching
- * staff record see a friendly "not authorised" message after redirect.
+ * Only staff with an email present in the `staff` table can sign in. This is
+ * gated at TWO points: (1) the `staff_email_exists` RPC here blocks the link
+ * request for unknown emails before any auth account is created, and (2) the
+ * auth-link trigger + AuthContext map the auth user back to a staff row. Any
+ * session that still ends up without a staff record sees the NoStaffProfile
+ * screen (or the "not authorised" card on /auth/callback).
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { toast } from "sonner";
 import { Mail, AlertCircle, Check, ArrowRight } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
@@ -27,6 +30,15 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [state, setState] = useState<LoginState>({ kind: "idle" });
 
+  // If we got here because the session expired (not a deliberate sign-out),
+  // explain why — otherwise being bounced to login mid-work is confusing.
+  useEffect(() => {
+    if (sessionStorage.getItem("spz:session-expired")) {
+      sessionStorage.removeItem("spz:session-expired");
+      toast.info("Your session expired. Please sign in again.");
+    }
+  }, []);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const trimmed = email.trim().toLowerCase();
@@ -37,14 +49,34 @@ export default function Login() {
 
     setState({ kind: "submitting" });
 
+    // Front-door gate: only emails present in the `staff` table may request a
+    // link. The RPC is SECURITY DEFINER (anon can't read `staff` directly) and
+    // returns a plain yes/no. This stops unknown emails from ever creating an
+    // orphan auth.users account (we still pass shouldCreateUser:true below so a
+    // known staff's account is created on their first sign-in).
+    const { data: known, error: checkError } = await supabase.rpc("staff_email_exists", {
+      p_email: trimmed,
+    });
+    if (checkError) {
+      setState({ kind: "error", message: "Couldn't verify your email right now. Please try again." });
+      return;
+    }
+    if (!known) {
+      setState({
+        kind: "error",
+        message: "This email isn't registered as a staff member. Please contact your admin.",
+      });
+      return;
+    }
+
     const { error } = await supabase.auth.signInWithOtp({
       email: trimmed,
       options: {
         // After clicking the link in the email, return here:
         emailRedirectTo: `${window.location.origin}/auth/callback`,
-        // Don't auto-create a user — only existing staff in our DB should be allowed in
-        // (this still requires the email to match an entry in staff for full app access,
-        // enforced inside AuthContext)
+        // Create the auth.users account on first sign-in. Safe now that the
+        // staff_email_exists gate above guarantees a matching staff row, so the
+        // link_staff_to_auth_user trigger will link them immediately.
         shouldCreateUser: true,
       },
     });
