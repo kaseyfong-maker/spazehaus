@@ -117,3 +117,9 @@ temp/
 
 # Webdev artifacts (checkpoint zips, migrations, etc.)
 .webdev/
+
+# Cypress — local secrets + run artifacts (never commit cypress.env.json)
+cypress.env.json
+cypress/screenshots/
+cypress/videos/
+cypress/downloads/

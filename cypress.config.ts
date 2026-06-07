@@ -4,29 +4,17 @@ import { execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
 // ── Local-only test config ───────────────────────────────────────────────────
-// These are LOCAL Supabase credentials (printed by `supabase status`). They are
-// safe to commit only because they're the well-known local dev defaults — never
-// put cloud/service keys here. baseUrl uses 127.0.0.1 so it shares a superdomain
-// with the Supabase URL (auth redirects work) and dodges the localhost service
-// worker. Override any of these via CYPRESS_* env vars if your ports differ.
+// Non-secret values (local URL, publishable key, ports) have safe defaults.
+// The SERVICE (secret) key is NEVER hardcoded — provide it via the gitignored
+// cypress.env.json  ({ "SERVICE_KEY": "sb_secret_..." })  or the env var
+// CYPRESS_SERVICE_KEY. Get the value from `supabase status` (Secret key).
+// baseUrl uses 127.0.0.1 so it shares a superdomain with the Supabase URL (auth
+// redirects work) and dodges the localhost service worker.
 const SUPABASE_URL = process.env.CYPRESS_SUPABASE_URL ?? "http://127.0.0.1:54321";
 const ANON_KEY = process.env.CYPRESS_ANON_KEY ?? "sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH";
-const SERVICE_KEY = process.env.CYPRESS_SERVICE_KEY ?? "sb_secret_LOCAL_PLACEHOLDER";
 const MAILPIT_URL = process.env.CYPRESS_MAILPIT_URL ?? "http://127.0.0.1:54324";
 const DB_CONTAINER = process.env.CYPRESS_DB_CONTAINER ?? "supabase_db_Web";
 const BASE_URL = process.env.CYPRESS_BASE_URL ?? "http://127.0.0.1:3000";
-
-function admin() {
-  return createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
-}
-
-// Make sure an auth user exists for this email (creates it confirmed if not),
-// which also fires the link_staff_to_auth_user trigger → links the staff row.
-async function ensureAuthUser(email: string) {
-  const { error } = await admin().auth.admin.createUser({ email, email_confirm: true });
-  // "already registered" is fine — we just need the user to exist.
-  if (error && !/already|registered|exists/i.test(error.message)) throw new Error(error.message);
-}
 
 export default defineConfig({
   e2e: {
@@ -36,13 +24,32 @@ export default defineConfig({
     chromeWebSecurity: false, // allow the cross-port auth-verify redirect
     defaultCommandTimeout: 10000,
     video: false,
-    env: { SUPABASE_URL, ANON_KEY, SERVICE_KEY, MAILPIT_URL, BASE_URL },
-    setupNodeEvents(on) {
+    // NOTE: the service key is intentionally NOT exposed to the browser here.
+    env: { SUPABASE_URL, ANON_KEY, MAILPIT_URL, BASE_URL },
+    setupNodeEvents(on, config) {
+      // Secret key resolved at runtime from cypress.env.json (gitignored) or env.
+      const SERVICE_KEY: string | undefined = config.env.SERVICE_KEY ?? process.env.CYPRESS_SERVICE_KEY;
+      if (!SERVICE_KEY) {
+        throw new Error(
+          "Missing SERVICE_KEY. Create cypress.env.json (gitignored) with " +
+            '{ "SERVICE_KEY": "<local Supabase Secret key from `supabase status`>" }, ' +
+            "or set CYPRESS_SERVICE_KEY.",
+        );
+      }
+
+      const admin = () => createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
+
+      // Ensure an auth user exists (creates it confirmed if not), which fires the
+      // link_staff_to_auth_user trigger → links the staff row.
+      async function ensureAuthUser(email: string) {
+        const { error } = await admin().auth.admin.createUser({ email, email_confirm: true });
+        if (error && !/already|registered|exists/i.test(error.message)) throw new Error(error.message);
+      }
+
       on("task", {
-        // Reset the DB to the clean seed (deterministic state per spec). The seed
-        // re-creates staff with auth_user_id = null, so we re-link any auth users
-        // created by earlier tests (the link trigger only fires on INSERT, and
-        // those auth.users rows already exist) — otherwise is_admin_tier/is_ops_tier
+        // Reset the DB to the clean seed, then re-link any auth users created by
+        // earlier tests (the link trigger only fires on INSERT, and those
+        // auth.users rows already exist) — otherwise is_admin_tier/is_ops_tier
         // would resolve to nothing after a reset.
         "db:reset"() {
           const sql = readFileSync("supabase/seed.sql", "utf8");
@@ -55,17 +62,13 @@ export default defineConfig({
           );
           return null;
         },
-        // Run a read query, return pipe-delimited rows as a trimmed string.
         "db:query"(sql: string) {
           return execSync(`docker exec ${DB_CONTAINER} psql -U postgres -d postgres -t -A -F'|' -c ${JSON.stringify(sql)}`).toString().trim();
         },
-        // Run a write statement (no rows returned).
         "db:exec"(sql: string) {
           execSync(`docker exec ${DB_CONTAINER} psql -U postgres -d postgres -c ${JSON.stringify(sql)}`);
           return null;
         },
-        // Fast login: returns a GoTrue action_link that, when visited, establishes
-        // a browser session and redirects to the app callback.
         async "auth:actionLink"(email: string) {
           await ensureAuthUser(email);
           const { data, error } = await admin().auth.admin.generateLink({
@@ -76,7 +79,6 @@ export default defineConfig({
           if (error) throw new Error(error.message);
           return data.properties?.action_link;
         },
-        // Returns a real user access token for authenticated cy.request() calls.
         async "auth:token"(email: string) {
           await ensureAuthUser(email);
           const { data, error } = await admin().auth.admin.generateLink({ type: "magiclink", email });
@@ -86,7 +88,6 @@ export default defineConfig({
           if (e2) throw new Error(e2.message);
           return s.session?.access_token;
         },
-        // Latest Mailpit message body (HTML) for the faithful magic-link test.
         async "mailpit:latestLink"(toEmail: string) {
           const list = await fetch(`${MAILPIT_URL}/api/v1/messages`).then((r) => r.json());
           const msg = (list.messages ?? []).find((m: any) => (m.To ?? []).some((t: any) => t.Address === toEmail));
@@ -104,6 +105,8 @@ export default defineConfig({
           return (list.messages ?? []).filter((m: any) => (m.To ?? []).some((t: any) => t.Address === toEmail)).length;
         },
       });
+
+      return config;
     },
   },
 });
