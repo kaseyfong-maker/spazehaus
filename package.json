@@ -10,6 +10,8 @@
     "preview": "vite preview --host",
     "check": "tsc --noEmit",
     "format": "prettier --write .",
+    "cy:open": "cypress open --e2e",
+    "cy:run": "cypress run --e2e",
     "gen:types": ": \"${SUPABASE_PROJECT_REF:?Set SUPABASE_PROJECT_REF to your Supabase project ref}\" && bun x supabase gen types typescript --project-id \"$SUPABASE_PROJECT_REF\" > /tmp/spazehaus.types.next.ts && mv /tmp/spazehaus.types.next.ts client/src/lib/database.types.ts"
   },
   "dependencies": {
@@ -82,6 +84,7 @@
     "@vitejs/plugin-react": "^5.0.4",
     "add": "^2.0.6",
     "autoprefixer": "^10.4.20",
+    "cypress": "^15.16.0",
     "esbuild": "^0.25.0",
     "pnpm": "^10.15.1",
     "postcss": "^8.4.47",
