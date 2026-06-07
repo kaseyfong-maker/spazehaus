@@ -1069,6 +1069,7 @@ export type Database = {
         Args: { p_project_id: string }
         Returns: string
       }
+      staff_email_exists: { Args: { p_email: string }; Returns: boolean }
     }
     Enums: {
       calendar_event_type: "project" | "meeting" | "leave" | "event"
