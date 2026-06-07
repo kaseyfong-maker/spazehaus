@@ -217,7 +217,13 @@ export function getToday(): Date {
     const [y, m, d] = override.split("-").map(Number);
     return new Date(y, m - 1, d);
   }
-  return new Date();
+  // Normalize to LOCAL midnight. `new Date()` carries the time-of-day, while
+  // parseDDMMYYYY returns midnight — so a date due *today* would compute to a
+  // fraction of a day and floor to -1 (= "overdue"). The override branch
+  // already returns midnight, which is why this bug never showed in test mode.
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  return now;
 }
 
 /** Parse a Spazehaus DD/MM/YYYY date string into a Date. Returns null for "TBD" / invalid. */

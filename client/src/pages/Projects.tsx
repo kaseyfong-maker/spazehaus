@@ -9,7 +9,7 @@ import { useLocation } from "wouter";
 import { Plus, Search, MapPin, Calendar, FileText, Receipt, AlertCircle, Users, ChevronRight } from "lucide-react";
 import { computeTotals, formatRM } from "@/lib/quotationData";
 import AppHeader from "@/components/AppHeader";
-import { statusConfig, priorityConfig } from "@/lib/mockData";
+import { statusConfig, priorityConfig, DEFAULT_PRIORITY_CONFIG } from "@/lib/mockData";
 import { useProjects, useOpenPayments, useOpenSignatures, useInquiries, useQuotations, computeCheckpointSummary, computeCustomerSummary } from "@/lib/queries";
 
 const HERO_BG = "/hero/portfolio.jpg";
@@ -36,7 +36,7 @@ export default function Projects() {
   const [activeFilter, setActiveFilter] = useState("all");
   const [search, setSearch] = useState("");
 
-  const { data: projects = [], isLoading } = useProjects();
+  const { data: projects = [], isLoading, isError, refetch } = useProjects();
   const { data: openPayments = [] } = useOpenPayments();
   const { data: openSignatures = [] } = useOpenSignatures();
   const { data: inquiries = [] } = useInquiries();
@@ -223,12 +223,31 @@ export default function Projects() {
           ))}
         </div>
 
+        {/* Load error — distinct from a genuinely empty list */}
+        {isError && (
+          <div
+            className="rounded-2xl p-4 mb-3 flex items-center justify-between gap-3"
+            style={{ background: "oklch(0.58 0.12 25 / 8%)", border: "1px solid oklch(0.58 0.12 25 / 25%)" }}
+          >
+            <p className="text-[12px]" style={{ color: "oklch(0.45 0.12 25)" }}>
+              Couldn't load projects. Check your connection.
+            </p>
+            <button
+              onClick={() => refetch()}
+              className="text-[11px] font-label px-3 py-1.5 rounded-lg shrink-0"
+              style={{ background: "oklch(0.58 0.12 25 / 12%)", color: "oklch(0.45 0.12 25)", letterSpacing: "0.04em" }}
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
         {/* Project cards */}
         <AnimatePresence mode="popLayout">
           <div className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-3 lg:items-start">
             {filtered.map((project, i) => {
               const ls = lightStatus[project.status] || lightStatus["on-hold"];
-              const pc = priorityConfig[project.priority as keyof typeof priorityConfig];
+              const pc = priorityConfig[project.priority as keyof typeof priorityConfig] ?? DEFAULT_PRIORITY_CONFIG;
               return (
                 <motion.div
                   key={project.id}

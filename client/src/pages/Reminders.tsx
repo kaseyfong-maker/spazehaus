@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import { toast } from "sonner";
+import { validateUploadFile } from "@/lib/upload";
 import {
   useProjects,
   useAllStaff,
@@ -90,6 +91,8 @@ export default function Reminders() {
     const file = e.target.files?.[0];
     e.target.value = ""; // reset so the same file can be re-picked later
     if (!file || !uploadFor) return;
+    const err = validateUploadFile(file, ["image/*"]);
+    if (err) { toast.error(err); setUploadFor(null); return; }
     try {
       await uploadPhoto.mutateAsync({
         projectId: uploadFor.projectId,

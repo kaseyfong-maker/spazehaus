@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import AppHeader from "@/components/AppHeader";
 import { useLeaveRequests, useUpdateLeaveStatus, useApplyLeave } from "@/lib/queries";
 import { useAuth } from "@/contexts/AuthContext";
-import { statusConfig } from "@/lib/mockData";
+import { statusConfig, DEFAULT_STATUS_CONFIG } from "@/lib/mockData";
 import { toast } from "sonner";
 import { Check, X, Plus } from "lucide-react";
 import { nanoid } from "nanoid";
@@ -214,7 +214,7 @@ export default function LeaveManagement() {
           {activeTab === "All Requests" && (
             <motion.div key="all" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-2 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-3 lg:items-start">
               {requests.map((req, i) => {
-                const sc = statusConfig[req.status as keyof typeof statusConfig];
+                const sc = statusConfig[req.status as keyof typeof statusConfig] ?? DEFAULT_STATUS_CONFIG;
                 return (
                   <motion.div
                     key={req.id}

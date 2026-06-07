@@ -18,6 +18,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, FileText, Receipt, Check, AlertCircle, Upload, ExternalLink, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { validateUploadFile } from "@/lib/upload";
 import {
   useUploadSignatureDoc,
   useUpdateSignature,
@@ -316,8 +317,11 @@ export default function SignDocumentSheet({
                   className="hidden"
                   onChange={(e) => {
                     const f = e.target.files?.[0];
-                    if (f) setPickedFile(f);
                     e.target.value = "";
+                    if (!f) return;
+                    const err = validateUploadFile(f, ["application/pdf", "image/jpeg", "image/png"]);
+                    if (err) { toast.error(err); return; }
+                    setPickedFile(f);
                   }}
                 />
                 {pickedFile ? (

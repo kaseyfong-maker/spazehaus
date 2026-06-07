@@ -27,3 +27,19 @@ export const priorityConfig = {
   "medium": { label: "Medium", color: "oklch(0.72 0.09 68)" },
   "low": { label: "Low", color: "oklch(0.60 0.07 145)" },
 };
+
+// Neutral fallbacks for when a DB status/priority value isn't in the maps above
+// (the DB enums can gain values that drift from these hardcoded configs). Use
+// `statusConfig[x] ?? DEFAULT_STATUS_CONFIG` so a lookup miss degrades to a grey
+// chip instead of crashing on `.bg`/`.color`/`.label`.
+export const DEFAULT_STATUS_CONFIG = {
+  label: "—",
+  bg: "oklch(0.55 0.006 80 / 15%)",
+  color: "oklch(0.55 0.006 80)",
+  border: "oklch(0.55 0.006 80 / 25%)",
+};
+
+export const DEFAULT_PRIORITY_CONFIG = {
+  label: "—",
+  color: "oklch(0.55 0.006 80)",
+};

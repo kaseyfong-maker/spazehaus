@@ -15,6 +15,8 @@ const priorityConfig = {
   low: { label: "General", bg: "oklch(0.60 0.07 145 / 15%)", color: "oklch(0.70 0.09 145)", bar: "oklch(0.60 0.07 145)" },
 };
 
+const DEFAULT_ANN_PRIORITY = { label: "—", bg: "oklch(0.55 0.006 80 / 12%)", color: "oklch(0.55 0.006 80)", bar: "oklch(0.55 0.006 80)" };
+
 export default function Announcements() {
   const [expanded, setExpanded] = useState<string | null>(null);
   const { data: announcements = [] } = useAnnouncements();
@@ -30,7 +32,7 @@ export default function Announcements() {
           </div>
         )}
         {announcements.map((ann, i) => {
-          const pc = priorityConfig[ann.priority as keyof typeof priorityConfig];
+          const pc = priorityConfig[ann.priority as keyof typeof priorityConfig] ?? DEFAULT_ANN_PRIORITY;
           const isExpanded = expanded === ann.id;
 
           return (

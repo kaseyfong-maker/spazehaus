@@ -369,7 +369,7 @@ export default function CreateQuotation() {
                     <div className="grid grid-cols-4 gap-2">
                       <div>
                         <label style={labelStyle}>QTY</label>
-                        <input style={inputStyle} type="number" min="0" value={item.qty} onChange={(e) => updateItem(item.id, "qty", Number(e.target.value))} />
+                        <input style={inputStyle} type="number" min="0" value={item.qty} onChange={(e) => updateItem(item.id, "qty", Number(e.target.value) || 0)} />
                       </div>
                       <div>
                         <label style={labelStyle}>UNIT</label>
@@ -379,11 +379,11 @@ export default function CreateQuotation() {
                       </div>
                       <div>
                         <label style={labelStyle}>UNIT PRICE</label>
-                        <input style={inputStyle} type="number" min="0" value={item.unitPrice} onChange={(e) => updateItem(item.id, "unitPrice", Number(e.target.value))} />
+                        <input style={inputStyle} type="number" min="0" value={item.unitPrice} onChange={(e) => updateItem(item.id, "unitPrice", Number(e.target.value) || 0)} />
                       </div>
                       <div>
                         <label style={labelStyle}>DISC %</label>
-                        <input style={inputStyle} type="number" min="0" max="100" value={item.discount} onChange={(e) => updateItem(item.id, "discount", Number(e.target.value))} />
+                        <input style={inputStyle} type="number" min="0" max="100" value={item.discount} onChange={(e) => updateItem(item.id, "discount", Number(e.target.value) || 0)} />
                       </div>
                     </div>
 
@@ -503,12 +503,13 @@ export default function CreateQuotation() {
           </motion.button>
         )}
         <motion.button
-          whileTap={{ scale: 0.95 }}
+          whileTap={createQuotation.isPending ? undefined : { scale: 0.95 }}
           onClick={step < 3 ? () => setStep((s) => s + 1) : handleSubmit}
+          disabled={step === 3 && createQuotation.isPending}
           className="flex-1 py-3.5 rounded-xl text-sm font-label font-semibold"
-          style={{ background: "linear-gradient(135deg, oklch(0.72 0.09 68), oklch(0.55 0.08 65))", color: "oklch(1 0 0)", letterSpacing: "0.04em" }}
+          style={{ background: "linear-gradient(135deg, oklch(0.72 0.09 68), oklch(0.55 0.08 65))", color: "oklch(1 0 0)", letterSpacing: "0.04em", opacity: step === 3 && createQuotation.isPending ? 0.7 : 1 }}
         >
-          {step < 3 ? "Continue" : "Create Document"}
+          {step < 3 ? "Continue" : createQuotation.isPending ? "Creating…" : "Create Document"}
         </motion.button>
       </div>
     </div>

@@ -41,7 +41,7 @@ export default function Dashboard() {
   const [, navigate] = useLocation();
   const { staff } = useAuth();
 
-  const { data: projects = [] } = useProjects();
+  const { data: projects = [], isError: projectsError, refetch: refetchProjects } = useProjects();
   const { data: openPayments = [] } = useOpenPayments();
   const { data: openSignatures = [] } = useOpenSignatures();
   const { data: allStaff = [] } = useAllStaff();
@@ -164,6 +164,24 @@ export default function Dashboard() {
         className="px-4 py-5 pb-28 space-y-6 lg:px-8 lg:py-7"
         style={{ background: "oklch(0.985 0.004 80)" }}
       >
+        {projectsError && (
+          <div
+            className="rounded-2xl p-4 flex items-center justify-between gap-3"
+            style={{ background: "oklch(0.58 0.12 25 / 8%)", border: "1px solid oklch(0.58 0.12 25 / 25%)" }}
+          >
+            <p className="text-[12px]" style={{ color: "oklch(0.45 0.12 25)" }}>
+              Some data couldn't load. Figures may be incomplete.
+            </p>
+            <button
+              onClick={() => refetchProjects()}
+              className="text-[11px] font-label px-3 py-1.5 rounded-lg shrink-0"
+              style={{ background: "oklch(0.58 0.12 25 / 12%)", color: "oklch(0.45 0.12 25)", letterSpacing: "0.04em" }}
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
         {/* Stats */}
         <motion.div variants={itemVariants}>
           <p className="sz-label mb-3">OVERVIEW</p>

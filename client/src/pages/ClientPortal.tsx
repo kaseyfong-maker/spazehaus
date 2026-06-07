@@ -135,7 +135,7 @@ function HeroBanner({ project }: { project: ClientPortalData["project"] }) {
         {project.name}
       </h1>
       <p className="text-xs mt-1" style={{ color: "oklch(0.93 0 0 / 80%)" }}>
-        {project.client_name} · {project.property_type} · {project.location.split(",")[0]}
+        {[project.client_name, project.property_type, project.location?.split(",")[0]].filter(Boolean).join(" · ")}
       </p>
     </div>
   );
