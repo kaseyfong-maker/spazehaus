@@ -14,7 +14,7 @@ import { Upload, UserPlus, CheckSquare, MapPin, Maximize2, Phone, FileText, Rece
 import AppHeader from "@/components/AppHeader";
 import MarkCollectedSheet, { type MarkCollectedTarget } from "@/components/MarkCollectedSheet";
 import SignDocumentSheet, { type SignDocumentTarget } from "@/components/SignDocumentSheet";
-import { statusConfig, priorityConfig } from "@/lib/mockData";
+import { statusConfig, priorityConfig, DEFAULT_STATUS_CONFIG, DEFAULT_PRIORITY_CONFIG } from "@/lib/mockData";
 import { statusConfig as qStatusConfig, computeTotals, formatRM } from "@/lib/quotationData";
 import {
   LIFECYCLE_STAGES,
@@ -34,6 +34,7 @@ import {
   canEditPayments,
   canEditSignatures,
   canEditProject,
+  useRegenerateClientToken,
   getSignatureDocUrl,
   isStorageDocRef,
   type PaymentRecord,
@@ -85,7 +86,7 @@ export default function ProjectDetail() {
   const [, navigate] = useLocation();
   const [activeTab, setActiveTab] = useState(() => getInitialTab());
 
-  const { data: project, isLoading } = useProject(id);
+  const { data: project, isLoading, isError, refetch } = useProject(id);
   const { data: allStaff = [] } = useAllStaff();
   const { data: allQuotations = [] } = useQuotations();
   const { staff: me } = useAuth();
@@ -95,6 +96,26 @@ export default function ProjectDetail() {
     return (
       <div className="mobile-container" style={{ background: "oklch(0.985 0.004 80)" }}>
         <AppHeader title="Loading…" subtitle="—" showBack compact />
+      </div>
+    );
+  }
+  // A failed query is NOT the same as "deleted" — show a retry, not "not found".
+  if (isError) {
+    return (
+      <div className="mobile-container" style={{ background: "oklch(0.985 0.004 80)" }}>
+        <AppHeader title="Couldn't load project" subtitle="—" showBack compact />
+        <div className="px-4 py-8 text-center space-y-3">
+          <p className="text-sm" style={{ color: "oklch(0.52 0.010 68)" }}>
+            Something went wrong loading this project. Check your connection and try again.
+          </p>
+          <button
+            onClick={() => refetch()}
+            className="px-4 py-2 rounded-xl text-sm font-label"
+            style={{ background: "oklch(0.72 0.09 68)", color: "oklch(1 0 0)", letterSpacing: "0.04em" }}
+          >
+            Retry
+          </button>
+        </div>
       </div>
     );
   }
@@ -111,8 +132,10 @@ export default function ProjectDetail() {
     );
   }
 
-  const sc = statusConfig[project.status as keyof typeof statusConfig];
-  const pc = priorityConfig[project.priority as keyof typeof priorityConfig];
+  // Fall back to a neutral chip if a status/priority value isn't in the maps
+  // (DB enums can drift from these hardcoded configs) — never crash on sc.bg.
+  const sc = statusConfig[project.status as keyof typeof statusConfig] ?? DEFAULT_STATUS_CONFIG;
+  const pc = priorityConfig[project.priority as keyof typeof priorityConfig] ?? DEFAULT_PRIORITY_CONFIG;
   const teamMembers = allStaff.filter((s) => project.team.includes(s.avatar_code));
   const canEdit = canEditProject(me?.role);
 
@@ -277,7 +300,7 @@ export default function ProjectDetail() {
 
                 {/* Share client portal — copies the unauthenticated /portal/:token
                     link so staff can WhatsApp / email it to the client. */}
-                <SharePortalButton token={project.clientAccessToken} clientName={project.client} />
+                <SharePortalButton token={project.clientAccessToken} clientName={project.client} projectId={project.id} canManage={canEdit} />
 
                 {/* Project Details card — shown inline on mobile, moves to side rail on lg */}
                 <div className="rounded-2xl p-4 space-y-3 lg:hidden" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}>
@@ -1086,8 +1109,9 @@ function SignatureRow({
 // Copies the read-only /portal/:token URL to the clipboard so staff can
 // WhatsApp / email it to the client. Falls back to a toast that shows the
 // URL when clipboard API isn't available (e.g. older browsers, http://).
-function SharePortalButton({ token, clientName }: { token: string; clientName: string }) {
+function SharePortalButton({ token, clientName, projectId, canManage }: { token: string; clientName: string; projectId: string; canManage: boolean }) {
   const [copied, setCopied] = useState(false);
+  const regenerate = useRegenerateClientToken();
   const url = `${window.location.origin}/portal/${token}`;
 
   const handleCopy = async () => {
@@ -1105,7 +1129,18 @@ function SharePortalButton({ token, clientName }: { token: string; clientName: s
     }
   };
 
+  const handleRegenerate = async () => {
+    if (!window.confirm("Generate a new portal link? The current link will stop working immediately.")) return;
+    try {
+      await regenerate.mutateAsync(projectId);
+      toast.success("Portal link regenerated — the old link no longer works");
+    } catch (err) {
+      toast.error(`Couldn't regenerate: ${err instanceof Error ? err.message : "unknown error"}`);
+    }
+  };
+
   return (
+    <div className="space-y-1.5">
     <motion.button
       whileTap={{ scale: 0.97 }}
       onClick={handleCopy}
@@ -1141,5 +1176,17 @@ function SharePortalButton({ token, clientName }: { token: string; clientName: s
         )}
       </div>
     </motion.button>
+
+    {canManage && (
+      <button
+        onClick={handleRegenerate}
+        disabled={regenerate.isPending}
+        className="text-[11px] font-label px-1"
+        style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.02em", opacity: regenerate.isPending ? 0.5 : 1 }}
+      >
+        {regenerate.isPending ? "Regenerating…" : "Regenerate link (if leaked)"}
+      </button>
+    )}
+    </div>
   );
 }
