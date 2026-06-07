@@ -5,10 +5,11 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useParams } from "wouter";
-import { Phone, Mail, Calendar, Award, Loader2, Pencil, MessageCircle } from "lucide-react";
+import { Phone, Mail, Calendar, Award, Loader2, Pencil, MessageCircle, UserMinus, UserCheck } from "lucide-react";
+import { toast } from "sonner";
 import AppHeader from "@/components/AppHeader";
-import { useStaffById, useLeaveRequests, useStaffKpiRecords, canEditStaffRow, isAdminTier } from "@/lib/queries";
-import { statusConfig } from "@/lib/mockData";
+import { useStaffById, useLeaveRequests, useStaffKpiRecords, useUpdateStaff, canEditStaffRow, isAdminTier } from "@/lib/queries";
+import { statusConfig, DEFAULT_STATUS_CONFIG } from "@/lib/mockData";
 import { useAuth } from "@/contexts/AuthContext";
 import EditStaffSheet from "@/components/EditStaffSheet";
 
@@ -23,16 +24,51 @@ export default function StaffProfile() {
   const { id } = useParams<{ id: string }>();
   const [activeTab, setActiveTab] = useState("Profile");
 
-  const { data: staff, isLoading } = useStaffById(id);
+  const { data: staff, isLoading, isError, refetch } = useStaffById(id);
   const { data: allLeave = [] } = useLeaveRequests();
   const { data: kpiRecords = [] } = useStaffKpiRecords(id);
   const { staff: me } = useAuth();
+  const updateStaff = useUpdateStaff();
   const [editOpen, setEditOpen] = useState(false);
+
+  // Soft "remove" / "reactivate" — flips status. inactive staff lose all access
+  // (enforced in RLS) but keep their KPI/leave/audit history. The DB also blocks
+  // removing the last active admin (guard_last_admin trigger).
+  async function handleSetActive(active: boolean) {
+    if (!staff) return;
+    const ok = window.confirm(
+      active
+        ? `Reactivate ${staff.name}? They'll regain access and reappear in the active directory.`
+        : `Remove ${staff.name} from the team? This revokes their access immediately. Their history is preserved and they can be reactivated later.`,
+    );
+    if (!ok) return;
+    try {
+      await updateStaff.mutateAsync({ id: staff.id, status: active ? "active" : "inactive" });
+      toast.success(active ? "Staff reactivated" : "Staff removed from team", { description: staff.name });
+    } catch (err) {
+      toast.error(`${active ? "Reactivate" : "Remove"} failed: ${err instanceof Error ? err.message : "unknown error"}`);
+    }
+  }
 
   if (isLoading) {
     return (
       <div className="mobile-container flex items-center justify-center min-h-screen">
         <Loader2 size={20} className="animate-spin" style={{ color: "oklch(0.52 0.010 68)" }} />
+      </div>
+    );
+  }
+  // Distinguish a load failure from a genuinely missing record.
+  if (isError) {
+    return (
+      <div className="mobile-container flex flex-col items-center justify-center min-h-screen gap-3 px-6 text-center">
+        <p style={{ color: "oklch(0.52 0.010 68)" }}>Couldn't load this staff member. Check your connection.</p>
+        <button
+          onClick={() => refetch()}
+          className="px-4 py-2 rounded-xl text-sm font-label"
+          style={{ background: "oklch(0.72 0.09 68)", color: "oklch(1 0 0)", letterSpacing: "0.04em" }}
+        >
+          Retry
+        </button>
       </div>
     );
   }
@@ -43,7 +79,7 @@ export default function StaffProfile() {
       </div>
     );
   }
-  const sc = statusConfig[staff.status as keyof typeof statusConfig];
+  const sc = statusConfig[staff.status as keyof typeof statusConfig] ?? DEFAULT_STATUS_CONFIG;
   const staffLeave = allLeave.filter((l) => l.staff_id === staff.id);
 
   // Editing: admins may edit anyone; a staff member may edit their own row.
@@ -201,6 +237,45 @@ export default function StaffProfile() {
                 </span>
               </div>
             </div>
+
+            {/* Admin: remove / reactivate (soft delete via status) */}
+            {canEditAll && (
+              <div className="rounded-2xl p-4 mt-3" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
+                {staff.status === "inactive" ? (
+                  <>
+                    <p className="text-[11px] mb-2.5" style={{ color: "oklch(0.52 0.010 68)" }}>
+                      This staff member is removed from the active roster and has no access. Reactivate to restore access.
+                    </p>
+                    <button
+                      onClick={() => handleSetActive(true)}
+                      disabled={updateStaff.isPending}
+                      className="w-full py-2.5 rounded-xl text-sm font-label font-semibold flex items-center justify-center gap-2"
+                      style={{ background: "oklch(0.55 0.09 145 / 12%)", color: "oklch(0.38 0.09 145)", border: "1px solid oklch(0.55 0.09 145 / 30%)", letterSpacing: "0.03em", opacity: updateStaff.isPending ? 0.6 : 1 }}
+                    >
+                      <UserCheck size={15} /> {updateStaff.isPending ? "Reactivating…" : "Reactivate staff"}
+                    </button>
+                  </>
+                ) : isOwnRow ? (
+                  <p className="text-[11px]" style={{ color: "oklch(0.52 0.010 68)" }}>
+                    You can't remove your own account.
+                  </p>
+                ) : (
+                  <>
+                    <p className="text-[11px] mb-2.5" style={{ color: "oklch(0.52 0.010 68)" }}>
+                      Removing revokes access immediately and takes them off the active roster. Their KPI, leave, and audit history are kept, and they can be reactivated later.
+                    </p>
+                    <button
+                      onClick={() => handleSetActive(false)}
+                      disabled={updateStaff.isPending}
+                      className="w-full py-2.5 rounded-xl text-sm font-label font-semibold flex items-center justify-center gap-2"
+                      style={{ background: "oklch(0.58 0.12 25 / 10%)", color: "oklch(0.55 0.14 25)", border: "1px solid oklch(0.58 0.12 25 / 30%)", letterSpacing: "0.03em", opacity: updateStaff.isPending ? 0.6 : 1 }}
+                    >
+                      <UserMinus size={15} /> {updateStaff.isPending ? "Removing…" : "Remove from team"}
+                    </button>
+                  </>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -232,7 +307,7 @@ export default function StaffProfile() {
             <div>
               <p className="text-xs font-label mb-2" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.06em" }}>LEAVE HISTORY</p>
               {staffLeave.length > 0 ? staffLeave.map((leave) => {
-                const lsc = statusConfig[leave.status as keyof typeof statusConfig];
+                const lsc = statusConfig[leave.status as keyof typeof statusConfig] ?? DEFAULT_STATUS_CONFIG;
                 return (
                   <div
                     key={leave.id}

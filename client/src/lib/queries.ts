@@ -132,7 +132,8 @@ export type Inquiry = Omit<InquiryRow, "contact_log"> & {
   client: string;
   estimatedSize?: number;
   estimatedBudget?: number;
-  assignedTo?: string;            // staff avatar code (resolved)
+  assignedTo?: string;            // staff avatar code (resolved) — display only
+  assignedToId?: string;          // staff id — stable key for attribution
   awardedProjectId?: string;
   awardedDate?: string;
   rejectedDate?: string;
@@ -228,6 +229,7 @@ function mapInquiry(row: InquiryRow, staffById: Map<string, StaffRow>): Inquiry 
     estimatedSize: row.estimated_size ?? undefined,
     estimatedBudget: row.estimated_budget ?? undefined,
     assignedTo: assignedAvatar,
+    assignedToId: row.assigned_to_id ?? undefined,
     awardedProjectId: row.awarded_project_id ?? undefined,
     awardedDate: isoToDDMMYYYY(row.awarded_date) || undefined,
     rejectedDate: isoToDDMMYYYY(row.rejected_date) || undefined,
@@ -1482,6 +1484,125 @@ export function useUpdateStaff() {
     onSuccess: (_row, args) => {
       qc.invalidateQueries({ queryKey: qk.staff });
       qc.invalidateQueries({ queryKey: qk.staffOne(args.id) });
+      // Projects/inquiries embed the staff name + avatar_code (designer/PM
+      // labels, team[], inquiry assignee chips), so a name/avatar change must
+      // refresh them too — otherwise they show stale attribution until reload.
+      qc.invalidateQueries({ queryKey: qk.projects });
+      qc.invalidateQueries({ queryKey: qk.inquiries });
+    },
+  });
+}
+
+export type CreateStaffArgs = {
+  name: string;
+  email: string;
+  job_title: string;
+  dept: string;
+  role: StaffRow["role"];
+  status?: StaffRow["status"];
+  phone?: string | null;
+  whatsapp_opt_in?: boolean;
+  join_date: string;          // ISO yyyy-mm-dd (the form converts from a date input)
+  /** 2–3 char initials shown in avatars; auto-derived from `name` when omitted. */
+  avatar_code?: string;
+};
+
+/** Default avatar code from a name: initials of the first two words, else the
+ *  first two letters. Mirrors the seed convention (e.g. "John Tan" → "JT"). */
+export function deriveAvatarCode(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase();
+  return (words[0] ?? "?").slice(0, 2).toUpperCase();
+}
+
+/** Create a brand-new staff record. Server-side gating: the `staff_write_admin`
+ *  RLS policy means only the ADMIN tier (principal / admin / admin_exec) can
+ *  insert — see `isAdminTier`. The record is created directly; the existing
+ *  `link_staff_to_auth_user` trigger links it to a Supabase Auth account by
+ *  email the first time the person signs in (no invite/edge function needed).
+ *
+ *  `id` is a sequential `SH###` string generated from the current max — the
+ *  staff PK isn't a DB-generated value, so we compute the next one here. */
+export function useCreateStaff() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: CreateStaffArgs): Promise<StaffRow> => {
+      // Snapshot existing ids + avatar codes once.
+      const { data: existing, error: listErr } = await supabase
+        .from("staff")
+        .select("id, avatar_code");
+      if (listErr) throw listErr;
+      const rows = existing ?? [];
+
+      const maxNum = rows.reduce((max, r) => {
+        const m = /^SH(\d+)$/.exec(r.id);
+        return m ? Math.max(max, parseInt(m[1], 10)) : max;
+      }, 0);
+
+      // Avatar codes drive inquiry/KPI attribution, so they must be unique.
+      // If the chosen/derived code is taken, append a digit (JT → JT2 → JT3…).
+      const taken = new Set(rows.map((r) => r.avatar_code?.toUpperCase()).filter(Boolean));
+      let avatar = (args.avatar_code?.trim() || deriveAvatarCode(args.name)).toUpperCase();
+      if (taken.has(avatar)) {
+        for (let n = 2; n < 100; n++) {
+          const candidate = `${avatar}${n}`;
+          if (!taken.has(candidate)) { avatar = candidate; break; }
+        }
+      }
+
+      // Insert with retry on PK collision: two admins creating staff at the same
+      // instant can compute the same SH### (the scan-max is racy). On a unique
+      // violation (23505) bump the number and retry rather than failing the user.
+      const base: Omit<TablesInsert<"staff">, "id"> = {
+        name: args.name,
+        email: args.email,
+        job_title: args.job_title,
+        dept: args.dept,
+        role: args.role,
+        avatar_code: avatar,
+        join_date: args.join_date,
+        status: args.status ?? "active",
+        phone: args.phone ?? null,
+        whatsapp_opt_in: args.whatsapp_opt_in ?? true,
+      };
+
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const id = `SH${String(maxNum + 1 + attempt).padStart(3, "0")}`;
+        const { data, error } = await supabase
+          .from("staff")
+          .insert({ ...base, id })
+          .select()
+          .single();
+        if (!error) return data as StaffRow;
+        // 23505 = unique_violation (id already taken) → try the next number.
+        if (error.code !== "23505") throw error;
+      }
+      throw new Error("Could not allocate a unique staff id after several attempts. Please retry.");
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.staff });
+    },
+  });
+}
+
+/** Rotate a project's client-portal token, invalidating any previously-shared
+ *  link. Use when a portal link leaks. OPS/admin only (enforced by the projects
+ *  update RLS). */
+export function useRegenerateClientToken() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (projectId: string): Promise<string> => {
+      const newToken = crypto.randomUUID();
+      const { error } = await supabase
+        .from("projects")
+        .update({ client_access_token: newToken })
+        .eq("id", projectId);
+      if (error) throw error;
+      return newToken;
+    },
+    onSuccess: (_token, projectId) => {
+      qc.invalidateQueries({ queryKey: qk.project(projectId) });
+      qc.invalidateQueries({ queryKey: qk.projects });
     },
   });
 }
@@ -1634,7 +1755,9 @@ export function computeStaffPerformance(
 ): StaffPerformance {
   const sMonth = startOfMonth(today);
   const sYear = startOfYear(today);
-  const mine = inquiries.filter((i) => i.assignedTo === staff.avatar_code);
+  // Attribute by staff id (immutable), NOT avatar_code — two staff can share
+  // initials, which would cross-credit their pipeline/awards on the leaderboard.
+  const mine = inquiries.filter((i) => i.assignedToId === staff.id);
 
   let awardedYTD = 0;
   let awardedThisMonth = 0;

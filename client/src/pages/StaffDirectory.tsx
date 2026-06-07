@@ -7,9 +7,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
 import { Search, Plus } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
-import { useAllStaff } from "@/lib/queries";
-import { statusConfig } from "@/lib/mockData";
-import { toast } from "sonner";
+import { useAllStaff, isAdminTier } from "@/lib/queries";
+import { useAuth } from "@/contexts/AuthContext";
+import { statusConfig, DEFAULT_STATUS_CONFIG } from "@/lib/mockData";
 
 const deptFilters = ["All", "Design", "Operations", "Sales", "Admin"];
 
@@ -22,15 +22,23 @@ const deptColors: Record<string, string> = {
 
 export default function StaffDirectory() {
   const [, navigate] = useLocation();
+  const { staff: me } = useAuth();
+  const canAddStaff = isAdminTier(me?.role);
+  const isAdmin = isAdminTier(me?.role);
   const [deptFilter, setDeptFilter] = useState("All");
   const [search, setSearch] = useState("");
+  const [showInactive, setShowInactive] = useState(false);
 
   const { data: staffMembers = [] } = useAllStaff();
 
+  const inactiveCount = staffMembers.filter((s) => s.status === "inactive").length;
+
   const filtered = staffMembers.filter((s) => {
+    // Removed staff are hidden by default; admins can reveal them to reactivate.
+    const matchActive = showInactive ? true : s.status !== "inactive";
     const matchDept = deptFilter === "All" || s.dept === deptFilter;
     const matchSearch = s.name.toLowerCase().includes(search.toLowerCase()) || s.job_title.toLowerCase().includes(search.toLowerCase());
-    return matchDept && matchSearch;
+    return matchActive && matchDept && matchSearch;
   });
 
   return (
@@ -71,16 +79,33 @@ export default function StaffDirectory() {
           ))}
         </div>
 
-        {/* Staff count */}
-        <p className="text-xs font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.04em" }}>
-          {filtered.length} MEMBER{filtered.length !== 1 ? "S" : ""}
-        </p>
+        {/* Staff count + admin show-inactive toggle */}
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.04em" }}>
+            {filtered.length} MEMBER{filtered.length !== 1 ? "S" : ""}
+          </p>
+          {isAdmin && inactiveCount > 0 && (
+            <button
+              onClick={() => setShowInactive((v) => !v)}
+              className="text-[11px] font-label px-2.5 py-1 rounded-full"
+              style={{
+                background: showInactive ? "oklch(0.58 0.12 25 / 12%)" : "oklch(1 0 0)",
+                color: showInactive ? "oklch(0.55 0.14 25)" : "oklch(0.52 0.010 68)",
+                border: "1px solid oklch(0.90 0.010 75)",
+                letterSpacing: "0.03em",
+              }}
+            >
+              {showInactive ? "Hide removed" : `Show removed (${inactiveCount})`}
+            </button>
+          )}
+        </div>
 
         {/* Staff list */}
         <AnimatePresence mode="popLayout">
           <div className="space-y-2 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-3 lg:items-start">
             {filtered.map((staff, i) => {
-              const sc = statusConfig[staff.status as keyof typeof statusConfig];
+              const sc = statusConfig[staff.status as keyof typeof statusConfig] ?? DEFAULT_STATUS_CONFIG;
+              const isInactive = staff.status === "inactive";
               return (
                 <motion.div
                   key={staff.id}
@@ -91,7 +116,7 @@ export default function StaffDirectory() {
                   whileTap={{ scale: 0.97 }}
                   onClick={() => navigate(`/company/staff/${staff.id}`)}
                   className="rounded-2xl p-4 flex items-center gap-3"
-                  style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}
+                  style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", opacity: isInactive ? 0.55 : 1 }}
                 >
                   <div
                     className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold shrink-0"
@@ -120,6 +145,11 @@ export default function StaffDirectory() {
                       {staff.kpi_grade && (
                         <span className="text-[10px]" style={{ color: "oklch(0.52 0.010 68)" }}>KPI: {staff.kpi_grade}</span>
                       )}
+                      {isInactive && (
+                        <span className="text-[10px] font-label px-2 py-0.5 rounded-full" style={{ background: "oklch(0.58 0.12 25 / 12%)", color: "oklch(0.55 0.14 25)", letterSpacing: "0.03em" }}>
+                          Removed
+                        </span>
+                      )}
                     </div>
                   </div>
                   <span className="status-pill shrink-0" style={{ background: sc.bg, color: sc.color }}>{sc.label}</span>
@@ -130,15 +160,17 @@ export default function StaffDirectory() {
         </AnimatePresence>
       </div>
 
-      {/* FAB */}
-      <motion.button
-        whileTap={{ scale: 0.9 }}
-        onClick={() => toast.info("Add staff feature coming soon")}
-        className="fixed bottom-20 right-4 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl z-40"
-        style={{ background: "linear-gradient(135deg, oklch(0.72 0.09 68), oklch(0.55 0.08 65))" }}
-      >
-        <Plus size={22} style={{ color: "oklch(1 0 0)" }} />
-      </motion.button>
+      {/* FAB — admin tier only (matches the staff_write_admin RLS policy) */}
+      {canAddStaff && (
+        <motion.button
+          whileTap={{ scale: 0.9 }}
+          onClick={() => navigate("/company/staff/new")}
+          className="fixed bottom-20 right-4 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl z-40"
+          style={{ background: "linear-gradient(135deg, oklch(0.72 0.09 68), oklch(0.55 0.08 65))" }}
+        >
+          <Plus size={22} style={{ color: "oklch(1 0 0)" }} />
+        </motion.button>
+      )}
     </div>
   );
 }
