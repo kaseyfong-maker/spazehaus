@@ -269,6 +269,8 @@ export default function CustomerDatabase() {
                   transition={{ delay: i * 0.04 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => navigate(`/customers/${inq.id}`)}
+                  data-testid="customer-card"
+                  data-inquiry-id={inq.id}
                   className="w-full rounded-2xl p-4 flex items-start gap-3 text-left"
                   style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
                 >

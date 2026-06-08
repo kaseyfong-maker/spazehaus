@@ -153,7 +153,7 @@ export default function EditProjectSheet({
             {/* Body */}
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
               <FieldGroup label="PROJECT NAME *">
-                <input type="text" value={name} onChange={(e) => setName(e.target.value)} style={inputStyle} />
+                <input data-testid="edit-name" type="text" value={name} onChange={(e) => setName(e.target.value)} style={inputStyle} />
               </FieldGroup>
 
               <div className="grid grid-cols-2 gap-3">
@@ -215,6 +215,7 @@ export default function EditProjectSheet({
                 whileTap={updateProject.isPending ? undefined : { scale: 0.96 }}
                 onClick={handleSubmit}
                 disabled={updateProject.isPending}
+                data-testid="edit-save"
                 className="flex-1 py-3 rounded-xl text-sm font-label font-semibold flex items-center justify-center gap-2"
                 style={{ background: "linear-gradient(135deg, oklch(0.62 0.09 68), oklch(0.52 0.08 65))", color: "oklch(1 0 0)", letterSpacing: "0.04em", boxShadow: updateProject.isPending ? "none" : "0 4px 16px oklch(0.62 0.09 68 / 0.35)", opacity: updateProject.isPending ? 0.7 : 1 }}
               >

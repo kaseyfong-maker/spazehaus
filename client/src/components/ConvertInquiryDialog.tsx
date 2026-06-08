@@ -216,6 +216,7 @@ export default function ConvertInquiryDialog({
               <div className="grid grid-cols-2 gap-3">
                 <FieldGroup label="DESIGNER">
                   <Select
+                    testid="convert-designer"
                     value={form.designerStaffId}
                     onChange={(v) => setForm({ ...form, designerStaffId: v })}
                     options={designStaff.map((s) => ({ value: s.id, label: s.name }))}
@@ -223,6 +224,7 @@ export default function ConvertInquiryDialog({
                 </FieldGroup>
                 <FieldGroup label="PROJECT MANAGER">
                   <Select
+                    testid="convert-pm"
                     value={form.pmStaffId}
                     onChange={(v) => setForm({ ...form, pmStaffId: v })}
                     options={opsStaff.map((s) => ({ value: s.id, label: s.name }))}
@@ -350,6 +352,7 @@ export default function ConvertInquiryDialog({
                 whileTap={isValid ? { scale: 0.97 } : undefined}
                 onClick={handleSubmit}
                 disabled={!isValid || submitting}
+                data-testid="convert-submit"
                 className="flex-[2] py-3 rounded-xl text-sm font-label flex items-center justify-center gap-1.5"
                 style={{
                   background: isValid
@@ -480,15 +483,18 @@ function Select({
   value,
   onChange,
   options,
+  testid,
 }: {
   value: string;
   onChange: (v: string) => void;
   options: { value: string; label: string }[];
+  testid?: string;
 }) {
   return (
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
+      data-testid={testid}
       className="w-full px-3 py-2.5 rounded-xl text-sm outline-none appearance-none"
       style={{
         background: "oklch(0.985 0.004 80)",

@@ -257,6 +257,8 @@ export default function Projects() {
                   transition={{ delay: i * 0.05 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => navigate(`/projects/${project.id}`)}
+                  data-testid="project-list-card"
+                  data-project-id={project.id}
                   className="rounded-2xl overflow-hidden"
                   style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 2px 12px oklch(0 0 0 / 0.05)" }}
                 >
@@ -351,6 +353,7 @@ export default function Projects() {
       <motion.button
         whileTap={{ scale: 0.9 }}
         onClick={() => navigate("/projects/new")}
+        data-testid="new-project-fab"
         className="fixed bottom-20 right-4 w-14 h-14 rounded-full flex items-center justify-center z-40"
         style={{
           background: "linear-gradient(135deg, oklch(0.62 0.09 68), oklch(0.52 0.08 65))",

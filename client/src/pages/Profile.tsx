@@ -141,6 +141,7 @@ export default function Profile() {
           whileTap={signingOut ? undefined : { scale: 0.97 }}
           onClick={handleSignOut}
           disabled={signingOut}
+          data-testid="profile-signout"
           className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl"
           style={{
             background: "oklch(0.68 0.12 25 / 10%)",

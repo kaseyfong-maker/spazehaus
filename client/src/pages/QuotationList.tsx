@@ -144,6 +144,8 @@ export default function QuotationList() {
                   transition={{ delay: i * 0.05 }}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => navigate(`/quotations/${q.id}`)}
+                  data-testid="quotation-card"
+                  data-quotation-id={q.id}
                   className="rounded-2xl p-4"
                   style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}
                 >
@@ -200,6 +202,7 @@ export default function QuotationList() {
       <motion.button
         whileTap={{ scale: 0.9 }}
         onClick={() => navigate("/quotations/new")}
+        data-testid="new-quotation-fab"
         className="fixed bottom-20 right-4 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl z-40"
         style={{ background: "linear-gradient(135deg, oklch(0.62 0.09 68), oklch(0.52 0.08 65))", boxShadow: "0 4px 20px oklch(0.62 0.09 68 / 40%)" }}
       >

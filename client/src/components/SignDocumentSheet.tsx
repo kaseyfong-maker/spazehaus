@@ -313,6 +313,7 @@ export default function SignDocumentSheet({
                 <input
                   ref={fileInputRef}
                   type="file"
+                  data-testid="sign-file"
                   accept="application/pdf,image/jpeg,image/png"
                   className="hidden"
                   onChange={(e) => {
@@ -366,6 +367,7 @@ export default function SignDocumentSheet({
               {/* Mark-signed toggle */}
               <button
                 onClick={() => setMarkSigned((v) => !v)}
+                data-testid="sign-mark-toggle"
                 className="w-full rounded-xl p-3 flex items-center gap-3"
                 style={{
                   background: markSigned ? "oklch(0.55 0.09 145 / 8%)" : "oklch(0.96 0.006 75)",
@@ -399,6 +401,7 @@ export default function SignDocumentSheet({
                   <FieldGroup label="SIGNED DATE *">
                     <input
                       type="date"
+                      data-testid="sign-date"
                       value={signedDateIso}
                       onChange={(e) => setSignedDateIso(e.target.value)}
                       max={isoToday()}
@@ -409,6 +412,7 @@ export default function SignDocumentSheet({
                   <FieldGroup label="SIGNED BY *" hint="Client name or signatory">
                     <input
                       type="text"
+                      data-testid="sign-by"
                       value={signedBy}
                       onChange={(e) => setSignedBy(e.target.value)}
                       placeholder={target.defaultSignedBy ?? "e.g. Mr. & Mrs. Lim"}
@@ -465,6 +469,7 @@ export default function SignDocumentSheet({
                 whileTap={isPending ? undefined : { scale: 0.96 }}
                 onClick={handleSubmit}
                 disabled={isPending}
+                data-testid="sign-submit"
                 className="flex-1 py-3 rounded-xl text-sm font-label font-semibold flex items-center justify-center gap-2"
                 style={{
                   background: accentGradient,

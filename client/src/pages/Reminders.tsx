@@ -272,6 +272,8 @@ export default function Reminders() {
                               type="button"
                               key={d}
                               onClick={() => openUpload(map.projectId, project.name, d)}
+                              data-testid="photo-cell"
+                              data-cell={`${map.projectId}:${d}`}
                               className="aspect-square rounded-md flex items-center justify-center"
                               title={`${d}${photo?.uploaded ? ` · uploaded ${photo.uploadedAt}${photo.by ? ` by ${photo.by}` : ""}` : " · click to upload"}`}
                               style={{
@@ -311,6 +313,7 @@ export default function Reminders() {
       <input
         ref={fileInputRef}
         type="file"
+        data-testid="reminder-file"
         accept="image/*"
         capture="environment"
         className="hidden"

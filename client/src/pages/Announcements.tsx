@@ -89,6 +89,7 @@ export default function Announcements() {
       <motion.button
         whileTap={{ scale: 0.9 }}
         onClick={() => toast.info("Create announcement feature coming soon")}
+        data-testid="new-announcement-fab"
         className="fixed bottom-20 right-4 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl z-40"
         style={{ background: "linear-gradient(135deg, oklch(0.72 0.09 68), oklch(0.55 0.08 65))" }}
       >

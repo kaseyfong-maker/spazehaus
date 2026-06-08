@@ -126,6 +126,7 @@ export default function LeaveManagement() {
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
+            data-testid={`leave-tab-${tab.toLowerCase().replace(/\s+/g, "-")}`}
             className="flex-1 py-3 text-[11px] font-label relative"
             style={{
               color: activeTab === tab ? "oklch(0.42 0.09 68)" : "oklch(0.45 0.008 65)",
@@ -192,6 +193,8 @@ export default function LeaveManagement() {
                     <motion.button
                       whileTap={{ scale: 0.95 }}
                       onClick={() => handleReject(req.id)}
+                      data-testid="leave-reject"
+                      data-leave-id={req.id}
                       className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-label"
                       style={{ background: "oklch(0.68 0.12 25 / 15%)", color: "oklch(0.68 0.12 25)", border: "1px solid oklch(0.68 0.12 25 / 25%)", letterSpacing: "0.04em" }}
                     >
@@ -200,6 +203,8 @@ export default function LeaveManagement() {
                     <motion.button
                       whileTap={{ scale: 0.95 }}
                       onClick={() => handleApprove(req.id)}
+                      data-testid="leave-approve"
+                      data-leave-id={req.id}
                       className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-xs font-label"
                       style={{ background: "oklch(0.60 0.07 145 / 15%)", color: "oklch(0.70 0.09 145)", border: "1px solid oklch(0.60 0.07 145 / 25%)", letterSpacing: "0.04em" }}
                     >
@@ -264,11 +269,11 @@ export default function LeaveManagement() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label style={labelStyle}>START DATE *</label>
-                  <input style={inputStyle} placeholder="DD/MM/YYYY" value={applyForm.startDate} onChange={(e) => setApplyForm((f) => ({ ...f, startDate: e.target.value }))} />
+                  <input data-testid="leave-start" style={inputStyle} placeholder="DD/MM/YYYY" value={applyForm.startDate} onChange={(e) => setApplyForm((f) => ({ ...f, startDate: e.target.value }))} />
                 </div>
                 <div>
                   <label style={labelStyle}>END DATE *</label>
-                  <input style={inputStyle} placeholder="DD/MM/YYYY" value={applyForm.endDate} onChange={(e) => setApplyForm((f) => ({ ...f, endDate: e.target.value }))} />
+                  <input data-testid="leave-end" style={inputStyle} placeholder="DD/MM/YYYY" value={applyForm.endDate} onChange={(e) => setApplyForm((f) => ({ ...f, endDate: e.target.value }))} />
                 </div>
               </div>
               <div>
@@ -283,6 +288,7 @@ export default function LeaveManagement() {
               <motion.button
                 whileTap={{ scale: 0.95 }}
                 onClick={handleApply}
+                data-testid="leave-submit"
                 className="w-full py-3.5 rounded-xl text-sm font-label font-semibold flex items-center justify-center gap-2"
                 style={{ background: "linear-gradient(135deg, oklch(0.72 0.09 68), oklch(0.55 0.08 65))", color: "oklch(1 0 0)", letterSpacing: "0.04em" }}
               >

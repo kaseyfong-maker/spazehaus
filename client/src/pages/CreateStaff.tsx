@@ -120,15 +120,15 @@ export default function CreateStaff() {
         </div>
 
         <FieldGroup label="NAME *">
-          <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Sarah Lim" style={inputStyle} />
+          <input data-testid="cs-name" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Sarah Lim" style={inputStyle} />
         </FieldGroup>
 
         <FieldGroup label="EMAIL *" hint="The sign-in identity. The staff signs in with this email — auto-linked on first login.">
-          <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@spazehaus.com" style={inputStyle} />
+          <input data-testid="cs-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@spazehaus.com" style={inputStyle} />
         </FieldGroup>
 
         <FieldGroup label="JOB TITLE *">
-          <input type="text" value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} placeholder="e.g. Interior Designer" style={inputStyle} />
+          <input data-testid="cs-job" type="text" value={jobTitle} onChange={(e) => setJobTitle(e.target.value)} placeholder="e.g. Interior Designer" style={inputStyle} />
         </FieldGroup>
 
         <div className="grid grid-cols-2 gap-3">
@@ -145,14 +145,14 @@ export default function CreateStaff() {
         </div>
 
         <FieldGroup label="ROLE" hint="Controls access tier — admin (principal/admin/admin_exec), ops (pm/site_supervisor), field (designer/sales).">
-          <select value={role} onChange={(e) => setRole(e.target.value as StaffRow["role"])} style={inputStyle}>
+          <select data-testid="cs-role" value={role} onChange={(e) => setRole(e.target.value as StaffRow["role"])} style={inputStyle}>
             {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
           </select>
         </FieldGroup>
 
         <div className="grid grid-cols-2 gap-3">
           <FieldGroup label="JOIN DATE *">
-            <input type="date" value={joinDate} onChange={(e) => setJoinDate(e.target.value)} style={inputStyle} />
+            <input data-testid="cs-join" type="date" value={joinDate} onChange={(e) => setJoinDate(e.target.value)} style={inputStyle} />
           </FieldGroup>
           <FieldGroup label="INITIALS" hint="Avatar code — auto-filled from name.">
             <input type="text" value={avatarCode} maxLength={3} onChange={(e) => setAvatarCode(e.target.value)} placeholder={name.trim() ? deriveAvatarCode(name) : "—"} style={inputStyle} />
@@ -194,6 +194,7 @@ export default function CreateStaff() {
             whileTap={createStaff.isPending ? undefined : { scale: 0.96 }}
             onClick={handleSubmit}
             disabled={createStaff.isPending}
+            data-testid="cs-submit"
             className="flex-1 py-3 rounded-xl text-sm font-label font-semibold flex items-center justify-center gap-2"
             style={{
               background: "linear-gradient(135deg, oklch(0.62 0.09 68), oklch(0.52 0.08 65))",

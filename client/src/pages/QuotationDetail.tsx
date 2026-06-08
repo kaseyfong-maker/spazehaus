@@ -326,6 +326,7 @@ export default function QuotationDetail() {
                 key={next}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => advanceStatus(next)}
+                data-testid={`quotation-status-${next}`}
                 className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-label"
                 style={{
                   background: next === "rejected" ? "oklch(0.68 0.12 25 / 15%)" : "oklch(0.62 0.09 68 / 12%)",

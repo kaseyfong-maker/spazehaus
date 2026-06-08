@@ -393,6 +393,7 @@ export default function CustomerDetail() {
             <motion.button
               whileTap={{ scale: 0.98 }}
               onClick={() => setConvertOpen(true)}
+              data-testid="open-convert-dialog"
               className="w-full rounded-2xl py-3.5 flex items-center justify-center gap-2"
               style={{
                 background: "linear-gradient(135deg, oklch(0.62 0.09 68), oklch(0.52 0.08 65))",

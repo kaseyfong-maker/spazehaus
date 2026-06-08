@@ -235,6 +235,7 @@ export default function CreateQuotation() {
                 <div>
                   <label style={labelStyle}>LINKED PROJECT *</label>
                   <select
+                    data-testid="cq-project"
                     style={selectStyle}
                     value={docInfo.projectId}
                     onChange={(e) => setDocInfo((d) => ({ ...d, projectId: e.target.value }))}
@@ -363,7 +364,7 @@ export default function CreateQuotation() {
 
                     <div>
                       <label style={labelStyle}>DESCRIPTION *</label>
-                      <input style={inputStyle} placeholder="Item description..." value={item.description} onChange={(e) => updateItem(item.id, "description", e.target.value)} />
+                      <input data-testid="cq-item-desc" style={inputStyle} placeholder="Item description..." value={item.description} onChange={(e) => updateItem(item.id, "description", e.target.value)} />
                     </div>
 
                     <div className="grid grid-cols-4 gap-2">
@@ -379,7 +380,7 @@ export default function CreateQuotation() {
                       </div>
                       <div>
                         <label style={labelStyle}>UNIT PRICE</label>
-                        <input style={inputStyle} type="number" min="0" value={item.unitPrice} onChange={(e) => updateItem(item.id, "unitPrice", Number(e.target.value) || 0)} />
+                        <input data-testid="cq-item-price" style={inputStyle} type="number" min="0" value={item.unitPrice} onChange={(e) => updateItem(item.id, "unitPrice", Number(e.target.value) || 0)} />
                       </div>
                       <div>
                         <label style={labelStyle}>DISC %</label>
@@ -506,6 +507,7 @@ export default function CreateQuotation() {
           whileTap={createQuotation.isPending ? undefined : { scale: 0.95 }}
           onClick={step < 3 ? () => setStep((s) => s + 1) : handleSubmit}
           disabled={step === 3 && createQuotation.isPending}
+          data-testid="cq-next"
           className="flex-1 py-3.5 rounded-xl text-sm font-label font-semibold"
           style={{ background: "linear-gradient(135deg, oklch(0.72 0.09 68), oklch(0.55 0.08 65))", color: "oklch(1 0 0)", letterSpacing: "0.04em", opacity: step === 3 && createQuotation.isPending ? 0.7 : 1 }}
         >

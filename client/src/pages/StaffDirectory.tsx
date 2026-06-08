@@ -115,6 +115,8 @@ export default function StaffDirectory() {
                   transition={{ delay: i * 0.04 }}
                   whileTap={{ scale: 0.97 }}
                   onClick={() => navigate(`/company/staff/${staff.id}`)}
+                  data-testid="staff-card"
+                  data-staff-id={staff.id}
                   className="rounded-2xl p-4 flex items-center gap-3"
                   style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", opacity: isInactive ? 0.55 : 1 }}
                 >
@@ -165,6 +167,7 @@ export default function StaffDirectory() {
         <motion.button
           whileTap={{ scale: 0.9 }}
           onClick={() => navigate("/company/staff/new")}
+          data-testid="add-staff-fab"
           className="fixed bottom-20 right-4 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl z-40"
           style={{ background: "linear-gradient(135deg, oklch(0.72 0.09 68), oklch(0.55 0.08 65))" }}
         >

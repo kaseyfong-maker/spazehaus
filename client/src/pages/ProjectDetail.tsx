@@ -151,6 +151,7 @@ export default function ProjectDetail() {
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={() => setEditOpen(true)}
+              data-testid="project-edit"
               className="flex items-center gap-1.5 h-9 px-3.5 rounded-full text-xs font-label"
               style={{ background: "oklch(0.96 0.006 75)", border: "1px solid oklch(0.90 0.010 75)", color: "oklch(0.42 0.09 68)", letterSpacing: "0.04em" }}
             >

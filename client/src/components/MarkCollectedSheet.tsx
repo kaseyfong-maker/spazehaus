@@ -216,6 +216,7 @@ export default function MarkCollectedSheet({
               <FieldGroup label="COLLECTED DATE *">
                 <input
                   type="date"
+                  data-testid="collect-date"
                   value={collectedDateIso}
                   onChange={(e) => setCollectedDateIso(e.target.value)}
                   max={isoToday()}
@@ -227,6 +228,7 @@ export default function MarkCollectedSheet({
               <FieldGroup label="REFERENCE *" hint="Bank transaction ID, cheque number, or bank slip ref.">
                 <input
                   type="text"
+                  data-testid="collect-reference"
                   value={reference}
                   onChange={(e) => setReference(e.target.value)}
                   placeholder="e.g. TXN20260513-001 or MBB-CHQ-882"
@@ -281,6 +283,7 @@ export default function MarkCollectedSheet({
                 whileTap={updatePayment.isPending ? undefined : { scale: 0.96 }}
                 onClick={handleSubmit}
                 disabled={updatePayment.isPending}
+                data-testid="collect-submit"
                 className="flex-1 py-3 rounded-xl text-sm font-label font-semibold flex items-center justify-center gap-2"
                 style={{
                   background: "linear-gradient(135deg, oklch(0.55 0.09 145), oklch(0.45 0.09 145))",

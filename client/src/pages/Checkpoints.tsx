@@ -127,6 +127,7 @@ export default function Checkpoints() {
               <button
                 key={t}
                 onClick={() => setFilter(t)}
+                data-testid={`checkpoints-tab-${t.toLowerCase()}`}
                 className="flex-1 py-2 text-xs font-label rounded-lg transition-colors relative"
                 style={{
                   background: active ? "oklch(0.62 0.09 68 / 10%)" : "transparent",
@@ -409,6 +410,8 @@ function PaymentItem({
     <div
       className="w-full px-3 py-3 flex items-center gap-3"
       style={{ borderBottom: isLast ? "none" : "1px solid oklch(0.95 0.008 75)" }}
+      data-testid="payment-row"
+      data-payment-key={`${row.projectId}-${row.gate}`}
     >
       {/* Row body — tapping navigates to the project's Lifecycle tab */}
       <motion.button
@@ -457,6 +460,7 @@ function PaymentItem({
           <motion.button
             whileTap={{ scale: 0.94 }}
             onClick={onCollect}
+            data-testid="payment-collect"
             className="px-2.5 py-1 rounded-md flex items-center gap-1"
             style={{
               background: "oklch(0.55 0.09 145 / 12%)",
@@ -529,6 +533,8 @@ function SignatureGroup({
                 key={`${row.projectId}-${row.key}`}
                 className="w-full px-3 py-3 flex items-center gap-3"
                 style={{ borderBottom: i === rows.length - 1 ? "none" : "1px solid oklch(0.95 0.008 75)" }}
+                data-testid="signature-row"
+                data-signature-key={`${row.projectId}-${row.key}`}
               >
                 <motion.button
                   whileTap={{ scale: 0.99 }}
@@ -572,6 +578,7 @@ function SignatureGroup({
                     <motion.button
                       whileTap={{ scale: 0.94 }}
                       onClick={() => onSign(row)}
+                      data-testid="signature-sign"
                       className="px-2.5 py-1 rounded-md flex items-center gap-1"
                       style={{
                         background: tintBg,
