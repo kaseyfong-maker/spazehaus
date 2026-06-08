@@ -18,12 +18,11 @@ import {
   useOpenSignatures,
   useAllStaff,
   useAnnouncements,
-  useSitePhotos,
-  buildSitePhotoMaps,
-  buildReminders,
-  reminderSummary,
+  useAuditLog,
   computeCheckpointSummary,
 } from "@/lib/queries";
+import { summarizeAudit, relativeTime } from "@/lib/activityFeed";
+import type { AuditAction } from "@/lib/dbTypes";
 import { formatRM } from "@/lib/quotationData";
 
 const HERO_BG = "/hero/warm.jpg";
@@ -46,7 +45,11 @@ export default function Dashboard() {
   const { data: openSignatures = [] } = useOpenSignatures();
   const { data: allStaff = [] } = useAllStaff();
   const { data: announcements = [] } = useAnnouncements();
-  const { data: sitePhotos = [] } = useSitePhotos();
+
+  // Recent activity — live audit-log feed (newest first, last 14 days).
+  // RLS limits non-admins to their own actions; the admin tier sees everything.
+  const { data: auditData } = useAuditLog({ daysBack: 14, pageSize: 7 });
+  const recentActivity = auditData?.pages[0]?.entries ?? [];
 
   const activeProjects = projects.filter((p) => p.status === "active" || p.status === "assigned").length;
   const pendingReview = projects.filter((p) => p.status === "under-review").length;
@@ -56,14 +59,6 @@ export default function Dashboard() {
   // Cross-project SOP checkpoint summary (Phase 2 → 0C via TanStack Query)
   const ckpt = computeCheckpointSummary(openPayments, openSignatures);
   const hasUrgent = ckpt.overdueCount > 0 || ckpt.thisWeekCount > 0 || ckpt.pendingSignsCount > 0;
-
-  // Daily/weekly reminder summary (Phase 4 → Supabase via Phase 0C.2)
-  const activeProjectIds = projects
-    .filter((p) => p.status === "active" || p.status === "assigned")
-    .map((p) => p.id);
-  const photoMaps = buildSitePhotoMaps(activeProjectIds, sitePhotos, allStaff);
-  const reminders = buildReminders(projects, photoMaps);
-  const rem = reminderSummary(reminders, photoMaps);
 
   const stats = [
     { label: "Active Projects", value: activeProjects, icon: FolderOpen, color: "oklch(0.52 0.09 68)", bg: "oklch(0.62 0.09 68 / 10%)" },
@@ -81,27 +76,15 @@ export default function Dashboard() {
     { label: "Quotes", icon: FileText, color: "oklch(0.50 0.10 25)", bg: "oklch(0.60 0.10 25 / 10%)", path: "/quotations" },
   ];
 
-  const recentActivity = [
-    { text: "Eco Botanic Office — Final review submitted", time: "2h ago", type: "review" },
-    { text: "Vinson Tan's leave approved (24–26 Feb)", time: "4h ago", type: "leave" },
-    { text: "New candidate: Amirah Zulkifli — 2nd Interview", time: "Yesterday", type: "recruit" },
-    { text: "Paragon Residence — 8/12 tasks completed", time: "Yesterday", type: "project" },
-    { text: "Austin Heights — Photos uploaded (8 photos)", time: "2 days ago", type: "photo" },
-    { text: "QT-2026-001 — Paragon Residence quotation accepted", time: "3 days ago", type: "quote" },
-    { text: "QT-2026-002 — Eco Botanic invoice marked as paid", time: "5 days ago", type: "quote" },
-  ];
-
-  const activityDot: Record<string, string> = {
-    review: "oklch(0.55 0.10 55)",
-    leave: "oklch(0.45 0.09 240)",
-    recruit: "oklch(0.45 0.09 145)",
-    project: "oklch(0.52 0.09 68)",
-    photo: "oklch(0.50 0.08 300)",
-    quote: "oklch(0.50 0.10 25)",
+  // Dot colour by audit action — green (created) / blue (updated) / red (deleted).
+  const activityDot: Record<AuditAction, string> = {
+    INSERT: "oklch(0.45 0.09 145)",
+    UPDATE: "oklch(0.45 0.09 240)",
+    DELETE: "oklch(0.50 0.12 25)",
   };
 
   return (
-    <div className="mobile-container" style={{ background: "oklch(0.985 0.004 80)" }}>
+    <div className="mobile-container" data-testid="dashboard-root" style={{ background: "oklch(0.985 0.004 80)" }}>
       {/* Hero Header — keeps dark overlay for contrast over image */}
       <div
         className="relative overflow-hidden"
@@ -123,6 +106,7 @@ export default function Dashboard() {
             <div className="flex items-center gap-2">
               <motion.button
                 whileTap={{ scale: 0.9 }}
+                data-testid="notif-bell"
                 className="w-9 h-9 flex items-center justify-center rounded-full relative"
                 style={{ background: "oklch(1 0 0 / 12%)", border: "1px solid oklch(1 0 0 / 18%)" }}
               >
@@ -130,6 +114,7 @@ export default function Dashboard() {
                 <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full" style={{ background: "oklch(0.72 0.09 68)" }} />
               </motion.button>
               <div
+                data-testid="hero-avatar"
                 className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold"
                 style={{ background: "linear-gradient(135deg, oklch(0.62 0.09 68), oklch(0.52 0.08 65))", color: "white" }}
               >
@@ -141,12 +126,13 @@ export default function Dashboard() {
           {/* Greeting */}
           <div className="mb-5">
             <p className="text-sm text-white/70">Good morning,</p>
-            <p className="font-display text-xl font-semibold text-white">{staff?.name ?? ""}</p>
-            <p className="text-xs mt-0.5" style={{ color: "oklch(0.72 0.09 68)" }}>{staff?.job_title ?? ""}</p>
+            <p data-testid="hero-greeting" className="font-display text-xl font-semibold text-white">{staff?.name ?? ""}</p>
+            <p data-testid="hero-jobtitle" className="text-xs mt-0.5" style={{ color: "oklch(0.72 0.09 68)" }}>{staff?.job_title ?? ""}</p>
           </div>
 
           {/* Search bar */}
           <div
+            data-testid="hero-search"
             className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-xl"
             style={{ background: "oklch(1 0 0 / 10%)", border: "1px solid oklch(1 0 0 / 15%)" }}
           >
@@ -166,6 +152,7 @@ export default function Dashboard() {
       >
         {projectsError && (
           <div
+            data-testid="error-banner"
             className="rounded-2xl p-4 flex items-center justify-between gap-3"
             style={{ background: "oklch(0.58 0.12 25 / 8%)", border: "1px solid oklch(0.58 0.12 25 / 25%)" }}
           >
@@ -174,6 +161,7 @@ export default function Dashboard() {
             </p>
             <button
               onClick={() => refetchProjects()}
+              data-testid="error-retry"
               className="text-[11px] font-label px-3 py-1.5 rounded-lg shrink-0"
               style={{ background: "oklch(0.58 0.12 25 / 12%)", color: "oklch(0.45 0.12 25)", letterSpacing: "0.04em" }}
             >
@@ -198,7 +186,11 @@ export default function Dashboard() {
                     <Icon size={18} style={{ color: s.color }} />
                   </div>
                   <div>
-                    <p className="text-2xl font-display font-bold" style={{ color: "oklch(0.14 0.008 65)" }}>{s.value}</p>
+                    <p
+                      data-testid={`stat-${s.label.toLowerCase().replace(/\s+/g, "-")}`}
+                      className="text-2xl font-display font-bold"
+                      style={{ color: "oklch(0.14 0.008 65)" }}
+                    >{s.value}</p>
                     <p className="text-xs leading-tight" style={{ color: "oklch(0.52 0.010 68)" }}>{s.label}</p>
                   </div>
                 </div>
@@ -214,6 +206,7 @@ export default function Dashboard() {
               <p className="sz-label">URGENT CHECKPOINTS</p>
               <button
                 onClick={() => navigate("/checkpoints")}
+                data-testid="checkpoints-viewall"
                 className="flex items-center gap-1 text-xs font-label"
                 style={{ color: "oklch(0.52 0.09 68)", letterSpacing: "0.04em" }}
               >
@@ -224,6 +217,7 @@ export default function Dashboard() {
             <motion.button
               whileTap={{ scale: 0.98 }}
               onClick={() => navigate("/checkpoints")}
+              data-testid="checkpoints-card"
               className="w-full rounded-2xl p-4 text-left"
               style={{
                 background: ckpt.overdueCount > 0
@@ -254,7 +248,7 @@ export default function Dashboard() {
                   />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold" style={{ color: "oklch(0.14 0.008 65)" }}>
+                  <p data-testid="ckpt-status" className="text-sm font-semibold" style={{ color: "oklch(0.14 0.008 65)" }}>
                     {ckpt.overdueCount > 0 ? "Action required" : "All on track"}
                   </p>
                   <p className="text-xs mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>
@@ -276,6 +270,7 @@ export default function Dashboard() {
                     <p className="text-[9px] font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.04em" }}>OVERDUE</p>
                   </div>
                   <p
+                    data-testid="ckpt-overdue"
                     className="font-display text-lg font-bold"
                     style={{ color: ckpt.overdueCount > 0 ? "oklch(0.50 0.12 25)" : "oklch(0.30 0.008 65)" }}
                   >
@@ -287,7 +282,7 @@ export default function Dashboard() {
                     <CalendarCheck size={10} style={{ color: "oklch(0.55 0.008 65)" }} />
                     <p className="text-[9px] font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.04em" }}>THIS WEEK</p>
                   </div>
-                  <p className="font-display text-lg font-bold" style={{ color: "oklch(0.30 0.008 65)" }}>
+                  <p data-testid="ckpt-thisweek" className="font-display text-lg font-bold" style={{ color: "oklch(0.30 0.008 65)" }}>
                     {ckpt.thisWeekCount}
                   </p>
                 </div>
@@ -296,7 +291,7 @@ export default function Dashboard() {
                     <PenSquare size={10} style={{ color: "oklch(0.55 0.008 65)" }} />
                     <p className="text-[9px] font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.04em" }}>SIGNS</p>
                   </div>
-                  <p className="font-display text-lg font-bold" style={{ color: "oklch(0.30 0.008 65)" }}>
+                  <p data-testid="ckpt-signs" className="font-display text-lg font-bold" style={{ color: "oklch(0.30 0.008 65)" }}>
                     {ckpt.pendingSignsCount}
                   </p>
                 </div>
@@ -309,7 +304,7 @@ export default function Dashboard() {
                 <span className="text-[10px] font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.06em" }}>
                   TOTAL OUTSTANDING
                 </span>
-                <span className="font-display text-sm font-semibold" style={{ color: "oklch(0.42 0.09 68)" }}>
+                <span data-testid="ckpt-outstanding" className="font-display text-sm font-semibold" style={{ color: "oklch(0.42 0.09 68)" }}>
                   {formatRM(ckpt.outstandingRM)}
                 </span>
               </div>
@@ -328,6 +323,8 @@ export default function Dashboard() {
                   key={action.label}
                   whileTap={{ scale: 0.94 }}
                   onClick={() => navigate(action.path)}
+                  data-testid="quick-action"
+                  data-action={action.path}
                   className="flex flex-col items-center gap-2 py-4 rounded-2xl"
                   style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
                 >
@@ -347,13 +344,14 @@ export default function Dashboard() {
             <p className="sz-label">RECENT PROJECTS</p>
             <button
               onClick={() => navigate("/projects")}
+              data-testid="projects-viewall"
               className="flex items-center gap-1 text-xs font-label"
               style={{ color: "oklch(0.52 0.09 68)", letterSpacing: "0.04em" }}
             >
               View All <ChevronRight size={12} />
             </button>
           </div>
-          <div className="space-y-2.5 lg:space-y-0 lg:grid lg:grid-cols-3 lg:gap-3">
+          <div className="space-y-2.5 lg:space-y-0 lg:grid lg:grid-cols-3 lg:gap-3" data-testid="recent-projects">
             {projects.slice(0, 3).map((project, i) => (
               <motion.div
                 key={project.id}
@@ -362,6 +360,8 @@ export default function Dashboard() {
                 transition={{ delay: i * 0.08 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => navigate(`/projects/${project.id}`)}
+                data-testid="project-card"
+                data-project-id={project.id}
                 className="rounded-2xl p-4"
                 style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
               >
@@ -371,6 +371,7 @@ export default function Dashboard() {
                     <p className="text-xs mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>{project.client}</p>
                   </div>
                   <span
+                    data-testid="project-status"
                     className="status-pill ml-2 shrink-0"
                     style={{
                       background: project.status === "active" ? "oklch(0.62 0.09 68 / 12%)" :
@@ -400,29 +401,49 @@ export default function Dashboard() {
           </div>
         </motion.div>
 
-        {/* Recent Activity */}
+        {/* Recent Activity — live audit-log feed */}
         <motion.div variants={itemVariants}>
-          <p className="sz-label mb-3">RECENT ACTIVITY</p>
+          <div className="flex items-center justify-between mb-3">
+            <p className="sz-label">RECENT ACTIVITY</p>
+            <button
+              onClick={() => navigate("/company/audit")}
+              className="flex items-center gap-1 text-xs font-label"
+              style={{ color: "oklch(0.52 0.09 68)", letterSpacing: "0.04em" }}
+            >
+              View All <ChevronRight size={12} />
+            </button>
+          </div>
           <div
             className="rounded-2xl overflow-hidden"
             style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
+            data-testid="recent-activity"
           >
-            {recentActivity.map((item, i) => (
-              <div
-                key={i}
-                className="px-4 py-3 flex items-start gap-3"
-                style={{ borderBottom: i < recentActivity.length - 1 ? "1px solid oklch(0.93 0.008 75)" : "none" }}
-              >
-                <div
-                  className="w-1.5 h-1.5 rounded-full shrink-0 mt-1.5"
-                  style={{ background: activityDot[item.type] || "oklch(0.52 0.09 68)" }}
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs leading-relaxed" style={{ color: "oklch(0.30 0.008 65)" }}>{item.text}</p>
-                </div>
-                <span className="text-[10px] shrink-0" style={{ color: "oklch(0.65 0.008 68)" }}>{item.time}</span>
+            {recentActivity.length === 0 ? (
+              <div className="px-4 py-6 text-center" data-testid="recent-activity-empty">
+                <p className="text-xs" style={{ color: "oklch(0.52 0.010 68)" }}>No recent activity</p>
               </div>
-            ))}
+            ) : (
+              recentActivity.map((entry, i) => (
+                <div
+                  key={entry.id}
+                  data-testid="activity-item"
+                  className="px-4 py-3 flex items-start gap-3"
+                  style={{ borderBottom: i < recentActivity.length - 1 ? "1px solid oklch(0.93 0.008 75)" : "none" }}
+                >
+                  <div
+                    className="w-1.5 h-1.5 rounded-full shrink-0 mt-1.5"
+                    style={{ background: activityDot[entry.action] || "oklch(0.52 0.09 68)" }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs leading-relaxed" style={{ color: "oklch(0.30 0.008 65)" }}>{summarizeAudit(entry)}</p>
+                    <p className="text-[10px] mt-0.5" style={{ color: "oklch(0.55 0.008 65)" }}>
+                      {entry.actor?.name ?? (entry.changed_by ? "Unknown user" : "System")}
+                    </p>
+                  </div>
+                  <span className="text-[10px] shrink-0" style={{ color: "oklch(0.65 0.008 68)" }}>{relativeTime(entry.changed_at)}</span>
+                </div>
+              ))
+            )}
           </div>
         </motion.div>
 
@@ -431,6 +452,7 @@ export default function Dashboard() {
           <motion.div variants={itemVariants}>
             <p className="sz-label mb-3">LATEST ANNOUNCEMENT</p>
             <div
+              data-testid="announcement-card"
               className="rounded-2xl p-4"
               style={{ background: "oklch(0.62 0.09 68 / 6%)", border: "1px solid oklch(0.62 0.09 68 / 20%)" }}
             >

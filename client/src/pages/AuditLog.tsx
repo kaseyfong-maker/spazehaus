@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import { useAuditLog, canViewAuditLog, type AuditEntry } from "@/lib/queries";
+import { summarizeAudit, relativeTime } from "@/lib/activityFeed";
 import { useAuth } from "@/contexts/AuthContext";
 import type { AuditAction } from "@/lib/dbTypes";
 
@@ -672,92 +673,4 @@ function deepEqual(a: unknown, b: unknown): boolean {
     }
   }
   return false;
-}
-
-/** Relative time formatter — "5m ago", "2h ago", "3d ago", "12 Feb". */
-function relativeTime(iso: string): string {
-  const ms = Date.now() - new Date(iso).getTime();
-  const min = Math.floor(ms / 60_000);
-  if (min < 1) return "just now";
-  if (min < 60) return `${min}m ago`;
-  const hr = Math.floor(min / 60);
-  if (hr < 24) return `${hr}h ago`;
-  const day = Math.floor(hr / 24);
-  if (day < 7) return `${day}d ago`;
-  return new Date(iso).toLocaleDateString("en-MY", { day: "numeric", month: "short" });
-}
-
-/** Smart one-line summary for an audit entry. Falls back to a generic verb + table. */
-function summarizeAudit(entry: AuditEntry): string {
-  const { table_name, action, before_data, after_data } = entry;
-  const after = (after_data ?? {}) as Record<string, unknown>;
-  const before = (before_data ?? {}) as Record<string, unknown>;
-
-  if (table_name === "payment_records") {
-    const gate = (after.gate ?? before.gate) as number | undefined;
-    const gateLabel = gate ? ["①", "②", "③", "④", "⑤"][gate - 1] : "?";
-    if (action === "UPDATE" && before.status !== "completed" && after.status === "completed") {
-      const amount = after.amount as number | undefined;
-      return `Marked payment ${gateLabel} collected${amount ? ` — RM ${Number(amount).toLocaleString()}` : ""}`;
-    }
-    if (action === "INSERT") {
-      return `New payment ${gateLabel}${after.amount ? ` — RM ${Number(after.amount).toLocaleString()}` : ""}`;
-    }
-  }
-
-  if (table_name === "signature_records") {
-    const label = (after.label ?? before.label) as string | undefined;
-    if (action === "UPDATE") {
-      if (before.status !== "completed" && after.status === "completed") {
-        return `Signed ${label ?? "document"}${after.signed_by ? ` by ${after.signed_by}` : ""}`;
-      }
-      if (before.document_ref !== after.document_ref && after.document_ref) {
-        return `Uploaded document for ${label ?? "signature"}`;
-      }
-    }
-  }
-
-  if (table_name === "projects") {
-    if (action === "INSERT") {
-      return `New project ${after.name ?? entry.row_id}`;
-    }
-    if (action === "UPDATE" && before.current_stage_id !== after.current_stage_id) {
-      return `Stage advanced ${before.current_stage_id ?? "—"} → ${after.current_stage_id ?? "—"}`;
-    }
-    if (action === "UPDATE" && before.status !== after.status) {
-      return `Project ${after.name ?? entry.row_id} status: ${after.status}`;
-    }
-  }
-
-  if (table_name === "inquiries") {
-    if (action === "INSERT") return `New inquiry from ${after.client_name ?? entry.row_id}`;
-    if (action === "UPDATE" && before.stage !== after.stage) {
-      return `Inquiry ${entry.row_id} → ${after.stage}`;
-    }
-  }
-
-  if (table_name === "leave_requests") {
-    if (action === "INSERT") return `Leave request from staff ${after.staff_id ?? entry.row_id}`;
-    if (action === "UPDATE" && before.status !== after.status) {
-      return `Leave ${entry.row_id} ${after.status}`;
-    }
-  }
-
-  if (table_name === "quotations") {
-    if (action === "INSERT") return `New ${(after.doc_type ?? "quotation")} ${entry.row_id}`;
-    if (action === "UPDATE" && before.status !== after.status) {
-      return `Quotation ${entry.row_id} → ${after.status}`;
-    }
-  }
-
-  if (table_name === "staff") {
-    if (action === "INSERT") return `New staff ${after.name ?? entry.row_id}`;
-    if (action === "UPDATE" && before.auth_user_id !== after.auth_user_id && after.auth_user_id) {
-      return `Linked auth account to ${after.name ?? entry.row_id}`;
-    }
-  }
-
-  // Fallback
-  const visual = actionVisual[action];
-  return `${visual.verb} ${table_name} ${entry.row_id || ""}`.trim();
 }
