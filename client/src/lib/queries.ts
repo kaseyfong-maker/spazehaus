@@ -399,6 +399,79 @@ export function useUpdateProject() {
   });
 }
 
+/** Fields captured by the New Project wizard (CreateProject.tsx). */
+export type CreateProjectArgs = {
+  name: string;
+  client: string;                  // → client_name
+  clientContact?: string | null;
+  clientEmail?: string | null;
+  type: string;                    // → project_type
+  propertyType: string;
+  location: string;
+  size?: number;                   // → size_sqft (NOT NULL → default 0)
+  budget?: number;                 // NOT NULL → default 0
+  startDate?: string | null;       // DD/MM/YYYY
+  targetDate?: string | null;      // DD/MM/YYYY
+  areas?: string[];
+  description?: string | null;
+};
+
+/** Create a brand-new project from the wizard. Server-side gating: the
+ *  `projects_write_admin_or_ops` RLS policy means only the OPS tier can insert.
+ *  Like staff, the `PRJ###` id isn't DB-generated — we compute the next one from
+ *  the current max and retry on a unique-violation (concurrent-create race).
+ *  New projects start at the first lifecycle stage (`new-inquiry`); payment and
+ *  signature scaffolding is added later (the convert-from-inquiry flow seeds
+ *  those up front, a blank create does not). */
+export function useCreateProject() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: CreateProjectArgs): Promise<ProjectRow> => {
+      const { data: existing, error: listErr } = await supabase.from("projects").select("id");
+      if (listErr) throw listErr;
+      const maxNum = (existing ?? []).reduce((max, r) => {
+        const m = /^PRJ(\d+)$/.exec(r.id);
+        return m ? Math.max(max, parseInt(m[1], 10)) : max;
+      }, 0);
+
+      const base: Omit<TablesInsert<"projects">, "id"> = {
+        name: args.name,
+        client_name: args.client,
+        client_contact: args.clientContact ?? null,
+        client_email: args.clientEmail ?? null,
+        project_type: args.type,
+        property_type: args.propertyType,
+        location: args.location,
+        size_sqft: args.size ?? 0,
+        budget: args.budget ?? 0,
+        start_date: args.startDate ? ddmmyyyyToIso(args.startDate) : null,
+        target_date: args.targetDate ? ddmmyyyyToIso(args.targetDate) : null,
+        status: "assigned",
+        priority: "medium",
+        areas: args.areas ?? [],
+        description: args.description ?? null,
+        current_stage_id: "new-inquiry",
+        lifecycle_started_at: new Date().toISOString(),
+      };
+
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const id = `PRJ${String(maxNum + 1 + attempt).padStart(3, "0")}`;
+        const { data, error } = await supabase
+          .from("projects")
+          .insert({ ...base, id })
+          .select()
+          .single();
+        if (!error) return data as ProjectRow;
+        if (error.code !== "23505") throw error; // 23505 = unique_violation → next id
+      }
+      throw new Error("Could not allocate a unique project id after several attempts. Please retry.");
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.projects });
+    },
+  });
+}
+
 /** Returns true when the role may edit project metadata — OPS tier, same as
  *  the payment/signature write gate (`canEditPayments`). */
 export const canEditProject = canEditPayments;

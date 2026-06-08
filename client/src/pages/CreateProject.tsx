@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
 import { Check } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
+import { useCreateProject } from "@/lib/queries";
 import { toast } from "sonner";
 
 const steps = [
@@ -26,6 +27,7 @@ const roomOptions = ["Living Room", "Master Bedroom", "Bedroom 2", "Bedroom 3", 
 
 export default function CreateProject() {
   const [, navigate] = useLocation();
+  const createProject = useCreateProject();
   const [step, setStep] = useState(1);
   const [form, setForm] = useState({
     clientName: "", clientContact: "", clientEmail: "",
@@ -44,9 +46,41 @@ export default function CreateProject() {
     update("selectedRooms", rooms);
   };
 
-  const handleSubmit = () => {
-    toast.success("Project created successfully!", { description: `${form.projectName || "New Project"} has been added.` });
-    navigate("/projects");
+  const handleSubmit = async () => {
+    // Required-field guard (mirrors the * markers in the wizard).
+    const missing =
+      !form.clientName.trim() ? "Client name" :
+      !form.clientContact.trim() ? "Contact number" :
+      !form.projectName.trim() ? "Project name" :
+      !form.propertyType ? "Property type" :
+      !form.location.trim() ? "Location" :
+      form.selectedRooms.length === 0 ? "At least one area/room" :
+      null;
+    if (missing) {
+      toast.error(`${missing} is required`);
+      return;
+    }
+    try {
+      const project = await createProject.mutateAsync({
+        name: form.projectName.trim(),
+        client: form.clientName.trim(),
+        clientContact: form.clientContact.trim() || null,
+        clientEmail: form.clientEmail.trim() || null,
+        type: form.projectType,
+        propertyType: form.propertyType,
+        location: form.location.trim(),
+        size: form.size ? Number(form.size) : 0,
+        budget: form.budget ? Number(form.budget) : 0,
+        startDate: form.startDate.trim() || null,
+        targetDate: form.targetDate.trim() || null,
+        areas: form.selectedRooms,
+        description: form.notes.trim() || null,
+      });
+      toast.success("Project created successfully!", { description: `${project.name} (${project.id}) has been added.` });
+      navigate(`/projects/${project.id}`);
+    } catch (err) {
+      toast.error(`Could not create project: ${err instanceof Error ? err.message : "unknown error"}`);
+    }
   };
 
   const inputStyle = {
@@ -108,11 +142,11 @@ export default function CreateProject() {
               <>
                 <div>
                   <label style={labelStyle}>CLIENT NAME *</label>
-                  <input style={inputStyle} placeholder="e.g. Mr. & Mrs. Lim" value={form.clientName} onChange={(e) => update("clientName", e.target.value)} />
+                  <input data-testid="cp-client-name" style={inputStyle} placeholder="e.g. Mr. & Mrs. Lim" value={form.clientName} onChange={(e) => update("clientName", e.target.value)} />
                 </div>
                 <div>
                   <label style={labelStyle}>CONTACT NUMBER *</label>
-                  <input style={inputStyle} placeholder="+60 12-345 6789" value={form.clientContact} onChange={(e) => update("clientContact", e.target.value)} />
+                  <input data-testid="cp-client-contact" style={inputStyle} placeholder="+60 12-345 6789" value={form.clientContact} onChange={(e) => update("clientContact", e.target.value)} />
                 </div>
                 <div>
                   <label style={labelStyle}>EMAIL ADDRESS</label>
@@ -125,7 +159,7 @@ export default function CreateProject() {
               <>
                 <div>
                   <label style={labelStyle}>PROJECT NAME *</label>
-                  <input style={inputStyle} placeholder="e.g. The Paragon Residence" value={form.projectName} onChange={(e) => update("projectName", e.target.value)} />
+                  <input data-testid="cp-project-name" style={inputStyle} placeholder="e.g. The Paragon Residence" value={form.projectName} onChange={(e) => update("projectName", e.target.value)} />
                 </div>
                 <div>
                   <label style={labelStyle}>PROJECT TYPE *</label>
@@ -168,7 +202,7 @@ export default function CreateProject() {
                 </div>
                 <div>
                   <label style={labelStyle}>LOCATION / ADDRESS *</label>
-                  <input style={inputStyle} placeholder="e.g. Bukit Indah, Johor Bahru" value={form.location} onChange={(e) => update("location", e.target.value)} />
+                  <input data-testid="cp-location" style={inputStyle} placeholder="e.g. Bukit Indah, Johor Bahru" value={form.location} onChange={(e) => update("location", e.target.value)} />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
@@ -273,10 +307,12 @@ export default function CreateProject() {
         <motion.button
           whileTap={{ scale: 0.95 }}
           onClick={step < 4 ? () => setStep((s) => s + 1) : handleSubmit}
+          disabled={createProject.isPending}
+          data-testid="cp-next"
           className="flex-1 py-3.5 rounded-xl text-sm font-label font-semibold"
-          style={{ background: "linear-gradient(135deg, oklch(0.72 0.09 68), oklch(0.55 0.08 65))", color: "oklch(1 0 0)", letterSpacing: "0.04em" }}
+          style={{ background: "linear-gradient(135deg, oklch(0.72 0.09 68), oklch(0.55 0.08 65))", color: "oklch(1 0 0)", letterSpacing: "0.04em", opacity: createProject.isPending ? 0.6 : 1 }}
         >
-          {step < 4 ? "Continue" : "Create Project"}
+          {step < 4 ? "Continue" : createProject.isPending ? "Creating…" : "Create Project"}
         </motion.button>
       </div>
     </div>
