@@ -88,6 +88,19 @@ export default defineConfig({
           if (e2) throw new Error(e2.message);
           return s.session?.access_token;
         },
+        // Full session object (access + refresh token, expiry, user) for a staff
+        // email — minted via the admin API, so it is NOT subject to the magic-link
+        // email rate limit. Cypress injects this straight into the supabase-js
+        // localStorage key so the browser is "logged in" without the UI flow.
+        async "auth:session"(email: string) {
+          await ensureAuthUser(email);
+          const { data, error } = await admin().auth.admin.generateLink({ type: "magiclink", email });
+          if (error) throw new Error(error.message);
+          const anon = createClient(SUPABASE_URL, ANON_KEY, { auth: { persistSession: false, autoRefreshToken: false } });
+          const { data: s, error: e2 } = await anon.auth.verifyOtp({ token_hash: data.properties!.hashed_token, type: "email" });
+          if (e2) throw new Error(e2.message);
+          return s.session ?? null;
+        },
         async "mailpit:latestLink"(toEmail: string) {
           const list = await fetch(`${MAILPIT_URL}/api/v1/messages`).then((r) => r.json());
           const msg = (list.messages ?? []).find((m: any) => (m.To ?? []).some((t: any) => t.Address === toEmail));

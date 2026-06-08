@@ -10,6 +10,9 @@ declare global {
       login(email: string): Chainable<void>;
       /** Faithful login through the real magic-link → Mailpit flow. */
       loginViaMailpit(email: string): Chainable<void>;
+      /** Cached login: inject an admin-minted session into localStorage (no email,
+       *  no rate limit). Cached via cy.session so it runs once per email. */
+      loginCached(email: string): Chainable<void>;
       /** Resolve a real user access token for authenticated cy.request() calls. */
       token(email: string): Chainable<string>;
     }
@@ -46,6 +49,35 @@ Cypress.Commands.add("loginViaMailpit", (email: string) => {
     cy.visit(link);
     cy.location("pathname", { timeout: 20000 }).should("not.include", "/login");
   });
+});
+
+// supabase-js (v2) persists the session under this localStorage key for the
+// local stack (URL host 127.0.0.1). Writing the session JSON here makes the app
+// authenticated on the next page load — no UI flow, no magic-link rate limit.
+const SUPABASE_STORAGE_KEY = "sb-127-auth-token";
+
+Cypress.Commands.add("loginCached", (email: string) => {
+  cy.session(
+    `cached:${email}`,
+    () => {
+      cy.task("auth:session", email).then((session) => {
+        expect(session, "minted session").to.be.an("object");
+        // Visit any app route first so localStorage belongs to the app origin.
+        cy.visit("/login");
+        cy.window().then((win) => {
+          win.localStorage.setItem(SUPABASE_STORAGE_KEY, JSON.stringify(session));
+        });
+      });
+    },
+    {
+      validate() {
+        cy.window().then((win) => {
+          expect(win.localStorage.getItem(SUPABASE_STORAGE_KEY), "session in localStorage").to.be.a("string");
+        });
+      },
+      cacheAcrossSpecs: true,
+    },
+  );
 });
 
 Cypress.Commands.add("token", (email: string) => {
