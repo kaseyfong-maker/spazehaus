@@ -9,6 +9,8 @@
     "start": "NODE_ENV=production node dist/index.js",
     "preview": "vite preview --host",
     "check": "tsc --noEmit",
+    "test:unit": "vitest run",
+    "test:unit:watch": "vitest",
     "format": "prettier --write .",
     "cy:open": "cypress open --e2e",
     "cy:run": "cypress run --e2e",
