@@ -10,7 +10,9 @@ import { Plus, Search, MapPin, Calendar, FileText, Receipt, AlertCircle, Users, 
 import { computeTotals, formatRM } from "@/lib/quotationData";
 import AppHeader from "@/components/AppHeader";
 import { statusConfig, priorityConfig, DEFAULT_PRIORITY_CONFIG } from "@/lib/mockData";
-import { useProjects, useOpenPayments, useOpenSignatures, useInquiries, useQuotations, computeCheckpointSummary, computeCustomerSummary } from "@/lib/queries";
+import { useProjects, useAllStaff, resolveProjectRoster, useOpenPayments, useOpenSignatures, useInquiries, useQuotations, computeCheckpointSummary, computeCustomerSummary } from "@/lib/queries";
+import { usePagination } from "@/hooks/usePagination";
+import PaginationBar from "@/components/PaginationBar";
 
 const HERO_BG = "/hero/portfolio.jpg";
 
@@ -24,11 +26,11 @@ const statusFilters = [
 
 // Light-theme status config
 const lightStatus: Record<string, { bg: string; color: string }> = {
-  active:       { bg: "oklch(0.62 0.09 68 / 12%)",  color: "oklch(0.42 0.09 68)" },
+  active:       { bg: "oklch(0.62 0.09 68 / 12%)",  color: "var(--acc-ink)" },
   assigned:     { bg: "oklch(0.55 0.09 240 / 12%)", color: "oklch(0.38 0.09 240)" },
   "under-review": { bg: "oklch(0.65 0.10 55 / 12%)", color: "oklch(0.45 0.10 55)" },
   completed:    { bg: "oklch(0.55 0.09 145 / 12%)", color: "oklch(0.38 0.09 145)" },
-  "on-hold":    { bg: "oklch(0.55 0.006 68 / 12%)", color: "oklch(0.40 0.006 68)" },
+  "on-hold":    { bg: "oklch(0.55 0.006 68 / 12%)", color: "var(--t-4)" },
 };
 
 export default function Projects() {
@@ -37,6 +39,7 @@ export default function Projects() {
   const [search, setSearch] = useState("");
 
   const { data: projects = [], isLoading, isError, refetch } = useProjects();
+  const { data: allStaff = [] } = useAllStaff();
   const { data: openPayments = [] } = useOpenPayments();
   const { data: openSignatures = [] } = useOpenSignatures();
   const { data: inquiries = [] } = useInquiries();
@@ -47,6 +50,7 @@ export default function Projects() {
     const matchSearch = p.name.toLowerCase().includes(search.toLowerCase()) || p.client.toLowerCase().includes(search.toLowerCase());
     return matchStatus && matchSearch;
   });
+  const pg = usePagination(filtered, 9, `${activeFilter}|${search}`);
 
   const stats = [
     { label: "Total", value: projects.length },
@@ -62,7 +66,7 @@ export default function Projects() {
   const cust = computeCustomerSummary(inquiries);
 
   return (
-    <div className="mobile-container" style={{ background: "oklch(0.985 0.004 80)" }}>
+    <div className="mobile-container" style={{ background: "var(--s-page)" }}>
       <AppHeader title="Projects" subtitle="DESIGN PORTFOLIO" bgImage={HERO_BG} showNotification />
 
       <div className="px-4 py-4 space-y-4 pb-24 lg:px-8 lg:py-7 lg:space-y-6">
@@ -72,16 +76,16 @@ export default function Projects() {
             whileTap={{ scale: 0.97 }}
             onClick={() => navigate("/quotations")}
             className="rounded-2xl p-3 flex flex-col gap-1.5 text-left"
-            style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.62 0.09 68 / 25%)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
+            style={{ background: "var(--s-card)", border: "1px solid oklch(0.62 0.09 68 / 25%)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
           >
             <div className="flex items-center justify-between">
               <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "oklch(0.62 0.09 68 / 12%)" }}>
-                <FileText size={14} style={{ color: "oklch(0.52 0.09 68)" }} />
+                <FileText size={14} style={{ color: "var(--acc)" }} />
               </div>
-              <Receipt size={12} style={{ color: "oklch(0.65 0.008 68)" }} />
+              <Receipt size={12} style={{ color: "var(--t-6)" }} />
             </div>
-            <p className="text-xs font-semibold mt-1" style={{ color: "oklch(0.14 0.008 65)" }}>Quotations</p>
-            <p className="text-[10px]" style={{ color: "oklch(0.52 0.010 68)" }}>
+            <p className="text-xs font-semibold mt-1" style={{ color: "var(--t-1)" }}>Quotations</p>
+            <p className="text-[10px]" style={{ color: "var(--t-5)" }}>
               {quotations.length} docs · RM {quotations.reduce((s, q) => s + computeTotals(q.items, q.taxRate).total, 0).toLocaleString("en-MY", { minimumFractionDigits: 0 })}
             </p>
           </motion.button>
@@ -109,7 +113,7 @@ export default function Projects() {
               >
                 <AlertCircle
                   size={14}
-                  style={{ color: ckpt.overdueCount > 0 ? "oklch(0.50 0.12 25)" : "oklch(0.52 0.09 68)" }}
+                  style={{ color: ckpt.overdueCount > 0 ? "oklch(0.50 0.12 25)" : "var(--acc)" }}
                 />
               </div>
               {ckpt.overdueCount > 0 && (
@@ -121,8 +125,8 @@ export default function Projects() {
                 </span>
               )}
             </div>
-            <p className="text-xs font-semibold mt-1" style={{ color: "oklch(0.14 0.008 65)" }}>Checkpoints</p>
-            <p className="text-[10px]" style={{ color: "oklch(0.52 0.010 68)" }}>
+            <p className="text-xs font-semibold mt-1" style={{ color: "var(--t-1)" }}>Checkpoints</p>
+            <p className="text-[10px]" style={{ color: "var(--t-5)" }}>
               {ckpt.paymentsCount} payments · {ckpt.pendingSignsCount} signs
             </p>
           </motion.button>
@@ -147,10 +151,10 @@ export default function Projects() {
               <Users size={18} style={{ color: "oklch(0.38 0.09 240)" }} />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold" style={{ color: "oklch(0.14 0.008 65)" }}>
+              <p className="text-sm font-semibold" style={{ color: "var(--t-1)" }}>
                 Customer Database
               </p>
-              <p className="text-[11px] mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>
+              <p className="text-[11px] mt-0.5" style={{ color: "var(--t-5)" }}>
                 Inquiry → Awarded · {cust.total} total · {(cust.winRate * 100).toFixed(0)}% win rate
               </p>
             </div>
@@ -183,22 +187,22 @@ export default function Projects() {
         {/* Stats row */}
         <div className="grid grid-cols-4 gap-2">
           {stats.map((s) => (
-            <div key={s.label} className="rounded-xl p-3 text-center" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 6px oklch(0 0 0 / 0.03)" }}>
-              <p className="text-xl font-display font-semibold" style={{ color: "oklch(0.14 0.008 65)" }}>{s.value}</p>
-              <p className="text-[10px] font-label mt-0.5" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.04em" }}>{s.label}</p>
+            <div key={s.label} className="rounded-xl p-3 text-center" style={{ background: "var(--s-card)", border: "1px solid var(--b-1)", boxShadow: "0 1px 6px oklch(0 0 0 / 0.03)" }}>
+              <p className="text-xl font-display font-semibold" style={{ color: "var(--t-1)" }}>{s.value}</p>
+              <p className="text-[10px] font-label mt-0.5" style={{ color: "var(--t-5)", letterSpacing: "0.04em" }}>{s.label}</p>
             </div>
           ))}
         </div>
 
         {/* Search */}
-        <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
-          <Search size={14} style={{ color: "oklch(0.65 0.008 68)" }} />
+        <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl" style={{ background: "var(--s-card)", border: "1px solid var(--b-1)" }}>
+          <Search size={14} style={{ color: "var(--t-6)" }} />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search projects or clients..."
             className="flex-1 bg-transparent text-sm outline-none"
-            style={{ color: "oklch(0.14 0.008 65)" }}
+            style={{ color: "var(--t-1)" }}
           />
         </div>
 
@@ -211,9 +215,9 @@ export default function Projects() {
               onClick={() => setActiveFilter(f.key)}
               className="shrink-0 px-4 py-1.5 rounded-full text-xs font-label"
               style={{
-                background: activeFilter === f.key ? "oklch(0.62 0.09 68)" : "oklch(1 0 0)",
-                color: activeFilter === f.key ? "oklch(1 0 0)" : "oklch(0.45 0.008 65)",
-                border: activeFilter === f.key ? "none" : "1px solid oklch(0.90 0.010 75)",
+                background: activeFilter === f.key ? "var(--acc-strong)" : "oklch(1 0 0)",
+                color: activeFilter === f.key ? "oklch(1 0 0)" : "var(--t-4)",
+                border: activeFilter === f.key ? "none" : "1px solid var(--b-1)",
                 letterSpacing: "0.04em",
                 fontWeight: activeFilter === f.key ? 600 : 400,
               }}
@@ -245,7 +249,7 @@ export default function Projects() {
         {/* Project cards */}
         <AnimatePresence mode="popLayout">
           <div className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-3 lg:items-start">
-            {filtered.map((project, i) => {
+            {pg.pageItems.map((project, i) => {
               const ls = lightStatus[project.status] || lightStatus["on-hold"];
               const pc = priorityConfig[project.priority as keyof typeof priorityConfig] ?? DEFAULT_PRIORITY_CONFIG;
               return (
@@ -260,17 +264,17 @@ export default function Projects() {
                   data-testid="project-list-card"
                   data-project-id={project.id}
                   className="rounded-2xl overflow-hidden"
-                  style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 2px 12px oklch(0 0 0 / 0.05)" }}
+                  style={{ background: "var(--s-card)", border: "1px solid var(--b-1)", boxShadow: "0 2px 12px oklch(0 0 0 / 0.05)" }}
                 >
                   {/* Gold top accent */}
-                  <div className="h-0.5" style={{ background: "linear-gradient(90deg, oklch(0.62 0.09 68), oklch(0.72 0.09 68 / 40%), transparent)" }} />
+                  <div className="h-0.5" style={{ background: "linear-gradient(90deg, var(--acc-strong), oklch(0.72 0.09 68 / 40%), transparent)" }} />
 
                   {/* Card header */}
                   <div className="px-4 pt-3.5 pb-3">
                     <div className="flex items-start justify-between gap-2 mb-1">
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-semibold leading-snug" style={{ color: "oklch(0.14 0.008 65)" }}>{project.name}</h3>
-                        <p className="text-xs mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>{project.client}</p>
+                        <h3 className="text-sm font-semibold leading-snug" style={{ color: "var(--t-1)" }}>{project.name}</h3>
+                        <p className="text-xs mt-0.5" style={{ color: "var(--t-5)" }}>{project.client}</p>
                       </div>
                       <div className="flex flex-col items-end gap-1.5 shrink-0">
                         <span className="status-pill" style={{ background: ls.bg, color: ls.color }}>
@@ -284,12 +288,12 @@ export default function Projects() {
 
                     <div className="flex items-center gap-3 mt-2">
                       <div className="flex items-center gap-1">
-                        <MapPin size={10} style={{ color: "oklch(0.65 0.008 68)" }} />
-                        <span className="text-[11px]" style={{ color: "oklch(0.52 0.010 68)" }}>{project.location}</span>
+                        <MapPin size={10} style={{ color: "var(--t-6)" }} />
+                        <span className="text-[11px]" style={{ color: "var(--t-5)" }}>{project.location}</span>
                       </div>
                       <div className="flex items-center gap-1">
-                        <Calendar size={10} style={{ color: "oklch(0.65 0.008 68)" }} />
-                        <span className="text-[11px]" style={{ color: "oklch(0.52 0.010 68)" }}>{project.targetDate}</span>
+                        <Calendar size={10} style={{ color: "var(--t-6)" }} />
+                        <span className="text-[11px]" style={{ color: "var(--t-5)" }}>{project.targetDate}</span>
                       </div>
                     </div>
                   </div>
@@ -297,17 +301,17 @@ export default function Projects() {
                   {/* Progress bar */}
                   <div className="px-4 pb-3">
                     <div className="flex items-center justify-between mb-1.5">
-                      <span className="text-[11px]" style={{ color: "oklch(0.52 0.010 68)" }}>
+                      <span className="text-[11px]" style={{ color: "var(--t-5)" }}>
                         {project.tasksCompleted}/{project.taskCount} tasks
                       </span>
-                      <span className="text-xs font-semibold" style={{ color: "oklch(0.52 0.09 68)" }}>{project.progress}%</span>
+                      <span className="text-xs font-semibold" style={{ color: "var(--acc)" }}>{project.progress}%</span>
                     </div>
-                    <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "oklch(0.92 0.008 75)" }}>
+                    <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--b-2)" }}>
                       <div
                         className="h-full rounded-full transition-all duration-700"
                         style={{
                           width: `${project.progress}%`,
-                          background: "linear-gradient(90deg, oklch(0.62 0.09 68), oklch(0.72 0.09 68))",
+                          background: "linear-gradient(90deg, var(--acc-strong), var(--acc-bright))",
                         }}
                       />
                     </div>
@@ -316,28 +320,29 @@ export default function Projects() {
                   {/* Footer */}
                   <div
                     className="px-4 py-2.5 flex items-center justify-between"
-                    style={{ borderTop: "1px solid oklch(0.93 0.008 75)", background: "oklch(0.985 0.004 80)" }}
+                    style={{ borderTop: "1px solid var(--b-2)", background: "var(--s-page)" }}
                   >
                     <div className="flex -space-x-1">
-                      {project.team.map((avatar) => (
+                      {resolveProjectRoster(project, allStaff).map(({ staff: member, role }) => (
                         <div
-                          key={avatar}
+                          key={member.id}
+                          title={`${member.name} · ${role}`}
                           className="w-6 h-6 rounded-full flex items-center justify-center text-[9px] font-bold border-2"
                           style={{
                             background: "linear-gradient(135deg, oklch(0.62 0.09 68 / 20%), oklch(0.52 0.08 65 / 20%))",
                             borderColor: "oklch(1 0 0)",
-                            color: "oklch(0.42 0.09 68)",
+                            color: "var(--acc-ink)",
                           }}
                         >
-                          {avatar}
+                          {member.avatar_code}
                         </div>
                       ))}
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-[11px]" style={{ color: "oklch(0.52 0.010 68)" }}>
+                      <span className="text-[11px]" style={{ color: "var(--t-5)" }}>
                         📷 {project.photoCount}
                       </span>
-                      <span className="text-[11px] font-semibold" style={{ color: "oklch(0.42 0.09 68)" }}>
+                      <span className="text-[11px] font-semibold" style={{ color: "var(--acc-ink)" }}>
                         RM {(project.budget / 1000).toFixed(0)}k
                       </span>
                     </div>
@@ -347,6 +352,7 @@ export default function Projects() {
             })}
           </div>
         </AnimatePresence>
+        <PaginationBar page={pg.page} pageCount={pg.pageCount} onPage={pg.setPage} from={pg.from} to={pg.to} total={pg.total} label="projects" />
       </div>
 
       {/* FAB */}
@@ -356,7 +362,7 @@ export default function Projects() {
         data-testid="new-project-fab"
         className="fixed bottom-20 right-4 w-14 h-14 rounded-full flex items-center justify-center z-40"
         style={{
-          background: "linear-gradient(135deg, oklch(0.62 0.09 68), oklch(0.52 0.08 65))",
+          background: "linear-gradient(135deg, var(--acc-strong), var(--acc-2))",
           boxShadow: "0 4px 20px oklch(0.62 0.09 68 / 40%)",
         }}
       >
@@ -369,7 +375,7 @@ export default function Projects() {
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
 function ChevronRightIcon() {
-  return <ChevronRight size={14} style={{ color: "oklch(0.65 0.008 68)" }} />;
+  return <ChevronRight size={14} style={{ color: "var(--t-6)" }} />;
 }
 
 function MiniStat({

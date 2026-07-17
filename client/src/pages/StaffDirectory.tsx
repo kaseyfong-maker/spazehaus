@@ -8,16 +8,18 @@ import { useLocation } from "wouter";
 import { Search, Plus } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import { useAllStaff, isAdminTier } from "@/lib/queries";
+import { usePagination } from "@/hooks/usePagination";
+import PaginationBar from "@/components/PaginationBar";
 import { useAuth } from "@/contexts/AuthContext";
 import { statusConfig, DEFAULT_STATUS_CONFIG } from "@/lib/mockData";
 
 const deptFilters = ["All", "Design", "Operations", "Sales", "Admin"];
 
 const deptColors: Record<string, string> = {
-  Design: "oklch(0.72 0.09 68)",
+  Design: "var(--acc-bright)",
   Operations: "oklch(0.70 0.09 240)",
   Sales: "oklch(0.70 0.09 145)",
-  Admin: "oklch(0.80 0.12 68)",
+  Admin: "var(--acc-bright)",
 };
 
 export default function StaffDirectory() {
@@ -40,6 +42,7 @@ export default function StaffDirectory() {
     const matchSearch = s.name.toLowerCase().includes(search.toLowerCase()) || s.job_title.toLowerCase().includes(search.toLowerCase());
     return matchActive && matchDept && matchSearch;
   });
+  const pg = usePagination(filtered, 12, `${deptFilter}|${search}|${showInactive}`);
 
   return (
     <div className="mobile-container">
@@ -47,14 +50,14 @@ export default function StaffDirectory() {
 
       <div className="px-4 py-4 space-y-4 pb-24 lg:px-8 lg:py-7">
         {/* Search */}
-        <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
-          <Search size={14} style={{ color: "oklch(0.52 0.010 68)" }} />
+        <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl" style={{ background: "var(--s-card)", border: "1px solid var(--b-1)" }}>
+          <Search size={14} style={{ color: "var(--t-5)" }} />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by name or role..."
             className="flex-1 bg-transparent text-sm outline-none"
-            style={{ color: "oklch(0.20 0.008 65)" }}
+            style={{ color: "var(--t-2)" }}
           />
         </div>
 
@@ -67,9 +70,9 @@ export default function StaffDirectory() {
               onClick={() => setDeptFilter(d)}
               className="shrink-0 px-4 py-1.5 rounded-full text-xs font-label"
               style={{
-                background: deptFilter === d ? "oklch(0.72 0.09 68)" : "oklch(1 0 0)",
-                color: deptFilter === d ? "oklch(1 0 0)" : "oklch(0.52 0.010 68)",
-                border: deptFilter === d ? "none" : "1px solid oklch(0.90 0.010 75)",
+                background: deptFilter === d ? "var(--acc-bright)" : "oklch(1 0 0)",
+                color: deptFilter === d ? "oklch(1 0 0)" : "var(--t-5)",
+                border: deptFilter === d ? "none" : "1px solid var(--b-1)",
                 letterSpacing: "0.04em",
                 fontWeight: deptFilter === d ? 600 : 400,
               }}
@@ -81,7 +84,7 @@ export default function StaffDirectory() {
 
         {/* Staff count + admin show-inactive toggle */}
         <div className="flex items-center justify-between">
-          <p className="text-xs font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.04em" }}>
+          <p className="text-xs font-label" style={{ color: "var(--t-5)", letterSpacing: "0.04em" }}>
             {filtered.length} MEMBER{filtered.length !== 1 ? "S" : ""}
           </p>
           {isAdmin && inactiveCount > 0 && (
@@ -90,8 +93,8 @@ export default function StaffDirectory() {
               className="text-[11px] font-label px-2.5 py-1 rounded-full"
               style={{
                 background: showInactive ? "oklch(0.58 0.12 25 / 12%)" : "oklch(1 0 0)",
-                color: showInactive ? "oklch(0.55 0.14 25)" : "oklch(0.52 0.010 68)",
-                border: "1px solid oklch(0.90 0.010 75)",
+                color: showInactive ? "oklch(0.55 0.14 25)" : "var(--t-5)",
+                border: "1px solid var(--b-1)",
                 letterSpacing: "0.03em",
               }}
             >
@@ -103,7 +106,7 @@ export default function StaffDirectory() {
         {/* Staff list */}
         <AnimatePresence mode="popLayout">
           <div className="space-y-2 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-3 lg:items-start">
-            {filtered.map((staff, i) => {
+            {pg.pageItems.map((staff, i) => {
               const sc = statusConfig[staff.status as keyof typeof statusConfig] ?? DEFAULT_STATUS_CONFIG;
               const isInactive = staff.status === "inactive";
               return (
@@ -118,34 +121,34 @@ export default function StaffDirectory() {
                   data-testid="staff-card"
                   data-staff-id={staff.id}
                   className="rounded-2xl p-4 flex items-center gap-3"
-                  style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", opacity: isInactive ? 0.55 : 1 }}
+                  style={{ background: "var(--s-card)", border: "1px solid var(--b-1)", opacity: isInactive ? 0.55 : 1 }}
                 >
                   <div
                     className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold shrink-0"
                     style={{
                       background: "oklch(0.62 0.09 68 / 12%)",
-                      color: deptColors[staff.dept] || "oklch(0.72 0.09 68)",
+                      color: deptColors[staff.dept] || "var(--acc-bright)",
                       border: "1px solid oklch(0.62 0.09 68 / 20%)",
                     }}
                   >
                     {staff.avatar_code}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-neutral-900">{staff.name}</p>
-                    <p className="text-xs mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>{staff.job_title}</p>
+                    <p className="text-sm font-semibold text-[color:var(--t-1)]">{staff.name}</p>
+                    <p className="text-xs mt-0.5" style={{ color: "var(--t-5)" }}>{staff.job_title}</p>
                     <div className="flex items-center gap-2 mt-1">
                       <span
                         className="text-[10px] font-label px-2 py-0.5 rounded-full"
                         style={{
-                          background: `${deptColors[staff.dept] || "oklch(0.72 0.09 68)"} / 12%`,
-                          color: deptColors[staff.dept] || "oklch(0.72 0.09 68)",
+                          background: `${deptColors[staff.dept] || "var(--acc-bright)"} / 12%`,
+                          color: deptColors[staff.dept] || "var(--acc-bright)",
                           letterSpacing: "0.03em",
                         }}
                       >
                         {staff.dept}
                       </span>
                       {staff.kpi_grade && (
-                        <span className="text-[10px]" style={{ color: "oklch(0.52 0.010 68)" }}>KPI: {staff.kpi_grade}</span>
+                        <span className="text-[10px]" style={{ color: "var(--t-5)" }}>KPI: {staff.kpi_grade}</span>
                       )}
                       {isInactive && (
                         <span className="text-[10px] font-label px-2 py-0.5 rounded-full" style={{ background: "oklch(0.58 0.12 25 / 12%)", color: "oklch(0.55 0.14 25)", letterSpacing: "0.03em" }}>
@@ -160,6 +163,7 @@ export default function StaffDirectory() {
             })}
           </div>
         </AnimatePresence>
+        <PaginationBar page={pg.page} pageCount={pg.pageCount} onPage={pg.setPage} from={pg.from} to={pg.to} total={pg.total} label="staff" />
       </div>
 
       {/* FAB — admin tier only (matches the staff_write_admin RLS policy) */}
@@ -169,7 +173,7 @@ export default function StaffDirectory() {
           onClick={() => navigate("/company/staff/new")}
           data-testid="add-staff-fab"
           className="fixed bottom-20 right-4 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl z-40"
-          style={{ background: "linear-gradient(135deg, oklch(0.72 0.09 68), oklch(0.55 0.08 65))" }}
+          style={{ background: "linear-gradient(135deg, var(--acc-bright), var(--acc-2))" }}
         >
           <Plus size={22} style={{ color: "oklch(1 0 0)" }} />
         </motion.button>

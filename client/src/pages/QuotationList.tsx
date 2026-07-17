@@ -10,6 +10,8 @@ import { Plus, Search, FileText, Receipt } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import { useQuotations } from "@/lib/queries";
 import { statusConfig, computeTotals, formatRM } from "@/lib/quotationData";
+import { usePagination } from "@/hooks/usePagination";
+import PaginationBar from "@/components/PaginationBar";
 
 const typeFilters = [
   { key: "all", label: "All" },
@@ -43,6 +45,7 @@ export default function QuotationList() {
       q.client.toLowerCase().includes(search.toLowerCase());
     return matchType && matchStatus && matchSearch;
   });
+  const pg = usePagination(filtered, 9, `${typeFilter}|${statusFilter}|${search}`);
 
   const totalValue = quotations.reduce((sum, q) => sum + computeTotals(q.items, q.taxRate).total, 0);
   const acceptedValue = quotations
@@ -56,29 +59,29 @@ export default function QuotationList() {
       <div className="px-4 py-4 space-y-4 pb-24 lg:px-8 lg:py-7">
         {/* Summary cards */}
         <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-2xl p-4" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
-            <p className="text-[10px] font-label mb-1" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.06em" }}>TOTAL PIPELINE</p>
-            <p className="text-lg font-display font-semibold" style={{ color: "oklch(0.52 0.09 68)" }}>{formatRM(totalValue)}</p>
-            <p className="text-[10px] mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>{quotations.length} documents</p>
+          <div className="rounded-2xl p-4" style={{ background: "var(--s-card)", border: "1px solid var(--b-1)" }}>
+            <p className="text-[10px] font-label mb-1" style={{ color: "var(--t-5)", letterSpacing: "0.06em" }}>TOTAL PIPELINE</p>
+            <p className="text-lg font-display font-semibold" style={{ color: "var(--acc)" }}>{formatRM(totalValue)}</p>
+            <p className="text-[10px] mt-0.5" style={{ color: "var(--t-5)" }}>{quotations.length} documents</p>
           </div>
-          <div className="rounded-2xl p-4" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
-            <p className="text-[10px] font-label mb-1" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.06em" }}>ACCEPTED / PAID</p>
+          <div className="rounded-2xl p-4" style={{ background: "var(--s-card)", border: "1px solid var(--b-1)" }}>
+            <p className="text-[10px] font-label mb-1" style={{ color: "var(--t-5)", letterSpacing: "0.06em" }}>ACCEPTED / PAID</p>
             <p className="text-lg font-display font-semibold" style={{ color: "oklch(0.70 0.09 145)" }}>{formatRM(acceptedValue)}</p>
-            <p className="text-[10px] mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>
+            <p className="text-[10px] mt-0.5" style={{ color: "var(--t-5)" }}>
               {quotations.filter((q) => q.status === "accepted" || q.status === "paid").length} accepted
             </p>
           </div>
         </div>
 
         {/* Search */}
-        <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
-          <Search size={14} style={{ color: "oklch(0.52 0.010 68)" }} />
+        <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl" style={{ background: "var(--s-card)", border: "1px solid var(--b-1)" }}>
+          <Search size={14} style={{ color: "var(--t-5)" }} />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by ID, project or client..."
             className="flex-1 bg-transparent text-sm outline-none"
-            style={{ color: "oklch(0.20 0.008 65)" }}
+            style={{ color: "var(--t-2)" }}
           />
         </div>
 
@@ -91,9 +94,9 @@ export default function QuotationList() {
               onClick={() => setTypeFilter(f.key)}
               className="shrink-0 px-3 py-1.5 rounded-full text-xs font-label"
               style={{
-                background: typeFilter === f.key ? "oklch(0.62 0.09 68)" : "oklch(1 0 0)",
-                color: typeFilter === f.key ? "oklch(1 0 0)" : "oklch(0.45 0.008 65)",
-                border: typeFilter === f.key ? "none" : "1px solid oklch(0.90 0.010 75)",
+                background: typeFilter === f.key ? "var(--acc-strong)" : "oklch(1 0 0)",
+                color: typeFilter === f.key ? "oklch(1 0 0)" : "var(--t-4)",
+                border: typeFilter === f.key ? "none" : "1px solid var(--b-1)",
                 letterSpacing: "0.04em",
                 fontWeight: typeFilter === f.key ? 600 : 400,
               }}
@@ -113,8 +116,8 @@ export default function QuotationList() {
               className="shrink-0 px-3 py-1.5 rounded-full text-xs font-label"
               style={{
                 background: statusFilter === f.key ? "oklch(0.62 0.09 68 / 10%)" : "transparent",
-                color: statusFilter === f.key ? "oklch(0.42 0.09 68)" : "oklch(0.45 0.008 65)",
-                border: statusFilter === f.key ? "1px solid oklch(0.62 0.09 68 / 25%)" : "1px solid oklch(0.90 0.010 75)",
+                color: statusFilter === f.key ? "var(--acc-ink)" : "var(--t-4)",
+                border: statusFilter === f.key ? "1px solid oklch(0.62 0.09 68 / 25%)" : "1px solid var(--b-1)",
                 letterSpacing: "0.04em",
               }}
             >
@@ -127,11 +130,11 @@ export default function QuotationList() {
         <AnimatePresence mode="popLayout">
           <div className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-3 lg:items-start">
             {filtered.length === 0 && (
-              <div className="rounded-2xl p-8 text-center" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
-                <p className="text-sm" style={{ color: "oklch(0.52 0.010 68)" }}>No documents found</p>
+              <div className="rounded-2xl p-8 text-center" style={{ background: "var(--s-card)", border: "1px solid var(--b-1)" }}>
+                <p className="text-sm" style={{ color: "var(--t-5)" }}>No documents found</p>
               </div>
             )}
-            {filtered.map((q, i) => {
+            {pg.pageItems.map((q, i) => {
               const sc = statusConfig[q.status];
               const { total } = computeTotals(q.items, q.taxRate);
               const isInvoice = q.type === "Invoice" || q.type === "Proforma Invoice";
@@ -147,7 +150,7 @@ export default function QuotationList() {
                   data-testid="quotation-card"
                   data-quotation-id={q.id}
                   className="rounded-2xl p-4"
-                  style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}
+                  style={{ background: "var(--s-card)", border: "1px solid var(--b-1)" }}
                 >
                   <div className="flex items-start gap-3 mb-3">
                     <div
@@ -156,14 +159,14 @@ export default function QuotationList() {
                     >
                       {isInvoice
                         ? <Receipt size={18} style={{ color: "oklch(0.70 0.09 240)" }} />
-                        : <FileText size={18} style={{ color: "oklch(0.52 0.09 68)" }} />
+                        : <FileText size={18} style={{ color: "var(--acc)" }} />
                       }
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
                         <div>
-                          <p className="text-sm font-semibold text-neutral-900">{q.id}</p>
-                          <p className="text-xs mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>{q.projectName}</p>
+                          <p className="text-sm font-semibold text-[color:var(--t-1)]">{q.id}</p>
+                          <p className="text-xs mt-0.5" style={{ color: "var(--t-5)" }}>{q.projectName}</p>
                         </div>
                         <span
                           className="status-pill shrink-0"
@@ -177,16 +180,16 @@ export default function QuotationList() {
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-xs" style={{ color: "oklch(0.52 0.010 68)" }}>{q.client}</p>
-                      <p className="text-[10px] mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>
+                      <p className="text-xs" style={{ color: "var(--t-5)" }}>{q.client}</p>
+                      <p className="text-[10px] mt-0.5" style={{ color: "var(--t-5)" }}>
                         {q.type} · Rev {q.revision} · {q.issueDate}
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-base font-display font-semibold" style={{ color: "oklch(0.52 0.09 68)" }}>
+                      <p className="text-base font-display font-semibold" style={{ color: "var(--acc)" }}>
                         {formatRM(total)}
                       </p>
-                      <p className="text-[10px]" style={{ color: "oklch(0.52 0.010 68)" }}>
+                      <p className="text-[10px]" style={{ color: "var(--t-5)" }}>
                         {q.items.length} line items
                       </p>
                     </div>
@@ -196,6 +199,7 @@ export default function QuotationList() {
             })}
           </div>
         </AnimatePresence>
+        <PaginationBar page={pg.page} pageCount={pg.pageCount} onPage={pg.setPage} from={pg.from} to={pg.to} total={pg.total} label="documents" />
       </div>
 
       {/* FAB */}
@@ -204,7 +208,7 @@ export default function QuotationList() {
         onClick={() => navigate("/quotations/new")}
         data-testid="new-quotation-fab"
         className="fixed bottom-20 right-4 w-14 h-14 rounded-full flex items-center justify-center shadow-2xl z-40"
-        style={{ background: "linear-gradient(135deg, oklch(0.62 0.09 68), oklch(0.52 0.08 65))", boxShadow: "0 4px 20px oklch(0.62 0.09 68 / 40%)" }}
+        style={{ background: "linear-gradient(135deg, var(--acc-strong), var(--acc-2))", boxShadow: "0 4px 20px oklch(0.62 0.09 68 / 40%)" }}
       >
         <Plus size={22} style={{ color: "oklch(1 0 0)" }} />
       </motion.button>
