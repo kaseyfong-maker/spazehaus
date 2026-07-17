@@ -17,7 +17,7 @@ const tabs = ["Pending", "All Requests", "Apply Leave"];
 const leaveTypeColors: Record<string, string> = {
   "Annual Leave": "oklch(0.70 0.09 240)",
   "Medical Leave": "oklch(0.68 0.12 25)",
-  "Replacement Leave": "oklch(0.80 0.12 68)",
+  "Replacement Leave": "var(--acc-bright)",
   "Unpaid Leave": "oklch(0.58 0.12 25)",
 };
 
@@ -97,9 +97,9 @@ export default function LeaveManagement() {
   };
 
   const inputStyle = {
-    background: "oklch(0.96 0.006 75)",
-    border: "1px solid oklch(0.90 0.010 75)",
-    color: "oklch(0.20 0.008 65)",
+    background: "var(--s-2)",
+    border: "1px solid var(--b-1)",
+    color: "var(--t-2)",
     borderRadius: "0.75rem",
     padding: "0.75rem 1rem",
     fontSize: "0.875rem",
@@ -108,7 +108,7 @@ export default function LeaveManagement() {
   } as React.CSSProperties;
 
   const labelStyle = {
-    color: "oklch(0.52 0.010 68)",
+    color: "var(--t-5)",
     fontSize: "0.75rem",
     marginBottom: "0.375rem",
     display: "block",
@@ -121,7 +121,7 @@ export default function LeaveManagement() {
       <AppHeader title="Leave Management" subtitle="APPROVALS & REQUESTS" showBack compact />
 
       {/* Tabs */}
-      <div className="flex" style={{ borderBottom: "1px solid oklch(0.90 0.010 75)" }}>
+      <div className="flex" style={{ borderBottom: "1px solid var(--b-1)" }}>
         {tabs.map((tab) => (
           <button
             key={tab}
@@ -129,7 +129,7 @@ export default function LeaveManagement() {
             data-testid={`leave-tab-${tab.toLowerCase().replace(/\s+/g, "-")}`}
             className="flex-1 py-3 text-[11px] font-label relative"
             style={{
-              color: activeTab === tab ? "oklch(0.42 0.09 68)" : "oklch(0.45 0.008 65)",
+              color: activeTab === tab ? "var(--acc-ink)" : "var(--t-4)",
               letterSpacing: "0.04em",
               fontWeight: activeTab === tab ? 600 : 400,
             }}
@@ -138,7 +138,7 @@ export default function LeaveManagement() {
             {tab === "Pending" && pending.length > 0 && (
               <span
                 className="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-bold"
-                style={{ background: "oklch(0.72 0.09 68)", color: "oklch(1 0 0)" }}
+                style={{ background: "var(--acc-bright)", color: "oklch(1 0 0)" }}
               >
                 {pending.length}
               </span>
@@ -147,7 +147,7 @@ export default function LeaveManagement() {
               <motion.div
                 layoutId="leaveTabIndicator"
                 className="absolute bottom-0 left-1/4 right-1/4 h-0.5 rounded-full"
-                style={{ background: "oklch(0.72 0.09 68)" }}
+                style={{ background: "var(--acc-bright)" }}
               />
             )}
           </button>
@@ -159,8 +159,8 @@ export default function LeaveManagement() {
           {activeTab === "Pending" && (
             <motion.div key="pending" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-3 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-3 lg:items-start">
               {pending.length === 0 ? (
-                <div className="rounded-2xl p-8 text-center" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
-                  <p className="text-sm" style={{ color: "oklch(0.52 0.010 68)" }}>No pending approvals</p>
+                <div className="rounded-2xl p-8 text-center" style={{ background: "var(--s-card)", border: "1px solid var(--b-1)" }}>
+                  <p className="text-sm" style={{ color: "var(--t-5)" }}>No pending approvals</p>
                 </div>
               ) : pending.map((req, i) => (
                 <motion.div
@@ -169,25 +169,25 @@ export default function LeaveManagement() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.07 }}
                   className="rounded-2xl p-4"
-                  style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}
+                  style={{ background: "var(--s-card)", border: "1px solid var(--b-1)" }}
                 >
                   <div className="flex items-start gap-3 mb-3">
                     <div
                       className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
-                      style={{ background: "oklch(0.62 0.09 68 / 12%)", color: "oklch(0.52 0.09 68)", border: "1px solid oklch(0.62 0.09 68 / 20%)" }}
+                      style={{ background: "oklch(0.62 0.09 68 / 12%)", color: "var(--acc)", border: "1px solid oklch(0.62 0.09 68 / 20%)" }}
                     >
                       {req.staffAvatar}
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-semibold text-neutral-900">{req.staffName}</p>
-                      <p className="text-xs mt-0.5" style={{ color: leaveTypeColors[req.leave_type] || "oklch(0.72 0.09 68)" }}>{req.leave_type}</p>
-                      <p className="text-xs mt-1" style={{ color: "oklch(0.52 0.010 68)" }}>
+                      <p className="text-sm font-semibold text-[color:var(--t-1)]">{req.staffName}</p>
+                      <p className="text-xs mt-0.5" style={{ color: leaveTypeColors[req.leave_type] || "var(--acc-bright)" }}>{req.leave_type}</p>
+                      <p className="text-xs mt-1" style={{ color: "var(--t-5)" }}>
                         {req.startDateLabel} — {req.endDateLabel} · {req.days} day{req.days > 1 ? "s" : ""}
                       </p>
                     </div>
                   </div>
                   {req.reason && (
-                    <p className="text-xs mb-3 px-1" style={{ color: "oklch(0.52 0.010 68)" }}>"{req.reason}"</p>
+                    <p className="text-xs mb-3 px-1" style={{ color: "var(--t-5)" }}>"{req.reason}"</p>
                   )}
                   <div className="flex gap-2">
                     <motion.button
@@ -227,16 +227,16 @@ export default function LeaveManagement() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.04 }}
                     className="rounded-xl p-3 flex items-center gap-3"
-                    style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}
+                    style={{ background: "var(--s-card)", border: "1px solid var(--b-1)" }}
                   >
                     <div
                       className="w-1.5 h-full min-h-[40px] rounded-full shrink-0"
-                      style={{ background: leaveTypeColors[req.leave_type] || "oklch(0.72 0.09 68)" }}
+                      style={{ background: leaveTypeColors[req.leave_type] || "var(--acc-bright)" }}
                     />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-neutral-900">{req.staffName}</p>
-                      <p className="text-xs mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>{req.leave_type} · {req.days}d</p>
-                      <p className="text-[10px] mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>{req.startDateLabel} — {req.endDateLabel}</p>
+                      <p className="text-sm font-semibold text-[color:var(--t-1)]">{req.staffName}</p>
+                      <p className="text-xs mt-0.5" style={{ color: "var(--t-5)" }}>{req.leave_type} · {req.days}d</p>
+                      <p className="text-[10px] mt-0.5" style={{ color: "var(--t-5)" }}>{req.startDateLabel} — {req.endDateLabel}</p>
                     </div>
                     <span className="status-pill shrink-0" style={{ background: sc.bg, color: sc.color }}>{sc.label}</span>
                   </motion.div>
@@ -256,9 +256,9 @@ export default function LeaveManagement() {
                       onClick={() => setApplyForm((f) => ({ ...f, type: t }))}
                       className="px-3 py-1.5 rounded-full text-xs font-label"
                       style={{
-                        background: applyForm.type === t ? "oklch(0.62 0.09 68 / 15%)" : "oklch(0.96 0.006 75)",
-                        color: applyForm.type === t ? "oklch(0.42 0.09 68)" : "oklch(0.45 0.008 65)",
-                        border: applyForm.type === t ? "1px solid oklch(0.72 0.09 68 / 40%)" : "1px solid oklch(0.90 0.010 75)",
+                        background: applyForm.type === t ? "oklch(0.62 0.09 68 / 15%)" : "var(--s-2)",
+                        color: applyForm.type === t ? "var(--acc-ink)" : "var(--t-4)",
+                        border: applyForm.type === t ? "1px solid oklch(0.72 0.09 68 / 40%)" : "1px solid var(--b-1)",
                       }}
                     >
                       {t}
@@ -290,7 +290,7 @@ export default function LeaveManagement() {
                 onClick={handleApply}
                 data-testid="leave-submit"
                 className="w-full py-3.5 rounded-xl text-sm font-label font-semibold flex items-center justify-center gap-2"
-                style={{ background: "linear-gradient(135deg, oklch(0.72 0.09 68), oklch(0.55 0.08 65))", color: "oklch(1 0 0)", letterSpacing: "0.04em" }}
+                style={{ background: "linear-gradient(135deg, var(--acc-bright), var(--acc-2))", color: "oklch(1 0 0)", letterSpacing: "0.04em" }}
               >
                 <Plus size={16} /> Submit Application
               </motion.button>

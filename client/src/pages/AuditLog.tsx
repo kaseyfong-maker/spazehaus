@@ -131,7 +131,7 @@ export default function AuditLog() {
   }, [entries]);
 
   return (
-    <div className="mobile-container" style={{ background: "oklch(0.985 0.004 80)" }}>
+    <div className="mobile-container" style={{ background: "var(--s-page)" }}>
       <AppHeader title="Audit Log" subtitle="SYSTEM ACTIVITY" bgImage={HERO_BG} showBack showNotification />
 
       <div className="px-4 py-4 space-y-5 pb-24 lg:px-8 lg:py-7 lg:space-y-6">
@@ -143,15 +143,15 @@ export default function AuditLog() {
             border: "1px solid oklch(0.62 0.09 68 / 25%)",
           }}
         >
-          <ShieldCheck size={14} style={{ color: "oklch(0.42 0.09 68)" }} />
-          <p className="text-[11px]" style={{ color: "oklch(0.35 0.008 65)" }}>
+          <ShieldCheck size={14} style={{ color: "var(--acc-ink)" }} />
+          <p className="text-[11px]" style={{ color: "var(--t-3)" }}>
             Admin view — captures every write across all SOP tables. Read-only.
           </p>
         </div>
 
         {/* KPI strip */}
         <div className="grid grid-cols-3 gap-3">
-          <KpiCard icon={Activity} label="Last 24h" primary={String(summary.todayCount)} tint="oklch(0.42 0.09 68)" tintBg="oklch(0.62 0.09 68 / 10%)" />
+          <KpiCard icon={Activity} label="Last 24h" primary={String(summary.todayCount)} tint="var(--acc-ink)" tintBg="oklch(0.62 0.09 68 / 10%)" />
           <KpiCard icon={Clock}    label="Last 7d"  primary={String(summary.weekCount)}  tint="oklch(0.45 0.10 55)" tintBg="oklch(0.65 0.10 55 / 10%)" />
           <KpiCard icon={Users}    label="Actors"   primary={String(summary.actors)}     tint="oklch(0.45 0.09 240)" tintBg="oklch(0.55 0.09 240 / 10%)" />
         </div>
@@ -159,11 +159,11 @@ export default function AuditLog() {
         {/* Filters */}
         <div
           className="rounded-2xl p-3 space-y-3"
-          style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}
+          style={{ background: "var(--s-card)", border: "1px solid var(--b-1)" }}
         >
           <div className="flex items-center gap-2">
-            <Filter size={12} style={{ color: "oklch(0.42 0.09 68)" }} />
-            <p className="text-[10px] font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.10em", fontWeight: 700 }}>
+            <Filter size={12} style={{ color: "var(--acc-ink)" }} />
+            <p className="text-[10px] font-label" style={{ color: "var(--t-5)", letterSpacing: "0.10em", fontWeight: 700 }}>
               FILTERS
             </p>
           </div>
@@ -214,16 +214,16 @@ export default function AuditLog() {
             <FilterRow label="ROW ID">
               <div
                 className="flex items-center gap-2 rounded-xl px-2.5 py-1.5"
-                style={{ background: "oklch(0.96 0.006 75)", border: "1px solid oklch(0.90 0.010 75)" }}
+                style={{ background: "var(--s-2)", border: "1px solid var(--b-1)" }}
               >
-                <Search size={12} style={{ color: "oklch(0.52 0.010 68)" }} />
+                <Search size={12} style={{ color: "var(--t-5)" }} />
                 <input
                   type="text"
                   value={rowIdInput}
                   onChange={(e) => setRowIdInput(e.target.value)}
                   placeholder="e.g. PRJ001 or 42"
                   className="flex-1 bg-transparent text-[11px] outline-none placeholder:opacity-60"
-                  style={{ color: "oklch(0.14 0.008 65)" }}
+                  style={{ color: "var(--t-1)" }}
                   spellCheck={false}
                   autoCapitalize="none"
                   autoCorrect="off"
@@ -233,9 +233,9 @@ export default function AuditLog() {
                     onClick={() => setRowIdInput("")}
                     className="text-[10px] font-label px-1.5 py-0.5 rounded"
                     style={{
-                      color: "oklch(0.52 0.010 68)",
-                      background: "oklch(1 0 0)",
-                      border: "1px solid oklch(0.90 0.010 75)",
+                      color: "var(--t-5)",
+                      background: "var(--s-card)",
+                      border: "1px solid var(--b-1)",
                       letterSpacing: "0.04em",
                       fontWeight: 700,
                     }}
@@ -244,7 +244,7 @@ export default function AuditLog() {
                   </button>
                 )}
               </div>
-              <p className="text-[9px] mt-1" style={{ color: "oklch(0.55 0.008 65)" }}>
+              <p className="text-[9px] mt-1" style={{ color: "var(--t-5)" }}>
                 Exact match — finds every event for a specific row (project, payment, signature, etc.).
               </p>
             </FilterRow>
@@ -254,28 +254,28 @@ export default function AuditLog() {
         {/* Event list */}
         <div>
           <div className="flex items-center justify-between mb-3">
-            <p className="font-label text-xs" style={{ color: "oklch(0.20 0.008 65)", letterSpacing: "0.10em", fontWeight: 700 }}>
+            <p className="font-label text-xs" style={{ color: "var(--t-2)", letterSpacing: "0.10em", fontWeight: 700 }}>
               EVENTS
             </p>
-            <span className="text-[10px]" style={{ color: "oklch(0.52 0.010 68)" }}>
+            <span className="text-[10px]" style={{ color: "var(--t-5)" }}>
               {entries.length} loaded{hasNextPage ? " · more available" : ""}
             </span>
           </div>
 
           {isLoading && (
-            <div className="rounded-2xl p-6 text-center" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
-              <p className="text-xs" style={{ color: "oklch(0.52 0.010 68)" }}>Loading…</p>
+            <div className="rounded-2xl p-6 text-center" style={{ background: "var(--s-card)", border: "1px solid var(--b-1)" }}>
+              <p className="text-xs" style={{ color: "var(--t-5)" }}>Loading…</p>
             </div>
           )}
 
           {!isLoading && entries.length === 0 && (
             <div
               className="rounded-2xl p-6 flex flex-col items-center text-center"
-              style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}
+              style={{ background: "var(--s-card)", border: "1px solid var(--b-1)" }}
             >
-              <Database size={22} className="mb-2" style={{ color: "oklch(0.75 0.008 68)" }} />
-              <p className="text-sm font-semibold" style={{ color: "oklch(0.14 0.008 65)" }}>No events match</p>
-              <p className="text-xs mt-1" style={{ color: "oklch(0.52 0.010 68)" }}>
+              <Database size={22} className="mb-2" style={{ color: "var(--t-7)" }} />
+              <p className="text-sm font-semibold" style={{ color: "var(--t-1)" }}>No events match</p>
+              <p className="text-xs mt-1" style={{ color: "var(--t-5)" }}>
                 Try a wider time window or removing filters
               </p>
             </div>
@@ -296,20 +296,20 @@ export default function AuditLog() {
               disabled={isFetchingNextPage}
               className="w-full mt-3 rounded-xl py-2.5 flex items-center justify-center gap-2 disabled:opacity-60"
               style={{
-                background: "oklch(1 0 0)",
+                background: "var(--s-card)",
                 border: "1px solid oklch(0.62 0.09 68 / 35%)",
                 boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)",
               }}
             >
               {isFetchingNextPage ? (
                 <>
-                  <Loader2 size={13} className="animate-spin" style={{ color: "oklch(0.42 0.09 68)" }} />
-                  <span className="text-xs font-label" style={{ color: "oklch(0.42 0.09 68)", letterSpacing: "0.04em", fontWeight: 700 }}>
+                  <Loader2 size={13} className="animate-spin" style={{ color: "var(--acc-ink)" }} />
+                  <span className="text-xs font-label" style={{ color: "var(--acc-ink)", letterSpacing: "0.04em", fontWeight: 700 }}>
                     LOADING…
                   </span>
                 </>
               ) : (
-                <span className="text-xs font-label" style={{ color: "oklch(0.42 0.09 68)", letterSpacing: "0.04em", fontWeight: 700 }}>
+                <span className="text-xs font-label" style={{ color: "var(--acc-ink)", letterSpacing: "0.04em", fontWeight: 700 }}>
                   LOAD {PAGE_SIZE} MORE
                 </span>
               )}
@@ -317,13 +317,13 @@ export default function AuditLog() {
           )}
 
           {!isLoading && entries.length > 0 && !hasNextPage && (
-            <p className="text-[10px] text-center mt-3" style={{ color: "oklch(0.55 0.008 65)" }}>
+            <p className="text-[10px] text-center mt-3" style={{ color: "var(--t-5)" }}>
               End of results
             </p>
           )}
         </div>
 
-        <p className="text-[10px] text-center font-label pt-2" style={{ color: "oklch(0.65 0.008 68)", letterSpacing: "0.06em" }}>
+        <p className="text-[10px] text-center font-label pt-2" style={{ color: "var(--t-6)", letterSpacing: "0.06em" }}>
           SPAZEHAUS · AUDIT LOG · ADMIN VIEW
         </p>
 
@@ -332,10 +332,10 @@ export default function AuditLog() {
           whileTap={{ scale: 0.97 }}
           onClick={() => navigate("/company")}
           className="w-full rounded-xl py-2.5 flex items-center justify-center gap-2"
-          style={{ background: "oklch(0.96 0.006 75)", border: "1px solid oklch(0.90 0.010 75)" }}
+          style={{ background: "var(--s-2)", border: "1px solid var(--b-1)" }}
         >
-          <ArrowLeft size={13} style={{ color: "oklch(0.42 0.09 68)" }} />
-          <span className="text-xs font-label" style={{ color: "oklch(0.42 0.09 68)", letterSpacing: "0.04em", fontWeight: 700 }}>
+          <ArrowLeft size={13} style={{ color: "var(--acc-ink)" }} />
+          <span className="text-xs font-label" style={{ color: "var(--acc-ink)", letterSpacing: "0.04em", fontWeight: 700 }}>
             BACK TO COMPANY
           </span>
         </motion.button>
@@ -357,7 +357,7 @@ function AuditEventCard({ entry }: { entry: AuditEntry }) {
   return (
     <div
       className="rounded-2xl overflow-hidden"
-      style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
+      style={{ background: "var(--s-card)", border: "1px solid var(--b-1)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
     >
       <button
         onClick={() => setExpanded((v) => !v)}
@@ -381,37 +381,37 @@ function AuditEventCard({ entry }: { entry: AuditEntry }) {
             >
               {visual.verb.toUpperCase()}
             </span>
-            <span className="text-[10px] font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.04em" }}>
+            <span className="text-[10px] font-label" style={{ color: "var(--t-5)", letterSpacing: "0.04em" }}>
               {tableLabel.toUpperCase()}
             </span>
           </div>
 
           {/* Summary — flex-grows to fill available space */}
-          <p className="text-sm font-semibold mt-1 leading-snug lg:mt-0 lg:flex-1 lg:min-w-0 lg:truncate" style={{ color: "oklch(0.14 0.008 65)" }}>
+          <p className="text-sm font-semibold mt-1 leading-snug lg:mt-0 lg:flex-1 lg:min-w-0 lg:truncate" style={{ color: "var(--t-1)" }}>
             {summary}
           </p>
 
           {/* Row ID + actor + timestamp — right-aligned metadata on lg */}
           <div className="flex items-center gap-2 mt-1 flex-wrap lg:mt-0 lg:flex-nowrap lg:shrink-0 lg:gap-3">
-            <span className="text-[10px]" style={{ color: "oklch(0.55 0.008 65)" }}>
+            <span className="text-[10px]" style={{ color: "var(--t-5)" }}>
               {entry.row_id || "—"}
             </span>
-            <span className="text-[10px] hidden lg:inline" style={{ color: "oklch(0.75 0.008 68)" }}>·</span>
-            <span className="text-[10px]" style={{ color: "oklch(0.55 0.008 65)" }}>
+            <span className="text-[10px] hidden lg:inline" style={{ color: "var(--t-7)" }}>·</span>
+            <span className="text-[10px]" style={{ color: "var(--t-5)" }}>
               {entry.actor?.name ?? (entry.changed_by ? "Unknown user" : "System")}
             </span>
-            <span className="text-[10px] hidden lg:inline" style={{ color: "oklch(0.75 0.008 68)" }}>·</span>
-            <span className="text-[10px] hidden lg:inline" style={{ color: "oklch(0.55 0.008 65)" }}>{rel}</span>
+            <span className="text-[10px] hidden lg:inline" style={{ color: "var(--t-7)" }}>·</span>
+            <span className="text-[10px] hidden lg:inline" style={{ color: "var(--t-5)" }}>{rel}</span>
             {/* Mobile: show rel inline */}
-            <span className="text-[10px] lg:hidden" style={{ color: "oklch(0.52 0.010 68)" }}>· {rel}</span>
+            <span className="text-[10px] lg:hidden" style={{ color: "var(--t-5)" }}>· {rel}</span>
           </div>
         </div>
 
         <div className="shrink-0">
           {expanded ? (
-            <ChevronUp size={14} style={{ color: "oklch(0.52 0.010 68)" }} />
+            <ChevronUp size={14} style={{ color: "var(--t-5)" }} />
           ) : (
-            <ChevronDown size={14} style={{ color: "oklch(0.52 0.010 68)" }} />
+            <ChevronDown size={14} style={{ color: "var(--t-5)" }} />
           )}
         </div>
       </button>
@@ -425,7 +425,7 @@ function AuditEventCard({ entry }: { entry: AuditEntry }) {
             transition={{ duration: 0.2 }}
             className="overflow-hidden"
           >
-            <div className="px-3 pb-3" style={{ borderTop: "1px solid oklch(0.93 0.008 75)" }}>
+            <div className="px-3 pb-3" style={{ borderTop: "1px solid var(--b-2)" }}>
               <DiffView entry={entry} />
             </div>
           </motion.div>
@@ -450,7 +450,7 @@ function DiffView({ entry }: { entry: AuditEntry }) {
   if (action === "INSERT") {
     return (
       <div className="pt-3 space-y-1">
-        <p className="text-[10px] font-label mb-1.5" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.08em", fontWeight: 700 }}>
+        <p className="text-[10px] font-label mb-1.5" style={{ color: "var(--t-5)", letterSpacing: "0.08em", fontWeight: 700 }}>
           INITIAL VALUES
         </p>
         {renderFieldList(after_data)}
@@ -476,19 +476,19 @@ function DiffView({ entry }: { entry: AuditEntry }) {
   if (changes.length === 0) {
     return (
       <div className="pt-3">
-        <p className="text-[10px]" style={{ color: "oklch(0.52 0.010 68)" }}>No discernible field changes (likely a trigger touch on `updated_at`).</p>
+        <p className="text-[10px]" style={{ color: "var(--t-5)" }}>No discernible field changes (likely a trigger touch on `updated_at`).</p>
         <ChangedAt entry={entry} />
       </div>
     );
   }
   return (
     <div className="pt-3 space-y-2.5">
-      <p className="text-[10px] font-label mb-1" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.08em", fontWeight: 700 }}>
+      <p className="text-[10px] font-label mb-1" style={{ color: "var(--t-5)", letterSpacing: "0.08em", fontWeight: 700 }}>
         CHANGES ({changes.length})
       </p>
       {changes.map(({ key, before, after }) => (
-        <div key={key} className="text-[11px] leading-snug" style={{ color: "oklch(0.35 0.008 65)" }}>
-          <p className="font-label text-[10px] mb-0.5" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.04em", fontWeight: 700 }}>
+        <div key={key} className="text-[11px] leading-snug" style={{ color: "var(--t-3)" }}>
+          <p className="font-label text-[10px] mb-0.5" style={{ color: "var(--t-5)", letterSpacing: "0.04em", fontWeight: 700 }}>
             {key}
           </p>
           <div className="flex items-center gap-1.5 flex-wrap">
@@ -498,7 +498,7 @@ function DiffView({ entry }: { entry: AuditEntry }) {
             >
               {fmtValue(before)}
             </code>
-            <span style={{ color: "oklch(0.55 0.008 65)" }}>→</span>
+            <span style={{ color: "var(--t-5)" }}>→</span>
             <code
               className="px-1.5 py-0.5 rounded"
               style={{ background: "oklch(0.55 0.09 145 / 10%)", color: "oklch(0.38 0.09 145)", fontSize: 10 }}
@@ -515,7 +515,7 @@ function DiffView({ entry }: { entry: AuditEntry }) {
 
 function ChangedAt({ entry }: { entry: AuditEntry }) {
   return (
-    <p className="text-[10px] mt-3 pt-2.5" style={{ color: "oklch(0.55 0.008 65)", borderTop: "1px solid oklch(0.93 0.008 75)" }}>
+    <p className="text-[10px] mt-3 pt-2.5" style={{ color: "var(--t-5)", borderTop: "1px solid var(--b-2)" }}>
       Logged at {new Date(entry.changed_at).toLocaleString("en-MY", {
         dateStyle: "medium",
         timeStyle: "short",
@@ -525,19 +525,19 @@ function ChangedAt({ entry }: { entry: AuditEntry }) {
 }
 
 function renderFieldList(data: Record<string, unknown> | null) {
-  if (!data) return <p className="text-[10px]" style={{ color: "oklch(0.52 0.010 68)" }}>—</p>;
+  if (!data) return <p className="text-[10px]" style={{ color: "var(--t-5)" }}>—</p>;
   const entries = Object.entries(data)
     .filter(([k]) => !INTERNAL_FIELDS.has(k))
     .filter(([, v]) => v !== null && v !== "" && v !== undefined);
   if (entries.length === 0) {
-    return <p className="text-[10px]" style={{ color: "oklch(0.52 0.010 68)" }}>(empty)</p>;
+    return <p className="text-[10px]" style={{ color: "var(--t-5)" }}>(empty)</p>;
   }
   return (
     <div className="space-y-1">
       {entries.map(([k, v]) => (
         <div key={k} className="flex items-start justify-between gap-2">
-          <p className="text-[10px] font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.04em" }}>{k}</p>
-          <p className="text-[10px] text-right truncate" style={{ color: "oklch(0.20 0.008 65)", maxWidth: "55%" }}>
+          <p className="text-[10px] font-label" style={{ color: "var(--t-5)", letterSpacing: "0.04em" }}>{k}</p>
+          <p className="text-[10px] text-right truncate" style={{ color: "var(--t-2)", maxWidth: "55%" }}>
             {fmtValue(v)}
           </p>
         </div>
@@ -551,7 +551,7 @@ function renderFieldList(data: Record<string, unknown> | null) {
 function FilterRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="text-[9px] font-label mb-1.5" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.10em", fontWeight: 700 }}>
+      <p className="text-[9px] font-label mb-1.5" style={{ color: "var(--t-5)", letterSpacing: "0.10em", fontWeight: 700 }}>
         {label}
       </p>
       {children}
@@ -566,9 +566,9 @@ function Chip({ active, onClick, children }: { active: boolean; onClick: () => v
       onClick={onClick}
       className="shrink-0 px-2.5 py-1 rounded-full text-[11px] font-label"
       style={{
-        background: active ? "oklch(0.62 0.09 68)" : "oklch(0.96 0.006 75)",
-        color: active ? "oklch(1 0 0)" : "oklch(0.45 0.008 65)",
-        border: active ? "none" : "1px solid oklch(0.90 0.010 75)",
+        background: active ? "var(--acc-strong)" : "var(--s-2)",
+        color: active ? "oklch(1 0 0)" : "var(--t-4)",
+        border: active ? "none" : "1px solid var(--b-1)",
         letterSpacing: "0.04em",
         fontWeight: active ? 700 : 500,
       }}
@@ -594,17 +594,17 @@ function KpiCard({
   return (
     <div
       className="rounded-2xl p-3"
-      style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
+      style={{ background: "var(--s-card)", border: "1px solid var(--b-1)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
     >
       <div className="flex items-center gap-2 mb-1.5">
         <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: tintBg }}>
           <Icon size={14} style={{ color: tint }} />
         </div>
       </div>
-      <p className="font-display text-xl font-semibold leading-none" style={{ color: "oklch(0.14 0.008 65)" }}>
+      <p className="font-display text-xl font-semibold leading-none" style={{ color: "var(--t-1)" }}>
         {primary}
       </p>
-      <p className="text-[10px] mt-1" style={{ color: "oklch(0.52 0.010 68)" }}>
+      <p className="text-[10px] mt-1" style={{ color: "var(--t-5)" }}>
         {label}
       </p>
     </div>

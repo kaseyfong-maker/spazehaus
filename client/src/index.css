@@ -114,9 +114,32 @@
   --sidebar-accent-foreground: oklch(0.14 0.008 65);
   --sidebar-border: oklch(0.90 0.010 75);
   --sidebar-ring: oklch(0.62 0.09 68);
+
+  /* ── SEMANTIC PAGE TOKENS (used directly by app pages) ──────────────────────
+     Light values equal the historical hardcoded literals, so light mode is
+     unchanged. `.dark` below overrides them for dark mode. */
+  --s-page: oklch(0.985 0.004 80);   /* page background */
+  --s-card: oklch(1 0 0);            /* card / panel surface */
+  --s-2: oklch(0.96 0.006 75);       /* subtle surface / input fill */
+  --s-3: oklch(0.97 0.004 80);       /* alt subtle surface */
+  --b-1: oklch(0.90 0.010 75);       /* default border */
+  --b-2: oklch(0.93 0.008 75);       /* faint divider */
+  --b-strong: oklch(0.85 0.008 75);  /* stronger border */
+  --t-1: oklch(0.14 0.008 65);       /* headings */
+  --t-2: oklch(0.20 0.008 65);       /* body */
+  --t-3: oklch(0.35 0.008 65);       /* secondary body */
+  --t-4: oklch(0.45 0.008 65);       /* tertiary */
+  --t-5: oklch(0.52 0.010 68);       /* muted (most common) */
+  --t-6: oklch(0.65 0.008 68);       /* faint */
+  --t-7: oklch(0.75 0.008 68);       /* very faint / placeholder icon */
+  --acc: oklch(0.52 0.09 68);        /* gold — mid */
+  --acc-strong: oklch(0.62 0.09 68); /* gold — primary */
+  --acc-bright: oklch(0.72 0.09 68); /* gold — bright */
+  --acc-2: oklch(0.52 0.08 65);      /* gold — gradient end */
+  --acc-ink: oklch(0.42 0.09 68);    /* gold — text on light */
 }
 
-/* ── DARK THEME (kept for reference, not used by default) ─────────────────── */
+/* ── DARK THEME ───────────────────────────────────────────────────────────── */
 .dark {
   --primary: oklch(0.72 0.09 68);
   --primary-foreground: oklch(0.11 0.004 285);
@@ -150,6 +173,27 @@
   --sidebar-accent-foreground: oklch(0.90 0.006 80);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.72 0.09 68);
+
+  /* Semantic page tokens — dark overrides (warm near-black surfaces + gold) */
+  --s-page: oklch(0.15 0.004 285);
+  --s-card: oklch(0.19 0.005 285);
+  --s-2: oklch(0.24 0.005 285);
+  --s-3: oklch(0.22 0.005 285);
+  --b-1: oklch(0.31 0.006 285);
+  --b-2: oklch(0.27 0.006 285);
+  --b-strong: oklch(0.40 0.008 285);
+  --t-1: oklch(0.96 0.004 80);
+  --t-2: oklch(0.90 0.004 80);
+  --t-3: oklch(0.80 0.005 80);
+  --t-4: oklch(0.72 0.006 80);
+  --t-5: oklch(0.66 0.006 80);
+  --t-6: oklch(0.56 0.006 80);
+  --t-7: oklch(0.48 0.006 80);
+  --acc: oklch(0.74 0.10 68);
+  --acc-strong: oklch(0.74 0.10 68);
+  --acc-bright: oklch(0.80 0.10 68);
+  --acc-2: oklch(0.66 0.09 65);
+  --acc-ink: oklch(0.80 0.10 68);
 }
 
 @layer base {
@@ -206,7 +250,7 @@
   /* Mobile container wrapper */
   .mobile-container {
     min-height: 100vh;
-    background: oklch(0.985 0.004 80);
+    background: var(--s-page);
     position: relative;
   }
 
@@ -225,8 +269,8 @@
 
   /* Card surface */
   .sz-card {
-    background: oklch(1 0 0);
-    border: 1px solid oklch(0.90 0.010 75);
+    background: var(--s-card);
+    border: 1px solid var(--b-1);
     border-radius: 1rem;
   }
 
@@ -236,12 +280,12 @@
     font-size: 0.6875rem;
     font-weight: 600;
     letter-spacing: 0.08em;
-    color: oklch(0.52 0.010 68);
+    color: var(--t-5);
   }
 
   /* Gold divider line */
   .sz-gold-line {
     height: 2px;
-    background: linear-gradient(90deg, oklch(0.62 0.09 68), oklch(0.72 0.09 68 / 40%), transparent);
+    background: linear-gradient(90deg, var(--acc-strong), oklch(0.72 0.09 68 / 40%), transparent);
   }
 }

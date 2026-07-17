@@ -73,8 +73,8 @@ export default function NoStaffProfile() {
           disabled={signingOut}
           className="w-full py-3 rounded-xl flex items-center justify-center gap-2"
           style={{
-            background: "linear-gradient(135deg, oklch(0.72 0.09 68), oklch(0.62 0.09 68))",
-            color: "oklch(0.14 0.008 65)",
+            background: "linear-gradient(135deg, var(--acc-bright), var(--acc-strong))",
+            color: "var(--t-1)",
             boxShadow: "0 4px 16px oklch(0.72 0.09 68 / 0.25)",
             opacity: signingOut ? 0.7 : 1,
           }}

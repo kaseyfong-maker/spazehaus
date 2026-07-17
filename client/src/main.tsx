@@ -2,6 +2,10 @@ import { createRoot } from "react-dom/client";
 import "./index.css";
 import { initSentry } from "./lib/sentry";
 import { initAnalytics } from "./lib/analytics";
+import { initTheme } from "./lib/theme";
+
+// Apply the persisted light/dark theme before the app renders (no flash).
+initTheme();
 
 // Initialise error tracking before React mounts so we catch boot-time crashes
 // too. No-op when VITE_SENTRY_DSN is unset (local dev / CI).

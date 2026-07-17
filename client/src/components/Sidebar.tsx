@@ -62,7 +62,7 @@ export default function Sidebar() {
           <div className="min-w-0">
             <p
               className="text-[11px] font-label"
-              style={{ color: "oklch(0.72 0.09 68)", letterSpacing: "0.18em" }}
+              style={{ color: "var(--acc-bright)", letterSpacing: "0.18em" }}
             >
               SPAZEHAUS
             </p>
@@ -112,7 +112,7 @@ export default function Sidebar() {
                 size={19}
                 className="relative z-10 shrink-0"
                 style={{
-                  color: active ? "oklch(0.78 0.09 68)" : "oklch(0.62 0.012 285)",
+                  color: active ? "var(--acc-bright)" : "oklch(0.62 0.012 285)",
                   strokeWidth: active ? 2 : 1.5,
                 }}
               />
@@ -146,7 +146,7 @@ export default function Sidebar() {
           <div
             className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-xs font-semibold"
             style={{
-              background: "linear-gradient(135deg, oklch(0.72 0.09 68), oklch(0.55 0.08 65))",
+              background: "linear-gradient(135deg, var(--acc-bright), var(--acc-2))",
               color: "oklch(1 0 0)",
             }}
           >

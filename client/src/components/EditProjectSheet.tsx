@@ -125,28 +125,28 @@ export default function EditProjectSheet({
             className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-50 flex flex-col lg:bottom-auto lg:top-1/2 lg:-translate-y-1/2 lg:max-w-[480px]"
             style={{
               maxHeight: "92vh",
-              background: "oklch(1 0 0)",
+              background: "var(--s-card)",
               borderRadius: isDesktop ? 28 : "28px 28px 0 0",
               boxShadow: "0 -12px 48px oklch(0 0 0 / 0.18)",
             }}
           >
             <div className="flex justify-center pt-2.5 pb-1.5 shrink-0 lg:hidden">
-              <div className="w-10 h-1 rounded-full" style={{ background: "oklch(0.85 0.008 75)" }} />
+              <div className="w-10 h-1 rounded-full" style={{ background: "var(--b-strong)" }} />
             </div>
 
             {/* Header */}
-            <div className="px-4 pb-3 flex items-start justify-between shrink-0" style={{ borderBottom: "1px solid oklch(0.93 0.008 75)" }}>
+            <div className="px-4 pb-3 flex items-start justify-between shrink-0" style={{ borderBottom: "1px solid var(--b-2)" }}>
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, oklch(0.62 0.09 68), oklch(0.52 0.08 65))" }}>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, var(--acc-strong), var(--acc-2))" }}>
                   <FolderCog size={16} className="text-white" />
                 </div>
                 <div>
-                  <p className="font-display text-base font-semibold leading-tight" style={{ color: "oklch(0.14 0.008 65)" }}>Edit Project</p>
-                  <p className="text-[11px]" style={{ color: "oklch(0.52 0.010 68)" }}>{project.id}</p>
+                  <p className="font-display text-base font-semibold leading-tight" style={{ color: "var(--t-1)" }}>Edit Project</p>
+                  <p className="text-[11px]" style={{ color: "var(--t-5)" }}>{project.id}</p>
                 </div>
               </div>
-              <button onClick={onClose} disabled={updateProject.isPending} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "oklch(0.96 0.006 75)", opacity: updateProject.isPending ? 0.5 : 1 }}>
-                <X size={14} style={{ color: "oklch(0.42 0.09 68)" }} />
+              <button onClick={onClose} disabled={updateProject.isPending} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "var(--s-2)", opacity: updateProject.isPending ? 0.5 : 1 }}>
+                <X size={14} style={{ color: "var(--acc-ink)" }} />
               </button>
             </div>
 
@@ -207,8 +207,8 @@ export default function EditProjectSheet({
             </div>
 
             {/* Footer */}
-            <div className="px-4 py-3 flex gap-2 shrink-0" style={{ borderTop: "1px solid oklch(0.93 0.008 75)" }}>
-              <button onClick={onClose} disabled={updateProject.isPending} className="flex-1 py-3 rounded-xl text-sm font-label" style={{ background: "oklch(0.96 0.006 75)", color: "oklch(0.35 0.008 65)", border: "1px solid oklch(0.90 0.010 75)", letterSpacing: "0.04em", opacity: updateProject.isPending ? 0.5 : 1 }}>
+            <div className="px-4 py-3 flex gap-2 shrink-0" style={{ borderTop: "1px solid var(--b-2)" }}>
+              <button onClick={onClose} disabled={updateProject.isPending} className="flex-1 py-3 rounded-xl text-sm font-label" style={{ background: "var(--s-2)", color: "var(--t-3)", border: "1px solid var(--b-1)", letterSpacing: "0.04em", opacity: updateProject.isPending ? 0.5 : 1 }}>
                 Cancel
               </button>
               <motion.button
@@ -217,7 +217,7 @@ export default function EditProjectSheet({
                 disabled={updateProject.isPending}
                 data-testid="edit-save"
                 className="flex-1 py-3 rounded-xl text-sm font-label font-semibold flex items-center justify-center gap-2"
-                style={{ background: "linear-gradient(135deg, oklch(0.62 0.09 68), oklch(0.52 0.08 65))", color: "oklch(1 0 0)", letterSpacing: "0.04em", boxShadow: updateProject.isPending ? "none" : "0 4px 16px oklch(0.62 0.09 68 / 0.35)", opacity: updateProject.isPending ? 0.7 : 1 }}
+                style={{ background: "linear-gradient(135deg, var(--acc-strong), var(--acc-2))", color: "oklch(1 0 0)", letterSpacing: "0.04em", boxShadow: updateProject.isPending ? "none" : "0 4px 16px oklch(0.62 0.09 68 / 0.35)", opacity: updateProject.isPending ? 0.7 : 1 }}
               >
                 {updateProject.isPending ? <span>Saving…</span> : (<><Check size={15} />Save Changes</>)}
               </motion.button>
@@ -234,19 +234,19 @@ export default function EditProjectSheet({
 function FieldGroup({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-[10px] font-label mb-1.5" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.06em", fontWeight: 700 }}>
+      <label className="block text-[10px] font-label mb-1.5" style={{ color: "var(--t-5)", letterSpacing: "0.06em", fontWeight: 700 }}>
         {label}
       </label>
       {children}
-      {hint && <p className="text-[10px] mt-1" style={{ color: "oklch(0.52 0.010 68)" }}>{hint}</p>}
+      {hint && <p className="text-[10px] mt-1" style={{ color: "var(--t-5)" }}>{hint}</p>}
     </div>
   );
 }
 
 const inputStyle: React.CSSProperties = {
-  background: "oklch(0.97 0.004 80)",
-  border: "1px solid oklch(0.90 0.010 75)",
-  color: "oklch(0.20 0.008 65)",
+  background: "var(--s-3)",
+  border: "1px solid var(--b-1)",
+  color: "var(--t-2)",
   borderRadius: "0.75rem",
   padding: "0.7rem 0.9rem",
   fontSize: "0.875rem",

@@ -163,33 +163,33 @@ export default function ConvertInquiryDialog({
             className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-50 flex flex-col lg:bottom-auto lg:top-1/2 lg:-translate-y-1/2 lg:max-w-[480px]"
             style={{
               maxHeight: "92vh",
-              background: "oklch(1 0 0)",
+              background: "var(--s-card)",
               borderRadius: isDesktop ? 28 : "28px 28px 0 0",
               boxShadow: "0 -12px 48px oklch(0 0 0 / 0.18)",
             }}
           >
             {/* Drag handle (mobile bottom-sheet affordance only) */}
             <div className="flex justify-center pt-2.5 pb-1.5 shrink-0 lg:hidden">
-              <div className="w-10 h-1 rounded-full" style={{ background: "oklch(0.85 0.008 75)" }} />
+              <div className="w-10 h-1 rounded-full" style={{ background: "var(--b-strong)" }} />
             </div>
 
             {/* Header */}
             <div
               className="px-4 pb-3 flex items-start justify-between shrink-0"
-              style={{ borderBottom: "1px solid oklch(0.93 0.008 75)" }}
+              style={{ borderBottom: "1px solid var(--b-2)" }}
             >
               <div className="flex items-center gap-2.5">
                 <div
                   className="w-9 h-9 rounded-xl flex items-center justify-center"
-                  style={{ background: "linear-gradient(135deg, oklch(0.62 0.09 68), oklch(0.52 0.08 65))" }}
+                  style={{ background: "linear-gradient(135deg, var(--acc-strong), var(--acc-2))" }}
                 >
                   <Sparkles size={16} className="text-white" />
                 </div>
                 <div>
-                  <p className="font-display text-base font-semibold leading-tight" style={{ color: "oklch(0.14 0.008 65)" }}>
+                  <p className="font-display text-base font-semibold leading-tight" style={{ color: "var(--t-1)" }}>
                     Convert to Project
                   </p>
-                  <p className="text-[11px]" style={{ color: "oklch(0.52 0.010 68)" }}>
+                  <p className="text-[11px]" style={{ color: "var(--t-5)" }}>
                     {inquiry.client} · {inquiry.id}
                   </p>
                 </div>
@@ -197,9 +197,9 @@ export default function ConvertInquiryDialog({
               <button
                 onClick={onClose}
                 className="w-8 h-8 rounded-full flex items-center justify-center"
-                style={{ background: "oklch(0.96 0.006 75)" }}
+                style={{ background: "var(--s-2)" }}
               >
-                <X size={14} style={{ color: "oklch(0.42 0.09 68)" }} />
+                <X size={14} style={{ color: "var(--acc-ink)" }} />
               </button>
             </div>
 
@@ -263,7 +263,7 @@ export default function ConvertInquiryDialog({
                 <div className="grid grid-cols-3 gap-2">
                   {([
                     { p: "high"   as Priority, tint: "oklch(0.50 0.12 25)",  bg: "oklch(0.60 0.12 25 / 12%)" },
-                    { p: "medium" as Priority, tint: "oklch(0.42 0.09 68)",  bg: "oklch(0.62 0.09 68 / 12%)" },
+                    { p: "medium" as Priority, tint: "var(--acc-ink)",  bg: "oklch(0.62 0.09 68 / 12%)" },
                     { p: "low"    as Priority, tint: "oklch(0.38 0.09 145)", bg: "oklch(0.55 0.09 145 / 12%)" },
                   ]).map(({ p, tint, bg }) => {
                     const active = form.priority === p;
@@ -273,9 +273,9 @@ export default function ConvertInquiryDialog({
                         onClick={() => setForm({ ...form, priority: p })}
                         className="py-2 rounded-lg text-xs font-label"
                         style={{
-                          background: active ? bg : "oklch(0.985 0.004 80)",
-                          color: active ? tint : "oklch(0.52 0.010 68)",
-                          border: active ? `1.5px solid ${tint}` : "1px solid oklch(0.90 0.010 75)",
+                          background: active ? bg : "var(--s-page)",
+                          color: active ? tint : "var(--t-5)",
+                          border: active ? `1.5px solid ${tint}` : "1px solid var(--b-1)",
                           letterSpacing: "0.06em",
                           fontWeight: active ? 700 : 500,
                         }}
@@ -303,7 +303,7 @@ export default function ConvertInquiryDialog({
                   border: "1px solid oklch(0.62 0.09 68 / 25%)",
                 }}
               >
-                <p className="text-[10px] font-label mb-2" style={{ color: "oklch(0.42 0.09 68)", letterSpacing: "0.10em", fontWeight: 700 }}>
+                <p className="text-[10px] font-label mb-2" style={{ color: "var(--acc-ink)", letterSpacing: "0.10em", fontWeight: 700 }}>
                   WHAT HAPPENS ON CONVERT
                 </p>
                 <Bullet text="A new project is created at status “Assigned”." />
@@ -333,15 +333,15 @@ export default function ConvertInquiryDialog({
             {/* Footer */}
             <div
               className="px-4 py-3 flex gap-2 shrink-0"
-              style={{ borderTop: "1px solid oklch(0.93 0.008 75)", paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)" }}
+              style={{ borderTop: "1px solid var(--b-2)", paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)" }}
             >
               <button
                 onClick={onClose}
                 className="flex-1 py-3 rounded-xl text-sm font-label"
                 style={{
-                  background: "oklch(0.985 0.004 80)",
-                  color: "oklch(0.42 0.09 68)",
-                  border: "1px solid oklch(0.90 0.010 75)",
+                  background: "var(--s-page)",
+                  color: "var(--acc-ink)",
+                  border: "1px solid var(--b-1)",
                   letterSpacing: "0.04em",
                   fontWeight: 600,
                 }}
@@ -356,8 +356,8 @@ export default function ConvertInquiryDialog({
                 className="flex-[2] py-3 rounded-xl text-sm font-label flex items-center justify-center gap-1.5"
                 style={{
                   background: isValid
-                    ? "linear-gradient(135deg, oklch(0.62 0.09 68), oklch(0.52 0.08 65))"
-                    : "oklch(0.85 0.008 75)",
+                    ? "linear-gradient(135deg, var(--acc-strong), var(--acc-2))"
+                    : "var(--b-strong)",
                   color: "white",
                   letterSpacing: "0.06em",
                   fontWeight: 700,
@@ -396,8 +396,8 @@ function FieldGroup({
   return (
     <div>
       <div className="flex items-center gap-1.5 mb-1.5">
-        {Icon && <Icon size={11} style={{ color: "oklch(0.52 0.010 68)" }} />}
-        <p className="text-[10px] font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.08em", fontWeight: 700 }}>
+        {Icon && <Icon size={11} style={{ color: "var(--t-5)" }} />}
+        <p className="text-[10px] font-label" style={{ color: "var(--t-5)", letterSpacing: "0.08em", fontWeight: 700 }}>
           {label}
         </p>
       </div>
@@ -415,9 +415,9 @@ function TextInput({ value, onChange, placeholder }: { value: string; onChange: 
       placeholder={placeholder}
       className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
       style={{
-        background: "oklch(0.985 0.004 80)",
-        border: "1px solid oklch(0.90 0.010 75)",
-        color: "oklch(0.20 0.008 65)",
+        background: "var(--s-page)",
+        border: "1px solid var(--b-1)",
+        color: "var(--t-2)",
       }}
     />
   );
@@ -438,10 +438,10 @@ function NumberInput({
     <div>
       <div
         className="flex items-center gap-2 px-3 py-2.5 rounded-xl"
-        style={{ background: "oklch(0.985 0.004 80)", border: "1px solid oklch(0.90 0.010 75)" }}
+        style={{ background: "var(--s-page)", border: "1px solid var(--b-1)" }}
       >
         {prefix && (
-          <span className="text-[10px] font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.04em" }}>
+          <span className="text-[10px] font-label" style={{ color: "var(--t-5)", letterSpacing: "0.04em" }}>
             {prefix}
           </span>
         )}
@@ -451,11 +451,11 @@ function NumberInput({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className="flex-1 bg-transparent outline-none text-sm font-display font-semibold"
-          style={{ color: "oklch(0.20 0.008 65)" }}
+          style={{ color: "var(--t-2)" }}
         />
       </div>
       {hint && (
-        <p className="text-[10px] mt-1" style={{ color: "oklch(0.52 0.010 68)" }}>
+        <p className="text-[10px] mt-1" style={{ color: "var(--t-5)" }}>
           {hint}
         </p>
       )}
@@ -471,9 +471,9 @@ function DateInput({ value, onChange }: { value: string; onChange: (v: string) =
       onChange={(e) => onChange(e.target.value)}
       className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
       style={{
-        background: "oklch(0.985 0.004 80)",
-        border: "1px solid oklch(0.90 0.010 75)",
-        color: "oklch(0.20 0.008 65)",
+        background: "var(--s-page)",
+        border: "1px solid var(--b-1)",
+        color: "var(--t-2)",
       }}
     />
   );
@@ -497,9 +497,9 @@ function Select({
       data-testid={testid}
       className="w-full px-3 py-2.5 rounded-xl text-sm outline-none appearance-none"
       style={{
-        background: "oklch(0.985 0.004 80)",
-        border: "1px solid oklch(0.90 0.010 75)",
-        color: "oklch(0.20 0.008 65)",
+        background: "var(--s-page)",
+        border: "1px solid var(--b-1)",
+        color: "var(--t-2)",
       }}
     >
       <option value="">— select —</option>
@@ -516,7 +516,7 @@ function Bullet({ text }: { text: string }) {
   return (
     <div className="flex items-start gap-1.5 mb-1">
       <Check size={11} style={{ color: "oklch(0.38 0.09 145)" }} className="mt-0.5 shrink-0" strokeWidth={3} />
-      <p className="text-[11px] leading-snug" style={{ color: "oklch(0.30 0.008 65)" }}>
+      <p className="text-[11px] leading-snug" style={{ color: "var(--t-3)" }}>
         {text}
       </p>
     </div>

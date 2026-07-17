@@ -9,7 +9,7 @@ import { useAllStaff, useKpiRecords } from "@/lib/queries";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell, Tooltip } from "recharts";
 
 const ratingColors: Record<string, { bg: string; color: string; border: string }> = {
-  A: { bg: "oklch(0.62 0.09 68 / 12%)", color: "oklch(0.52 0.09 68)", border: "oklch(0.62 0.09 68 / 25%)" },
+  A: { bg: "oklch(0.62 0.09 68 / 12%)", color: "var(--acc)", border: "oklch(0.62 0.09 68 / 25%)" },
   B: { bg: "oklch(0.70 0.09 240 / 15%)", color: "oklch(0.70 0.09 240)", border: "oklch(0.70 0.09 240 / 30%)" },
   C: { bg: "oklch(0.68 0.12 25 / 15%)", color: "oklch(0.68 0.12 25)", border: "oklch(0.68 0.12 25 / 30%)" },
 };
@@ -19,9 +19,9 @@ const MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "S
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="rounded-xl px-3 py-2" style={{ background: "oklch(0.96 0.006 75)", border: "1px solid oklch(1 0 0 / 15%)" }}>
-        <p className="text-xs font-label" style={{ color: "oklch(0.52 0.010 68)" }}>{label}</p>
-        <p className="text-sm font-semibold" style={{ color: "oklch(0.52 0.09 68)" }}>{payload[0].value}</p>
+      <div className="rounded-xl px-3 py-2" style={{ background: "var(--s-2)", border: "1px solid oklch(1 0 0 / 15%)" }}>
+        <p className="text-xs font-label" style={{ color: "var(--t-5)" }}>{label}</p>
+        <p className="text-sm font-semibold" style={{ color: "var(--acc)" }}>{payload[0].value}</p>
       </div>
     );
   }
@@ -70,27 +70,27 @@ export default function KPIPerformance() {
         {/* Summary cards */}
         <div className="grid grid-cols-3 gap-2">
           {[
-            { label: "Rating A", value: aCount, color: "oklch(0.52 0.09 68)" },
+            { label: "Rating A", value: aCount, color: "var(--acc)" },
             { label: "Rating B", value: bCount, color: "oklch(0.70 0.09 240)" },
             { label: "Rating C", value: cCount, color: "oklch(0.68 0.12 25)" },
           ].map((s) => (
-            <div key={s.label} className="rounded-xl p-3 text-center" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
+            <div key={s.label} className="rounded-xl p-3 text-center" style={{ background: "var(--s-card)", border: "1px solid var(--b-1)" }}>
               <p className="text-2xl font-display font-semibold" style={{ color: s.color }}>{s.value}</p>
-              <p className="text-[10px] font-label mt-0.5" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.04em" }}>{s.label}</p>
+              <p className="text-[10px] font-label mt-0.5" style={{ color: "var(--t-5)", letterSpacing: "0.04em" }}>{s.label}</p>
             </div>
           ))}
         </div>
 
         {/* Team chart */}
-        <div className="rounded-2xl p-4" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
-          <h4 className="font-display text-base font-semibold text-neutral-900 mb-4">Monthly Score Trend</h4>
+        <div className="rounded-2xl p-4" style={{ background: "var(--s-card)", border: "1px solid var(--b-1)" }}>
+          <h4 className="font-display text-base font-semibold text-[color:var(--t-1)] mb-4">Monthly Score Trend</h4>
           <ResponsiveContainer width="100%" height={140}>
             <BarChart data={chartData} barSize={20}>
               <XAxis
                 dataKey="month"
                 axisLine={false}
                 tickLine={false}
-                tick={{ fill: "oklch(0.52 0.010 68)", fontSize: 10, fontFamily: "Raleway, sans-serif" }}
+                tick={{ fill: "var(--t-5)", fontSize: 10, fontFamily: "Raleway, sans-serif" }}
               />
               <YAxis hide domain={[60, 100]} />
               <Tooltip content={<CustomTooltip />} cursor={{ fill: "oklch(1 0 0 / 4%)" }} />
@@ -98,7 +98,7 @@ export default function KPIPerformance() {
                 {chartData.map((entry, i) => (
                   <Cell
                     key={i}
-                    fill={entry.score >= 81 ? "oklch(0.72 0.09 68)" : entry.score >= 61 ? "oklch(0.70 0.09 240)" : "oklch(0.68 0.12 25)"}
+                    fill={entry.score >= 81 ? "var(--acc-bright)" : entry.score >= 61 ? "oklch(0.70 0.09 240)" : "oklch(0.68 0.12 25)"}
                     fillOpacity={0.85}
                   />
                 ))}
@@ -109,7 +109,7 @@ export default function KPIPerformance() {
 
         {/* Staff KPI list */}
         <div>
-          <p className="text-xs font-label mb-3" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.08em" }}>STAFF RATINGS — FEB 2026</p>
+          <p className="text-xs font-label mb-3" style={{ color: "var(--t-5)", letterSpacing: "0.08em" }}>STAFF RATINGS — FEB 2026</p>
           <div className="space-y-2 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-3 lg:items-start">
             {staffMembers.map((staff, i) => {
               const ratingKey = rating(staff.id);
@@ -121,17 +121,17 @@ export default function KPIPerformance() {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.04 }}
                   className="rounded-xl p-3 flex items-center gap-3"
-                  style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}
+                  style={{ background: "var(--s-card)", border: "1px solid var(--b-1)" }}
                 >
                   <div
                     className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
-                    style={{ background: "oklch(0.62 0.09 68 / 12%)", color: "oklch(0.52 0.09 68)", border: "1px solid oklch(0.62 0.09 68 / 20%)" }}
+                    style={{ background: "oklch(0.62 0.09 68 / 12%)", color: "var(--acc)", border: "1px solid oklch(0.62 0.09 68 / 20%)" }}
                   >
                     {staff.avatar_code}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-neutral-900">{staff.name}</p>
-                    <p className="text-xs mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>{staff.job_title}</p>
+                    <p className="text-sm text-[color:var(--t-1)]">{staff.name}</p>
+                    <p className="text-xs mt-0.5" style={{ color: "var(--t-5)" }}>{staff.job_title}</p>
                   </div>
                   <div className="flex flex-col items-end gap-1">
                     <span
@@ -140,7 +140,7 @@ export default function KPIPerformance() {
                     >
                       {ratingKey}
                     </span>
-                    <span className="text-[9px] font-label" style={{ color: "oklch(0.52 0.010 68)" }}>
+                    <span className="text-[9px] font-label" style={{ color: "var(--t-5)" }}>
                       {ratingKey === "A" ? "81-100" : ratingKey === "B" ? "61-80" : "≤60"}
                     </span>
                   </div>

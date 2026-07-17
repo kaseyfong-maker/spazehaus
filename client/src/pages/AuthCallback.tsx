@@ -55,7 +55,7 @@ export default function AuthCallback() {
       >
         {state.status === "loading" && (
           <>
-            <Loader2 size={28} className="mx-auto animate-spin" style={{ color: "oklch(0.72 0.09 68)" }} />
+            <Loader2 size={28} className="mx-auto animate-spin" style={{ color: "var(--acc-bright)" }} />
             <p className="text-sm text-white">Signing you in…</p>
           </>
         )}
@@ -93,7 +93,7 @@ export default function AuthCallback() {
                 navigate("/login");
               }}
               className="text-[11px] font-label underline"
-              style={{ color: "oklch(0.72 0.09 68)", letterSpacing: "0.04em" }}
+              style={{ color: "var(--acc-bright)", letterSpacing: "0.04em" }}
             >
               Sign out and try again
             </button>

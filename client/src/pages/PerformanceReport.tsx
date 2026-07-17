@@ -68,14 +68,14 @@ export default function PerformanceReport() {
   const timeline = useMemo(() => buildProjectTimeline(projects), [projects]);
 
   return (
-    <div className="mobile-container" style={{ background: "oklch(0.985 0.004 80)" }}>
+    <div className="mobile-container" style={{ background: "var(--s-page)" }}>
       <AppHeader title="Performance" subtitle="REPORT · TARGETS" bgImage={HERO_BG} showBack showNotification />
 
       <div className="px-4 py-4 space-y-5 pb-24 lg:px-8 lg:py-7 lg:space-y-6">
         {/* View toggle */}
         <div
           className="flex rounded-xl p-1"
-          style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}
+          style={{ background: "var(--s-card)", border: "1px solid var(--b-1)" }}
         >
           {(["Team", "Personal"] as View[]).map((t) => {
             const active = view === t;
@@ -86,7 +86,7 @@ export default function PerformanceReport() {
                 className="flex-1 py-2 text-xs font-label rounded-lg transition-colors"
                 style={{
                   background: active ? "oklch(0.62 0.09 68 / 10%)" : "transparent",
-                  color: active ? "oklch(0.42 0.09 68)" : "oklch(0.52 0.010 68)",
+                  color: active ? "var(--acc-ink)" : "var(--t-5)",
                   letterSpacing: "0.04em",
                   fontWeight: active ? 700 : 400,
                 }}
@@ -115,7 +115,7 @@ export default function PerformanceReport() {
           data-testid="perf-generate"
           className="w-full rounded-2xl py-3.5 flex items-center justify-center gap-2"
           style={{
-            background: "linear-gradient(135deg, oklch(0.62 0.09 68), oklch(0.52 0.08 65))",
+            background: "linear-gradient(135deg, var(--acc-strong), var(--acc-2))",
             color: "white",
             boxShadow: "0 4px 16px oklch(0.62 0.09 68 / 0.25)",
           }}
@@ -126,7 +126,7 @@ export default function PerformanceReport() {
           </span>
         </motion.button>
 
-        <p className="text-[10px] text-center font-label pt-2" style={{ color: "oklch(0.65 0.008 68)", letterSpacing: "0.06em" }}>
+        <p className="text-[10px] text-center font-label pt-2" style={{ color: "var(--t-6)", letterSpacing: "0.06em" }}>
           SPAZEHAUS · PERFORMANCE REPORT · {monthLabel(getToday())}
         </p>
       </div>
@@ -156,7 +156,7 @@ function TeamView({
           label="YTD Revenue"
           primary={formatRMCompact(company.awardedYTD)}
           secondary={`${(company.ytdAchievementPct * 100).toFixed(0)}% of ${formatRMCompact(company.ytdRevenueTarget)}`}
-          tint="oklch(0.42 0.09 68)"
+          tint="var(--acc-ink)"
           tintBg="oklch(0.62 0.09 68 / 10%)"
           progress={company.ytdAchievementPct}
         />
@@ -192,26 +192,26 @@ function TeamView({
         {/* Cash flow snapshot */}
         <div
           className="rounded-2xl p-4"
-          style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
+          style={{ background: "var(--s-card)", border: "1px solid var(--b-1)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
         >
-          <p className="font-label text-xs mb-3" style={{ color: "oklch(0.20 0.008 65)", letterSpacing: "0.10em", fontWeight: 700 }}>
+          <p className="font-label text-xs mb-3" style={{ color: "var(--t-2)", letterSpacing: "0.10em", fontWeight: 700 }}>
             CASH FLOW
           </p>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <p className="text-[10px] font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.06em" }}>INVOICED</p>
-              <p className="font-display text-base font-semibold" style={{ color: "oklch(0.42 0.09 68)" }}>
+              <p className="text-[10px] font-label" style={{ color: "var(--t-5)", letterSpacing: "0.06em" }}>INVOICED</p>
+              <p className="font-display text-base font-semibold" style={{ color: "var(--acc-ink)" }}>
                 {formatRM(company.invoicedRM)}
               </p>
             </div>
             <div>
-              <p className="text-[10px] font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.06em" }}>COLLECTED</p>
+              <p className="text-[10px] font-label" style={{ color: "var(--t-5)", letterSpacing: "0.06em" }}>COLLECTED</p>
               <p className="font-display text-base font-semibold" style={{ color: "oklch(0.38 0.09 145)" }}>
                 {formatRM(company.collectedRM)}
               </p>
             </div>
           </div>
-          <div className="mt-2.5 h-2 rounded-full overflow-hidden" style={{ background: "oklch(0.92 0.008 75)" }}>
+          <div className="mt-2.5 h-2 rounded-full overflow-hidden" style={{ background: "var(--b-2)" }}>
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${company.invoicedRM === 0 ? 0 : (company.collectedRM / company.invoicedRM) * 100}%` }}
@@ -220,7 +220,7 @@ function TeamView({
               style={{ background: "linear-gradient(90deg, oklch(0.55 0.09 145), oklch(0.65 0.09 145))" }}
             />
           </div>
-          <p className="text-[10px] mt-1.5" style={{ color: "oklch(0.52 0.010 68)" }}>
+          <p className="text-[10px] mt-1.5" style={{ color: "var(--t-5)" }}>
             {company.invoicedRM === 0 ? 0 : ((company.collectedRM / company.invoicedRM) * 100).toFixed(0)}% of invoiced is in the bank
           </p>
         </div>
@@ -247,10 +247,10 @@ function PersonalView({ staff }: { staff: StaffPerformance | undefined }) {
     return (
       <div
         className="rounded-2xl p-6 text-center"
-        style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}
+        style={{ background: "var(--s-card)", border: "1px solid var(--b-1)" }}
       >
-        <p className="text-sm font-semibold" style={{ color: "oklch(0.14 0.008 65)" }}>No personal target set</p>
-        <p className="text-xs mt-1" style={{ color: "oklch(0.52 0.010 68)" }}>
+        <p className="text-sm font-semibold" style={{ color: "var(--t-1)" }}>No personal target set</p>
+        <p className="text-xs mt-1" style={{ color: "var(--t-5)" }}>
           Sales/GP targets are configured for Sales Consultants and Principal Designer.
         </p>
       </div>
@@ -269,15 +269,15 @@ function PersonalView({ staff }: { staff: StaffPerformance | undefined }) {
       >
         <div
           className="w-12 h-12 rounded-full flex items-center justify-center text-sm font-bold shrink-0"
-          style={{ background: "linear-gradient(135deg, oklch(0.62 0.09 68), oklch(0.52 0.08 65))", color: "white" }}
+          style={{ background: "linear-gradient(135deg, var(--acc-strong), var(--acc-2))", color: "white" }}
         >
           {staff.avatar}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="font-display text-base font-semibold" style={{ color: "oklch(0.14 0.008 65)" }}>
+          <p className="font-display text-base font-semibold" style={{ color: "var(--t-1)" }}>
             {staff.name}
           </p>
-          <p className="text-xs mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>{staff.role}</p>
+          <p className="text-xs mt-0.5" style={{ color: "var(--t-5)" }}>{staff.role}</p>
         </div>
         {ytdAch >= 1 && (
           <div
@@ -316,7 +316,7 @@ function PersonalView({ staff }: { staff: StaffPerformance | undefined }) {
           <div className="grid grid-cols-3 gap-2">
             <MiniStat icon={Award} label="DEALS WON" value={String(staff.awardedCount)} tint="oklch(0.38 0.09 145)" />
             <MiniStat icon={Briefcase} label="PIPELINE" value={String(staff.pipelineCount)} sub={formatRMCompact(staff.pipelineRM)} tint="oklch(0.38 0.09 240)" />
-            <MiniStat icon={Coins} label="GP @ TARGET" value={formatRMCompact(staff.projectedGP)} sub={`${staff.gpTargetPct}%`} tint="oklch(0.42 0.09 68)" />
+            <MiniStat icon={Coins} label="GP @ TARGET" value={formatRMCompact(staff.projectedGP)} sub={`${staff.gpTargetPct}%`} tint="var(--acc-ink)" />
           </div>
         </div>
 
@@ -328,17 +328,17 @@ function PersonalView({ staff }: { staff: StaffPerformance | undefined }) {
             border: `1px solid ${ytdAch >= 1 ? "oklch(0.55 0.09 145 / 30%)" : ytdAch >= 0.7 ? "oklch(0.65 0.10 55 / 30%)" : "oklch(0.60 0.12 25 / 30%)"}`,
           }}
         >
-          <p className="font-label text-xs mb-2" style={{ color: "oklch(0.20 0.008 65)", letterSpacing: "0.10em", fontWeight: 700 }}>
+          <p className="font-label text-xs mb-2" style={{ color: "var(--t-2)", letterSpacing: "0.10em", fontWeight: 700 }}>
             VARIANCE TO TARGET
           </p>
-          <p className="text-sm font-semibold" style={{ color: "oklch(0.20 0.008 65)" }}>
+          <p className="text-sm font-semibold" style={{ color: "var(--t-2)" }}>
             {ytdAch >= 1
               ? `On track — exceeded YTD by ${formatRMCompact(staff.awardedYTD - staff.ytdTarget)} (${((ytdAch - 1) * 100).toFixed(0)}%)`
               : ytdAch >= 0.7
               ? `Behind by ${formatRMCompact(staff.ytdTarget - staff.awardedYTD)} — recoverable with current pipeline`
               : `Significantly behind — ${formatRMCompact(staff.ytdTarget - staff.awardedYTD)} gap to close`}
           </p>
-          <p className="text-[11px] mt-1" style={{ color: "oklch(0.52 0.010 68)" }}>
+          <p className="text-[11px] mt-1" style={{ color: "var(--t-5)" }}>
             Pipeline coverage: {staff.ytdTarget === 0 ? "—" : `${((staff.pipelineRM / Math.max(staff.ytdTarget - staff.awardedYTD, 1)) * 100).toFixed(0)}% of remaining gap`}
           </p>
         </div>
@@ -356,8 +356,8 @@ function Section({ title, subtitle, children }: { title: string; subtitle: strin
     <div>
       <div className="flex items-center justify-between mb-3">
         <div>
-          <p className="font-label text-xs" style={{ color: "oklch(0.20 0.008 65)", letterSpacing: "0.10em", fontWeight: 700 }}>{title}</p>
-          <p className="text-[10px] mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>{subtitle}</p>
+          <p className="font-label text-xs" style={{ color: "var(--t-2)", letterSpacing: "0.10em", fontWeight: 700 }}>{title}</p>
+          <p className="text-[10px] mt-0.5" style={{ color: "var(--t-5)" }}>{subtitle}</p>
         </div>
       </div>
       {children}
@@ -385,24 +385,24 @@ function KpiCard({
   return (
     <div
       className="rounded-2xl p-3"
-      style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
+      style={{ background: "var(--s-card)", border: "1px solid var(--b-1)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
     >
       <div className="flex items-center gap-2 mb-1.5">
         <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: tintBg }}>
           <Icon size={14} style={{ color: tint }} />
         </div>
-        <p className="text-[10px] font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.06em" }}>
+        <p className="text-[10px] font-label" style={{ color: "var(--t-5)", letterSpacing: "0.06em" }}>
           {label.toUpperCase()}
         </p>
       </div>
-      <p className="font-display text-lg font-semibold leading-none truncate" style={{ color: "oklch(0.14 0.008 65)" }}>
+      <p className="font-display text-lg font-semibold leading-none truncate" style={{ color: "var(--t-1)" }}>
         {primary}
       </p>
-      <p className="text-[10px] mt-1 truncate" style={{ color: "oklch(0.52 0.010 68)" }}>
+      <p className="text-[10px] mt-1 truncate" style={{ color: "var(--t-5)" }}>
         {secondary}
       </p>
       {progress !== undefined && (
-        <div className="mt-2 h-1.5 rounded-full overflow-hidden" style={{ background: "oklch(0.92 0.008 75)" }}>
+        <div className="mt-2 h-1.5 rounded-full overflow-hidden" style={{ background: "var(--b-2)" }}>
           <motion.div
             initial={{ width: 0 }}
             animate={{ width: `${Math.min(progress * 100, 100)}%` }}
@@ -433,22 +433,22 @@ function Gauge({
   return (
     <div
       className="rounded-2xl p-3"
-      style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
+      style={{ background: "var(--s-card)", border: "1px solid var(--b-1)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
     >
-      <p className="text-[10px] font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.06em" }}>
+      <p className="text-[10px] font-label" style={{ color: "var(--t-5)", letterSpacing: "0.06em" }}>
         {label}
       </p>
       <div className="flex items-baseline gap-1.5 mt-1">
         <p className="font-display text-2xl font-semibold leading-none" style={{ color: tint }}>
           {(pct * 100).toFixed(0)}%
         </p>
-        <p className="text-[10px]" style={{ color: "oklch(0.52 0.010 68)" }}>achieved</p>
+        <p className="text-[10px]" style={{ color: "var(--t-5)" }}>achieved</p>
       </div>
-      <p className="text-xs font-display font-semibold mt-1.5" style={{ color: "oklch(0.20 0.008 65)" }}>
+      <p className="text-xs font-display font-semibold mt-1.5" style={{ color: "var(--t-2)" }}>
         {primary}
       </p>
-      <p className="text-[10px]" style={{ color: "oklch(0.52 0.010 68)" }}>{secondary}</p>
-      <div className="mt-2 h-1.5 rounded-full overflow-hidden" style={{ background: "oklch(0.92 0.008 75)" }}>
+      <p className="text-[10px]" style={{ color: "var(--t-5)" }}>{secondary}</p>
+      <div className="mt-2 h-1.5 rounded-full overflow-hidden" style={{ background: "var(--b-2)" }}>
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${(clamped / 1.5) * 100}%` }}
@@ -477,11 +477,11 @@ function MiniStat({
   return (
     <div
       className="rounded-xl p-2.5 text-center"
-      style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}
+      style={{ background: "var(--s-card)", border: "1px solid var(--b-1)" }}
     >
       <Icon size={14} className="mx-auto mb-1" style={{ color: tint }} />
-      <p className="font-display text-base font-semibold" style={{ color: "oklch(0.14 0.008 65)" }}>{value}</p>
-      <p className="text-[9px] font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.04em" }}>{label}</p>
+      <p className="font-display text-base font-semibold" style={{ color: "var(--t-1)" }}>{value}</p>
+      <p className="text-[9px] font-label" style={{ color: "var(--t-5)", letterSpacing: "0.04em" }}>{label}</p>
       {sub && <p className="text-[9px] mt-0.5" style={{ color: tint }}>{sub}</p>}
     </div>
   );
@@ -494,39 +494,39 @@ function StaffRow({ perf, rank }: { perf: StaffPerformance; rank: number }) {
   return (
     <div
       className="rounded-2xl p-3"
-      style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
+      style={{ background: "var(--s-card)", border: "1px solid var(--b-1)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
     >
       <div className="flex items-center gap-3 mb-2">
         <div
           className="w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0"
           style={{
-            background: rank === 1 ? "oklch(0.62 0.09 68)" : rank === 2 ? "oklch(0.55 0.006 80)" : "oklch(0.96 0.006 75)",
-            color: rank <= 2 ? "white" : "oklch(0.42 0.09 68)",
-            border: rank === 3 ? "1.5px solid oklch(0.62 0.09 68)" : "none",
+            background: rank === 1 ? "var(--acc-strong)" : rank === 2 ? "var(--t-5)" : "var(--s-2)",
+            color: rank <= 2 ? "white" : "var(--acc-ink)",
+            border: rank === 3 ? "1.5px solid var(--acc-strong)" : "none",
           }}
         >
           #{rank}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold" style={{ color: "oklch(0.14 0.008 65)" }}>{perf.name}</p>
-          <p className="text-[10px]" style={{ color: "oklch(0.52 0.010 68)" }}>{perf.role}</p>
+          <p className="text-sm font-semibold" style={{ color: "var(--t-1)" }}>{perf.name}</p>
+          <p className="text-[10px]" style={{ color: "var(--t-5)" }}>{perf.role}</p>
         </div>
         <div className="text-right">
           <p className="font-display text-sm font-semibold" style={{ color: tint }}>
             {(ach * 100).toFixed(0)}%
           </p>
-          <p className="text-[10px]" style={{ color: "oklch(0.52 0.010 68)" }}>YTD</p>
+          <p className="text-[10px]" style={{ color: "var(--t-5)" }}>YTD</p>
         </div>
       </div>
       <div className="flex items-center justify-between mb-1.5">
-        <span className="text-[10px]" style={{ color: "oklch(0.52 0.010 68)" }}>
+        <span className="text-[10px]" style={{ color: "var(--t-5)" }}>
           {formatRMCompact(perf.awardedYTD)} / {formatRMCompact(perf.ytdTarget)}
         </span>
-        <span className="text-[10px]" style={{ color: "oklch(0.52 0.010 68)" }}>
+        <span className="text-[10px]" style={{ color: "var(--t-5)" }}>
           {perf.awardedCount} won · {perf.pipelineCount} active
         </span>
       </div>
-      <div className="h-2 rounded-full overflow-hidden" style={{ background: "oklch(0.92 0.008 75)" }}>
+      <div className="h-2 rounded-full overflow-hidden" style={{ background: "var(--b-2)" }}>
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${Math.min(ach * 100, 100)}%` }}
@@ -557,16 +557,16 @@ function ProjectGantt({ rows }: { rows: ReturnType<typeof buildProjectTimeline> 
 
   const statusColor: Record<string, string> = {
     active: "oklch(0.55 0.09 240)",
-    assigned: "oklch(0.62 0.09 68)",
+    assigned: "var(--acc-strong)",
     "under-review": "oklch(0.65 0.10 55)",
     completed: "oklch(0.55 0.09 145)",
-    "on-hold": "oklch(0.55 0.006 80)",
+    "on-hold": "var(--t-5)",
   };
 
   return (
     <div
       className="rounded-2xl p-4"
-      style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
+      style={{ background: "var(--s-card)", border: "1px solid var(--b-1)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
     >
       {/* Month ticks */}
       <div className="relative h-4 mb-2">
@@ -578,7 +578,7 @@ function ProjectGantt({ rows }: { rows: ReturnType<typeof buildProjectTimeline> 
               className="absolute text-[8px] font-label"
               style={{
                 left: `${left}%`,
-                color: "oklch(0.55 0.008 65)",
+                color: "var(--t-5)",
                 letterSpacing: "0.04em",
                 transform: "translateX(-50%)",
               }}
@@ -617,17 +617,17 @@ function ProjectGantt({ rows }: { rows: ReturnType<typeof buildProjectTimeline> 
             const startPos = timelinePos(r.start, bounds) * 100;
             const endPos = timelinePos(r.end, bounds) * 100;
             const width = Math.max(endPos - startPos, 4);
-            const tint = statusColor[r.status] || "oklch(0.42 0.09 68)";
+            const tint = statusColor[r.status] || "var(--acc-ink)";
 
             return (
               <div key={r.projectId}>
                 <div className="flex items-center justify-between mb-1">
-                  <p className="text-[11px] font-semibold truncate" style={{ color: "oklch(0.20 0.008 65)" }}>
+                  <p className="text-[11px] font-semibold truncate" style={{ color: "var(--t-2)" }}>
                     {r.name}
                   </p>
                   <span className="text-[10px]" style={{ color: tint }}>{r.progressPct}%</span>
                 </div>
-                <div className="relative h-3 rounded-full" style={{ background: "oklch(0.96 0.006 75)" }}>
+                <div className="relative h-3 rounded-full" style={{ background: "var(--s-2)" }}>
                   <div
                     className="absolute top-0 h-full rounded-full"
                     style={{

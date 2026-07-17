@@ -75,7 +75,7 @@ export default function Checkpoints() {
   const drawings = openSignatures.filter((s) => s.group === "drawing");
 
   return (
-    <div className="mobile-container" style={{ background: "oklch(0.985 0.004 80)" }}>
+    <div className="mobile-container" style={{ background: "var(--s-page)" }}>
       <AppHeader title="Checkpoints" subtitle="IMPORTANT · SOP" bgImage={HERO_BG} showBack showNotification />
 
       <div className="px-4 py-4 space-y-5 pb-24 lg:px-8 lg:py-7 lg:space-y-6">
@@ -86,7 +86,7 @@ export default function Checkpoints() {
             label="Outstanding"
             primary={formatRM(summary.outstandingRM)}
             secondary={`${summary.paymentsCount} open payments`}
-            tint="oklch(0.42 0.09 68)"
+            tint="var(--acc-ink)"
             tintBg="oklch(0.62 0.09 68 / 10%)"
           />
           <KpiCard
@@ -119,7 +119,7 @@ export default function Checkpoints() {
         {/* Filter tabs */}
         <div
           className="flex rounded-xl p-1"
-          style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}
+          style={{ background: "var(--s-card)", border: "1px solid var(--b-1)" }}
         >
           {filterTabs.map((t) => {
             const active = filter === t;
@@ -131,7 +131,7 @@ export default function Checkpoints() {
                 className="flex-1 py-2 text-xs font-label rounded-lg transition-colors relative"
                 style={{
                   background: active ? "oklch(0.62 0.09 68 / 10%)" : "transparent",
-                  color: active ? "oklch(0.42 0.09 68)" : "oklch(0.52 0.010 68)",
+                  color: active ? "var(--acc-ink)" : "var(--t-5)",
                   letterSpacing: "0.04em",
                   fontWeight: active ? 700 : 400,
                 }}
@@ -160,11 +160,11 @@ export default function Checkpoints() {
                         <p className="font-label text-[10px]" style={{ color: tone.color, letterSpacing: "0.12em" }}>
                           {bucketLabel[group.bucket]} ({group.rows.length})
                         </p>
-                        <div className="flex-1 h-px" style={{ background: "oklch(0.92 0.008 75)" }} />
+                        <div className="flex-1 h-px" style={{ background: "var(--b-2)" }} />
                       </div>
                       <div
                         className="rounded-2xl overflow-hidden"
-                        style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
+                        style={{ background: "var(--s-card)", border: "1px solid var(--b-1)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
                       >
                         {group.rows.map((row, i) => (
                           <PaymentItem
@@ -257,7 +257,7 @@ export default function Checkpoints() {
           </div>
         )}
 
-        <p className="text-[10px] text-center font-label pt-2" style={{ color: "oklch(0.65 0.008 68)", letterSpacing: "0.06em" }}>
+        <p className="text-[10px] text-center font-label pt-2" style={{ color: "var(--t-6)", letterSpacing: "0.06em" }}>
           SPAZEHAUS · IMPORTANT CHECKPOINT SOP · 2026 ANNUAL MEETING
         </p>
       </div>
@@ -306,8 +306,8 @@ function KpiCard({
       transition={urgent ? { repeat: Infinity, duration: 2.4 } : undefined}
       className="rounded-2xl p-3"
       style={{
-        background: "oklch(1 0 0)",
-        border: urgent ? `1px solid ${tint}` : "1px solid oklch(0.90 0.010 75)",
+        background: "var(--s-card)",
+        border: urgent ? `1px solid ${tint}` : "1px solid var(--b-1)",
         boxShadow: urgent ? `0 1px 12px ${tintBg}` : "0 1px 8px oklch(0 0 0 / 0.04)",
       }}
     >
@@ -315,14 +315,14 @@ function KpiCard({
         <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: tintBg }}>
           <Icon size={14} style={{ color: tint }} />
         </div>
-        <p className="text-[10px] font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.06em" }}>
+        <p className="text-[10px] font-label" style={{ color: "var(--t-5)", letterSpacing: "0.06em" }}>
           {label.toUpperCase()}
         </p>
       </div>
-      <p className="font-display text-lg font-semibold leading-none truncate" style={{ color: urgent ? tint : "oklch(0.14 0.008 65)" }}>
+      <p className="font-display text-lg font-semibold leading-none truncate" style={{ color: urgent ? tint : "var(--t-1)" }}>
         {primary}
       </p>
-      <p className="text-[10px] mt-1 truncate" style={{ color: "oklch(0.52 0.010 68)" }}>
+      <p className="text-[10px] mt-1 truncate" style={{ color: "var(--t-5)" }}>
         {secondary}
       </p>
     </motion.div>
@@ -345,13 +345,13 @@ function SectionHeader({
   return (
     <div className="flex items-center gap-3">
       <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: "oklch(0.62 0.09 68 / 10%)" }}>
-        <Icon size={16} style={{ color: "oklch(0.42 0.09 68)" }} />
+        <Icon size={16} style={{ color: "var(--acc-ink)" }} />
       </div>
       <div>
-        <p className="font-label text-xs" style={{ color: "oklch(0.20 0.008 65)", letterSpacing: "0.10em", fontWeight: 700 }}>
+        <p className="font-label text-xs" style={{ color: "var(--t-2)", letterSpacing: "0.10em", fontWeight: 700 }}>
           {title}
         </p>
-        <p className="text-[10px]" style={{ color: "oklch(0.52 0.010 68)" }}>{subtitle}</p>
+        <p className="text-[10px]" style={{ color: "var(--t-5)" }}>{subtitle}</p>
       </div>
     </div>
   );
@@ -365,13 +365,13 @@ function EmptyCard({ icon: Icon, title, subtitle }: { icon: typeof Coins; title:
   return (
     <div
       className="rounded-2xl p-6 flex flex-col items-center gap-2 text-center"
-      style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
+      style={{ background: "var(--s-card)", border: "1px solid var(--b-1)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
     >
       <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "oklch(0.55 0.09 145 / 10%)" }}>
         <Icon size={18} style={{ color: "oklch(0.38 0.09 145)" }} />
       </div>
-      <p className="text-sm font-semibold" style={{ color: "oklch(0.14 0.008 65)" }}>{title}</p>
-      <p className="text-xs" style={{ color: "oklch(0.52 0.010 68)" }}>{subtitle}</p>
+      <p className="text-sm font-semibold" style={{ color: "var(--t-1)" }}>{title}</p>
+      <p className="text-xs" style={{ color: "var(--t-5)" }}>{subtitle}</p>
     </div>
   );
 }
@@ -409,7 +409,7 @@ function PaymentItem({
   return (
     <div
       className="w-full px-3 py-3 flex items-center gap-3"
-      style={{ borderBottom: isLast ? "none" : "1px solid oklch(0.95 0.008 75)" }}
+      style={{ borderBottom: isLast ? "none" : "1px solid var(--s-2)" }}
       data-testid="payment-row"
       data-payment-key={`${row.projectId}-${row.gate}`}
     >
@@ -423,18 +423,18 @@ function PaymentItem({
           className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 font-display text-sm font-semibold"
           style={{
             background: row.effectiveStatus === "overdue" ? "oklch(0.60 0.12 25 / 12%)" : "oklch(0.62 0.09 68 / 10%)",
-            color: row.effectiveStatus === "overdue" ? "oklch(0.50 0.12 25)" : "oklch(0.42 0.09 68)",
+            color: row.effectiveStatus === "overdue" ? "oklch(0.50 0.12 25)" : "var(--acc-ink)",
           }}
         >
           {gateLabel}
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <p className="text-sm font-semibold truncate" style={{ color: "oklch(0.14 0.008 65)" }}>
+            <p className="text-sm font-semibold truncate" style={{ color: "var(--t-1)" }}>
               {row.label}
             </p>
           </div>
-          <p className="text-[11px] truncate mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>
+          <p className="text-[11px] truncate mt-0.5" style={{ color: "var(--t-5)" }}>
             {row.projectName} · {row.client}
           </p>
           <div className="flex items-center gap-1.5 mt-1">
@@ -452,7 +452,7 @@ function PaymentItem({
       <div className="flex flex-col items-end gap-1.5 shrink-0">
         <p
           className="font-display text-sm font-semibold"
-          style={{ color: row.effectiveStatus === "overdue" ? "oklch(0.50 0.12 25)" : "oklch(0.42 0.09 68)" }}
+          style={{ color: row.effectiveStatus === "overdue" ? "oklch(0.50 0.12 25)" : "var(--acc-ink)" }}
         >
           {formatRM(row.amount)}
         </p>
@@ -474,7 +474,7 @@ function PaymentItem({
             </span>
           </motion.button>
         ) : (
-          <ChevronRight size={12} style={{ color: "oklch(0.65 0.008 68)" }} />
+          <ChevronRight size={12} style={{ color: "var(--t-6)" }} />
         )}
       </div>
     </div>
@@ -511,20 +511,20 @@ function SignatureGroup({
         <p className="font-label text-[10px]" style={{ color: tint, letterSpacing: "0.12em" }}>
           {title} ({rows.length})
         </p>
-        <div className="flex-1 h-px" style={{ background: "oklch(0.92 0.008 75)" }} />
+        <div className="flex-1 h-px" style={{ background: "var(--b-2)" }} />
       </div>
 
       {rows.length === 0 ? (
         <div
           className="rounded-2xl p-4 text-center"
-          style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}
+          style={{ background: "var(--s-card)", border: "1px solid var(--b-1)" }}
         >
-          <p className="text-xs" style={{ color: "oklch(0.52 0.010 68)" }}>All signed off</p>
+          <p className="text-xs" style={{ color: "var(--t-5)" }}>All signed off</p>
         </div>
       ) : (
         <div
           className="rounded-2xl overflow-hidden"
-          style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
+          style={{ background: "var(--s-card)", border: "1px solid var(--b-1)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
         >
           {rows.map((row, i) => {
             const sc = checkpointStatusConfig[row.status];
@@ -532,7 +532,7 @@ function SignatureGroup({
               <div
                 key={`${row.projectId}-${row.key}`}
                 className="w-full px-3 py-3 flex items-center gap-3"
-                style={{ borderBottom: i === rows.length - 1 ? "none" : "1px solid oklch(0.95 0.008 75)" }}
+                style={{ borderBottom: i === rows.length - 1 ? "none" : "1px solid var(--s-2)" }}
                 data-testid="signature-row"
                 data-signature-key={`${row.projectId}-${row.key}`}
               >
@@ -548,14 +548,14 @@ function SignatureGroup({
                     <Icon size={15} style={{ color: tint }} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold truncate" style={{ color: "oklch(0.14 0.008 65)" }}>
+                    <p className="text-sm font-semibold truncate" style={{ color: "var(--t-1)" }}>
                       {row.label}
                     </p>
-                    <p className="text-[11px] truncate mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>
+                    <p className="text-[11px] truncate mt-0.5" style={{ color: "var(--t-5)" }}>
                       {row.projectName} · {row.client}
                     </p>
                     {row.notes && (
-                      <p className="text-[10px] truncate mt-0.5" style={{ color: "oklch(0.55 0.008 65)" }}>
+                      <p className="text-[10px] truncate mt-0.5" style={{ color: "var(--t-5)" }}>
                         {row.notes}
                       </p>
                     )}
@@ -592,7 +592,7 @@ function SignatureGroup({
                       </span>
                     </motion.button>
                   ) : (
-                    <ChevronRight size={12} style={{ color: "oklch(0.65 0.008 68)" }} />
+                    <ChevronRight size={12} style={{ color: "var(--t-6)" }} />
                   )}
                 </div>
               </div>

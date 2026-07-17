@@ -51,7 +51,7 @@ export default function AppHeader({
         {/* Gold accent line at top */}
         <div
           className="absolute top-0 left-0 right-0 h-0.5"
-          style={{ background: "linear-gradient(90deg, transparent, oklch(0.72 0.09 68), transparent)" }}
+          style={{ background: "linear-gradient(90deg, transparent, var(--acc-bright), transparent)" }}
         />
         <div className="px-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -62,7 +62,7 @@ export default function AppHeader({
                 className="w-9 h-9 flex items-center justify-center rounded-full"
                 style={{ background: "oklch(1 0 0 / 15%)", border: "1px solid oklch(1 0 0 / 20%)" }}
               >
-                <ChevronLeft size={18} style={{ color: "oklch(0.72 0.09 68)" }} />
+                <ChevronLeft size={18} style={{ color: "var(--acc-bright)" }} />
               </motion.button>
             )}
             <div>
@@ -79,7 +79,7 @@ export default function AppHeader({
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.1 }}
                   className="text-xs mt-0.5 font-label"
-                  style={{ color: "oklch(0.72 0.09 68)", letterSpacing: "0.08em" }}
+                  style={{ color: "var(--acc-bright)", letterSpacing: "0.08em" }}
                 >
                   {subtitle}
                 </motion.p>
@@ -95,7 +95,7 @@ export default function AppHeader({
                 style={{ background: "oklch(1 0 0 / 15%)", border: "1px solid oklch(1 0 0 / 20%)" }}
               >
                 <Bell size={16} className="text-white" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full" style={{ background: "oklch(0.62 0.09 68)" }} />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full" style={{ background: "var(--acc-strong)" }} />
               </motion.button>
             )}
           </div>
@@ -109,14 +109,14 @@ export default function AppHeader({
     <div
       className={`relative ${compact ? "pt-10 pb-4" : "pt-12 pb-5"}`}
       style={{
-        background: "oklch(1 0 0)",
-        borderBottom: "1px solid oklch(0.90 0.010 75)",
+        background: "var(--s-card)",
+        borderBottom: "1px solid var(--b-1)",
       }}
     >
       {/* Gold accent line at top */}
       <div
         className="absolute top-0 left-0 right-0 h-0.5"
-        style={{ background: "linear-gradient(90deg, oklch(0.62 0.09 68), oklch(0.72 0.09 68 / 60%), transparent)" }}
+        style={{ background: "linear-gradient(90deg, var(--acc-strong), oklch(0.72 0.09 68 / 60%), transparent)" }}
       />
 
       {/* Header content */}
@@ -127,9 +127,9 @@ export default function AppHeader({
               whileTap={{ scale: 0.9 }}
               onClick={handleBack}
               className="w-9 h-9 flex items-center justify-center rounded-full"
-              style={{ background: "oklch(0.96 0.006 75)", border: "1px solid oklch(0.90 0.010 75)" }}
+              style={{ background: "var(--s-2)", border: "1px solid var(--b-1)" }}
             >
-              <ChevronLeft size={18} style={{ color: "oklch(0.62 0.09 68)" }} />
+              <ChevronLeft size={18} style={{ color: "var(--acc-strong)" }} />
             </motion.button>
           )}
           <div>
@@ -137,7 +137,7 @@ export default function AppHeader({
               initial={{ opacity: 0, y: -4 }}
               animate={{ opacity: 1, y: 0 }}
               className={`font-display font-semibold leading-tight ${compact ? "text-xl" : "text-2xl"}`}
-              style={{ color: "oklch(0.14 0.008 65)" }}
+              style={{ color: "var(--t-1)" }}
             >
               {title}
             </motion.h1>
@@ -147,7 +147,7 @@ export default function AppHeader({
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.1 }}
                 className="text-xs mt-0.5 font-label"
-                style={{ color: "oklch(0.62 0.09 68)", letterSpacing: "0.08em" }}
+                style={{ color: "var(--acc-strong)", letterSpacing: "0.08em" }}
               >
                 {subtitle}
               </motion.p>
@@ -161,10 +161,10 @@ export default function AppHeader({
             <motion.button
               whileTap={{ scale: 0.9 }}
               className="w-9 h-9 flex items-center justify-center rounded-full relative"
-              style={{ background: "oklch(0.96 0.006 75)", border: "1px solid oklch(0.90 0.010 75)" }}
+              style={{ background: "var(--s-2)", border: "1px solid var(--b-1)" }}
             >
-              <Bell size={16} style={{ color: "oklch(0.35 0.008 65)" }} />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full" style={{ background: "oklch(0.62 0.09 68)" }} />
+              <Bell size={16} style={{ color: "var(--t-3)" }} />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full" style={{ background: "var(--acc-strong)" }} />
             </motion.button>
           )}
         </div>

@@ -203,20 +203,20 @@ export default function SignDocumentSheet({
             className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-50 flex flex-col lg:bottom-auto lg:top-1/2 lg:-translate-y-1/2 lg:max-w-[480px]"
             style={{
               maxHeight: "92vh",
-              background: "oklch(1 0 0)",
+              background: "var(--s-card)",
               borderRadius: isDesktop ? 28 : "28px 28px 0 0",
               boxShadow: "0 -12px 48px oklch(0 0 0 / 0.18)",
             }}
           >
             {/* Drag handle (mobile bottom-sheet affordance only) */}
             <div className="flex justify-center pt-2.5 pb-1.5 shrink-0 lg:hidden">
-              <div className="w-10 h-1 rounded-full" style={{ background: "oklch(0.85 0.008 75)" }} />
+              <div className="w-10 h-1 rounded-full" style={{ background: "var(--b-strong)" }} />
             </div>
 
             {/* Header */}
             <div
               className="px-4 pb-3 flex items-start justify-between shrink-0"
-              style={{ borderBottom: "1px solid oklch(0.93 0.008 75)" }}
+              style={{ borderBottom: "1px solid var(--b-2)" }}
             >
               <div className="flex items-center gap-2.5 min-w-0">
                 <div
@@ -226,10 +226,10 @@ export default function SignDocumentSheet({
                   <Icon size={16} className="text-white" />
                 </div>
                 <div className="min-w-0">
-                  <p className="font-display text-base font-semibold leading-tight truncate" style={{ color: "oklch(0.14 0.008 65)" }}>
+                  <p className="font-display text-base font-semibold leading-tight truncate" style={{ color: "var(--t-1)" }}>
                     Sign Document
                   </p>
-                  <p className="text-[11px] truncate" style={{ color: "oklch(0.52 0.010 68)" }}>
+                  <p className="text-[11px] truncate" style={{ color: "var(--t-5)" }}>
                     {target.label} · {isContract ? "Contract" : "Drawing"}
                   </p>
                 </div>
@@ -238,9 +238,9 @@ export default function SignDocumentSheet({
                 onClick={onClose}
                 disabled={isPending}
                 className="w-8 h-8 rounded-full flex items-center justify-center shrink-0"
-                style={{ background: "oklch(0.96 0.006 75)", opacity: isPending ? 0.5 : 1 }}
+                style={{ background: "var(--s-2)", opacity: isPending ? 0.5 : 1 }}
               >
-                <X size={14} style={{ color: "oklch(0.42 0.09 68)" }} />
+                <X size={14} style={{ color: "var(--acc-ink)" }} />
               </button>
             </div>
 
@@ -259,8 +259,8 @@ export default function SignDocumentSheet({
                     <Icon size={15} style={{ color: accent }} />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[10px] font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.06em" }}>PROJECT</p>
-                    <p className="text-sm font-semibold truncate" style={{ color: "oklch(0.14 0.008 65)" }}>{target.projectName}</p>
+                    <p className="text-[10px] font-label" style={{ color: "var(--t-5)", letterSpacing: "0.06em" }}>PROJECT</p>
+                    <p className="text-sm font-semibold truncate" style={{ color: "var(--t-1)" }}>{target.projectName}</p>
                   </div>
                 </div>
               )}
@@ -269,15 +269,15 @@ export default function SignDocumentSheet({
               {hasUploadedRef && (
                 <div
                   className="rounded-xl p-3 flex items-center justify-between gap-2"
-                  style={{ background: "oklch(0.985 0.004 80)", border: "1px solid oklch(0.93 0.008 75)" }}
+                  style={{ background: "var(--s-page)", border: "1px solid var(--b-2)" }}
                 >
                   <div className="flex items-center gap-2 min-w-0">
                     <FileText size={14} style={{ color: accent }} />
                     <div className="min-w-0">
-                      <p className="text-xs font-semibold" style={{ color: "oklch(0.20 0.008 65)" }}>
+                      <p className="text-xs font-semibold" style={{ color: "var(--t-2)" }}>
                         Current document
                       </p>
-                      <p className="text-[10px] truncate" style={{ color: "oklch(0.52 0.010 68)" }}>
+                      <p className="text-[10px] truncate" style={{ color: "var(--t-5)" }}>
                         {target.documentRef?.split("/").pop()}
                       </p>
                     </div>
@@ -333,10 +333,10 @@ export default function SignDocumentSheet({
                     <div className="flex items-center gap-2 min-w-0">
                       <FileText size={14} style={{ color: "oklch(0.38 0.09 145)" }} />
                       <div className="min-w-0">
-                        <p className="text-xs font-semibold truncate" style={{ color: "oklch(0.20 0.008 65)" }}>
+                        <p className="text-xs font-semibold truncate" style={{ color: "var(--t-2)" }}>
                           {pickedFile.name}
                         </p>
-                        <p className="text-[10px]" style={{ color: "oklch(0.52 0.010 68)" }}>
+                        <p className="text-[10px]" style={{ color: "var(--t-5)" }}>
                           {(pickedFile.size / 1024).toFixed(0)} KB · ready to upload
                         </p>
                       </div>
@@ -344,9 +344,9 @@ export default function SignDocumentSheet({
                     <button
                       onClick={() => setPickedFile(null)}
                       className="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
-                      style={{ background: "oklch(0.96 0.006 75)" }}
+                      style={{ background: "var(--s-2)" }}
                     >
-                      <X size={11} style={{ color: "oklch(0.52 0.010 68)" }} />
+                      <X size={11} style={{ color: "var(--t-5)" }} />
                     </button>
                   </div>
                 ) : (
@@ -370,24 +370,24 @@ export default function SignDocumentSheet({
                 data-testid="sign-mark-toggle"
                 className="w-full rounded-xl p-3 flex items-center gap-3"
                 style={{
-                  background: markSigned ? "oklch(0.55 0.09 145 / 8%)" : "oklch(0.96 0.006 75)",
-                  border: `1px solid ${markSigned ? "oklch(0.55 0.09 145 / 30%)" : "oklch(0.90 0.010 75)"}`,
+                  background: markSigned ? "oklch(0.55 0.09 145 / 8%)" : "var(--s-2)",
+                  border: `1px solid ${markSigned ? "oklch(0.55 0.09 145 / 30%)" : "var(--b-1)"}`,
                 }}
               >
                 <div
                   className="w-5 h-5 rounded flex items-center justify-center shrink-0"
                   style={{
                     background: markSigned ? "oklch(0.55 0.09 145)" : "oklch(1 0 0)",
-                    border: `1.5px solid ${markSigned ? "oklch(0.55 0.09 145)" : "oklch(0.75 0.008 68)"}`,
+                    border: `1.5px solid ${markSigned ? "oklch(0.55 0.09 145)" : "var(--t-7)"}`,
                   }}
                 >
                   {markSigned && <Check size={12} className="text-white" strokeWidth={3} />}
                 </div>
                 <div className="text-left flex-1">
-                  <p className="text-sm font-semibold" style={{ color: "oklch(0.14 0.008 65)" }}>
+                  <p className="text-sm font-semibold" style={{ color: "var(--t-1)" }}>
                     Mark as signed
                   </p>
-                  <p className="text-[11px]" style={{ color: "oklch(0.52 0.010 68)" }}>
+                  <p className="text-[11px]" style={{ color: "var(--t-5)" }}>
                     {markSigned
                       ? "Status → completed · signed_by + signed_date will be recorded"
                       : "Status → in-progress · just uploading the file for now"}
@@ -437,8 +437,8 @@ export default function SignDocumentSheet({
                 className="rounded-xl p-3 flex items-start gap-2"
                 style={{ background: "oklch(0.62 0.09 68 / 5%)", border: "1px solid oklch(0.62 0.09 68 / 18%)" }}
               >
-                <AlertCircle size={13} className="shrink-0 mt-0.5" style={{ color: "oklch(0.42 0.09 68)" }} />
-                <p className="text-[11px] leading-relaxed" style={{ color: "oklch(0.35 0.008 65)" }}>
+                <AlertCircle size={13} className="shrink-0 mt-0.5" style={{ color: "var(--acc-ink)" }} />
+                <p className="text-[11px] leading-relaxed" style={{ color: "var(--t-3)" }}>
                   Documents are stored privately and viewed via short-lived signed URLs.
                   The OPS tier (admin / PM / site supervisor) can upload and edit; every
                   change is captured in the audit log.
@@ -449,16 +449,16 @@ export default function SignDocumentSheet({
             {/* Footer */}
             <div
               className="px-4 py-3 flex gap-2 shrink-0"
-              style={{ borderTop: "1px solid oklch(0.93 0.008 75)" }}
+              style={{ borderTop: "1px solid var(--b-2)" }}
             >
               <button
                 onClick={onClose}
                 disabled={isPending}
                 className="flex-1 py-3 rounded-xl text-sm font-label"
                 style={{
-                  background: "oklch(0.96 0.006 75)",
-                  color: "oklch(0.35 0.008 65)",
-                  border: "1px solid oklch(0.90 0.010 75)",
+                  background: "var(--s-2)",
+                  color: "var(--t-3)",
+                  border: "1px solid var(--b-1)",
                   letterSpacing: "0.04em",
                   opacity: isPending ? 0.5 : 1,
                 }}
@@ -521,22 +521,22 @@ function FieldGroup({
     <div>
       <label
         className="block text-[10px] font-label mb-1.5"
-        style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.06em", fontWeight: 700 }}
+        style={{ color: "var(--t-5)", letterSpacing: "0.06em", fontWeight: 700 }}
       >
         {label}
       </label>
       {children}
       {hint && (
-        <p className="text-[10px] mt-1" style={{ color: "oklch(0.52 0.010 68)" }}>{hint}</p>
+        <p className="text-[10px] mt-1" style={{ color: "var(--t-5)" }}>{hint}</p>
       )}
     </div>
   );
 }
 
 const inputStyle: React.CSSProperties = {
-  background: "oklch(0.97 0.004 80)",
-  border: "1px solid oklch(0.90 0.010 75)",
-  color: "oklch(0.20 0.008 65)",
+  background: "var(--s-3)",
+  border: "1px solid var(--b-1)",
+  color: "var(--t-2)",
   borderRadius: "0.75rem",
   padding: "0.7rem 0.9rem",
   fontSize: "0.875rem",

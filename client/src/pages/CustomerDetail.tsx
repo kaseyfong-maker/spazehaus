@@ -32,7 +32,7 @@ const PIPELINE: { key: InquiryStage; label: string }[] = [
 ];
 
 const contactIconConfig: Record<ContactLogEntry["type"], { icon: typeof Phone; color: string; bg: string }> = {
-  call:        { icon: Phone,         color: "oklch(0.42 0.09 68)",  bg: "oklch(0.62 0.09 68 / 12%)" },
+  call:        { icon: Phone,         color: "var(--acc-ink)",  bg: "oklch(0.62 0.09 68 / 12%)" },
   email:       { icon: Mail,          color: "oklch(0.38 0.09 240)", bg: "oklch(0.55 0.09 240 / 12%)" },
   whatsapp:    { icon: MessageSquare, color: "oklch(0.38 0.09 145)", bg: "oklch(0.55 0.09 145 / 12%)" },
   meet:        { icon: Briefcase,     color: "oklch(0.45 0.10 55)",  bg: "oklch(0.65 0.10 55 / 12%)" },
@@ -48,17 +48,17 @@ export default function CustomerDetail() {
 
   if (isLoading) {
     return (
-      <div className="mobile-container" style={{ background: "oklch(0.985 0.004 80)" }}>
+      <div className="mobile-container" style={{ background: "var(--s-page)" }}>
         <AppHeader title="Loading…" subtitle="—" showBack compact />
       </div>
     );
   }
   if (!inq) {
     return (
-      <div className="mobile-container" style={{ background: "oklch(0.985 0.004 80)" }}>
+      <div className="mobile-container" style={{ background: "var(--s-page)" }}>
         <AppHeader title="Customer not found" subtitle="—" showBack compact />
         <div className="px-4 py-8 text-center">
-          <p className="text-sm" style={{ color: "oklch(0.52 0.010 68)" }}>
+          <p className="text-sm" style={{ color: "var(--t-5)" }}>
             This inquiry could not be located.
           </p>
         </div>
@@ -80,7 +80,7 @@ export default function CustomerDetail() {
   const isRejected = inq.stage === "rejected";
 
   return (
-    <div className="mobile-container" style={{ background: "oklch(0.985 0.004 80)" }}>
+    <div className="mobile-container" style={{ background: "var(--s-page)" }}>
       <AppHeader title={inq.client} subtitle={inq.id} bgImage={HERO_BG} showBack compact />
 
       <div className="pb-24">
@@ -88,7 +88,7 @@ export default function CustomerDetail() {
         <div className="px-4 pt-4 lg:px-8 lg:pt-7">
           <div
             className="rounded-2xl p-4 flex items-center gap-3"
-            style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 12px oklch(0 0 0 / 0.04)" }}
+            style={{ background: "var(--s-card)", border: "1px solid var(--b-1)", boxShadow: "0 1px 12px oklch(0 0 0 / 0.04)" }}
           >
             <div
               className="w-14 h-14 rounded-full flex items-center justify-center text-base font-bold shrink-0"
@@ -101,7 +101,7 @@ export default function CustomerDetail() {
               {initials || "—"}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="font-display text-base font-semibold" style={{ color: "oklch(0.14 0.008 65)" }}>
+              <p className="font-display text-base font-semibold" style={{ color: "var(--t-1)" }}>
                 {inq.client}
               </p>
               <div className="flex items-center gap-1.5 mt-1 flex-wrap">
@@ -119,7 +119,7 @@ export default function CustomerDetail() {
                     {inq.tier.toUpperCase()}
                   </span>
                 )}
-                <span className="text-[10px]" style={{ color: "oklch(0.52 0.010 68)" }}>
+                <span className="text-[10px]" style={{ color: "var(--t-5)" }}>
                   · via {inq.source}
                 </span>
               </div>
@@ -156,11 +156,11 @@ export default function CustomerDetail() {
                   <p className="text-sm font-semibold" style={{ color: "oklch(0.50 0.12 25)" }}>
                     Inquiry Rejected
                   </p>
-                  <p className="text-xs mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>
+                  <p className="text-xs mt-0.5" style={{ color: "var(--t-5)" }}>
                     {inq.rejectionReason || "—"}
                   </p>
                   {inq.rejectedDate && (
-                    <p className="text-[10px] mt-1" style={{ color: "oklch(0.55 0.008 65)" }}>
+                    <p className="text-[10px] mt-1" style={{ color: "var(--t-5)" }}>
                       Closed on {inq.rejectedDate}
                     </p>
                   )}
@@ -197,11 +197,11 @@ export default function CustomerDetail() {
                           <div
                             className="w-9 h-9 rounded-full flex items-center justify-center shrink-0"
                             style={{
-                              background: "oklch(0.96 0.006 75)",
-                              border: "1.5px solid oklch(0.85 0.008 75)",
+                              background: "var(--s-2)",
+                              border: "1.5px solid var(--b-strong)",
                             }}
                           >
-                            <span className="text-[10px] font-display font-bold" style={{ color: "oklch(0.65 0.008 68)" }}>
+                            <span className="text-[10px] font-display font-bold" style={{ color: "var(--t-6)" }}>
                               {i + 1}
                             </span>
                           </div>
@@ -209,7 +209,7 @@ export default function CustomerDetail() {
                         <p
                           className="text-[9px] font-label text-center leading-tight"
                           style={{
-                            color: isCurrent || isDone ? stepSc.color : "oklch(0.55 0.008 65)",
+                            color: isCurrent || isDone ? stepSc.color : "var(--t-5)",
                             letterSpacing: "0.04em",
                             fontWeight: isCurrent ? 700 : 500,
                           }}
@@ -221,7 +221,7 @@ export default function CustomerDetail() {
                         <div
                           className="h-0.5 flex-1"
                           style={{
-                            background: isDone ? "oklch(0.55 0.09 145 / 50%)" : "oklch(0.92 0.008 75)",
+                            background: isDone ? "oklch(0.55 0.09 145 / 50%)" : "var(--b-2)",
                             marginBottom: 18,
                           }}
                         />
@@ -235,9 +235,9 @@ export default function CustomerDetail() {
             {inq.awardedDate && (
               <div
                 className="mt-3 pt-3 flex items-center justify-between"
-                style={{ borderTop: "1px solid oklch(0.93 0.008 75)" }}
+                style={{ borderTop: "1px solid var(--b-2)" }}
               >
-                <span className="text-[10px] font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.06em" }}>
+                <span className="text-[10px] font-label" style={{ color: "var(--t-5)", letterSpacing: "0.06em" }}>
                   AWARDED ON
                 </span>
                 <span className="text-xs font-semibold" style={{ color: "oklch(0.38 0.09 145)" }}>
@@ -266,10 +266,10 @@ export default function CustomerDetail() {
                 <p className="text-[10px] font-label" style={{ color: "oklch(0.38 0.09 145)", letterSpacing: "0.06em", fontWeight: 700 }}>
                   AWARDED PROJECT
                 </p>
-                <p className="text-sm font-semibold" style={{ color: "oklch(0.14 0.008 65)" }}>
+                <p className="text-sm font-semibold" style={{ color: "var(--t-1)" }}>
                   {inq.awardedProjectId}
                 </p>
-                <p className="text-[10px] mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>
+                <p className="text-[10px] mt-0.5" style={{ color: "var(--t-5)" }}>
                   Tap to open project lifecycle
                 </p>
               </div>
@@ -295,7 +295,7 @@ export default function CustomerDetail() {
                         {i < inq.contactLog!.length - 1 && (
                           <div
                             className="w-0.5 flex-1 mt-1"
-                            style={{ background: "oklch(0.92 0.008 75)", minHeight: 16 }}
+                            style={{ background: "var(--b-2)", minHeight: 16 }}
                           />
                         )}
                       </div>
@@ -307,11 +307,11 @@ export default function CustomerDetail() {
                           >
                             {entry.type.toUpperCase().replace("-", " ")}
                           </span>
-                          <span className="text-[10px]" style={{ color: "oklch(0.55 0.008 65)" }}>
+                          <span className="text-[10px]" style={{ color: "var(--t-5)" }}>
                             {entry.date} · {entry.by}
                           </span>
                         </div>
-                        <p className="text-[12px] leading-snug" style={{ color: "oklch(0.30 0.008 65)" }}>
+                        <p className="text-[12px] leading-snug" style={{ color: "var(--t-3)" }}>
                           {entry.note}
                         </p>
                       </div>
@@ -325,7 +325,7 @@ export default function CustomerDetail() {
           {/* Notes */}
           {inq.notes && (
             <SectionCard title="NOTES">
-              <p className="text-sm leading-relaxed" style={{ color: "oklch(0.30 0.008 65)" }}>
+              <p className="text-sm leading-relaxed" style={{ color: "var(--t-3)" }}>
                 {inq.notes}
               </p>
             </SectionCard>
@@ -343,27 +343,27 @@ export default function CustomerDetail() {
             {assignedStaff && (
               <div
                 className="flex items-center gap-3 py-2.5"
-                style={{ borderTop: "1px solid oklch(0.95 0.008 75)" }}
+                style={{ borderTop: "1px solid var(--s-2)" }}
               >
                 <div
                   className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
                   style={{
                     background: "linear-gradient(135deg, oklch(0.62 0.09 68 / 20%), oklch(0.52 0.08 65 / 20%))",
-                    color: "oklch(0.42 0.09 68)",
+                    color: "var(--acc-ink)",
                     border: "1.5px solid oklch(0.62 0.09 68 / 25%)",
                   }}
                 >
                   {assignedStaff.avatar_code}
                 </div>
                 <div className="flex-1">
-                  <p className="text-[10px] font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.06em" }}>
+                  <p className="text-[10px] font-label" style={{ color: "var(--t-5)", letterSpacing: "0.06em" }}>
                     SALES OWNER
                   </p>
-                  <p className="text-sm font-semibold" style={{ color: "oklch(0.14 0.008 65)" }}>
+                  <p className="text-sm font-semibold" style={{ color: "var(--t-1)" }}>
                     {assignedStaff.name}
                   </p>
                 </div>
-                <span className="text-[10px]" style={{ color: "oklch(0.52 0.010 68)" }}>
+                <span className="text-[10px]" style={{ color: "var(--t-5)" }}>
                   {assignedStaff.job_title}
                 </span>
               </div>
@@ -396,7 +396,7 @@ export default function CustomerDetail() {
               data-testid="open-convert-dialog"
               className="w-full rounded-2xl py-3.5 flex items-center justify-center gap-2"
               style={{
-                background: "linear-gradient(135deg, oklch(0.62 0.09 68), oklch(0.52 0.08 65))",
+                background: "linear-gradient(135deg, var(--acc-strong), var(--acc-2))",
                 color: "white",
                 boxShadow: "0 4px 16px oklch(0.62 0.09 68 / 0.30)",
               }}
@@ -436,11 +436,11 @@ function SectionCard({ title, children }: { title: string; children: React.React
   return (
     <div
       className="rounded-2xl p-4"
-      style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
+      style={{ background: "var(--s-card)", border: "1px solid var(--b-1)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
     >
       <p
         className="font-label text-xs mb-3"
-        style={{ color: "oklch(0.20 0.008 65)", letterSpacing: "0.10em", fontWeight: 700 }}
+        style={{ color: "var(--t-2)", letterSpacing: "0.10em", fontWeight: 700 }}
       >
         {title}
       </p>
@@ -463,13 +463,13 @@ function DetailRow({
   return (
     <div
       className="flex items-center gap-3 py-2"
-      style={{ borderBottom: "1px solid oklch(0.95 0.008 75)" }}
+      style={{ borderBottom: "1px solid var(--s-2)" }}
     >
-      <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: "oklch(0.985 0.004 80)" }}>
-        <Icon size={12} style={{ color: "oklch(0.55 0.008 65)" }} />
+      <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: "var(--s-page)" }}>
+        <Icon size={12} style={{ color: "var(--t-5)" }} />
       </div>
-      <span className="text-xs flex-1" style={{ color: "oklch(0.52 0.010 68)" }}>{label}</span>
-      <span className="text-xs font-medium text-right" style={{ color: valueColor || "oklch(0.20 0.008 65)" }}>
+      <span className="text-xs flex-1" style={{ color: "var(--t-5)" }}>{label}</span>
+      <span className="text-xs font-medium text-right" style={{ color: valueColor || "var(--t-2)" }}>
         {value}
       </span>
     </div>
@@ -491,19 +491,19 @@ function ContactRow({
     <button
       onClick={onClick}
       className="w-full flex items-center gap-3 py-2 text-left"
-      style={{ borderBottom: "1px solid oklch(0.95 0.008 75)" }}
+      style={{ borderBottom: "1px solid var(--s-2)" }}
     >
       <div
         className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
         style={{ background: "oklch(0.62 0.09 68 / 10%)" }}
       >
-        <Icon size={14} style={{ color: "oklch(0.42 0.09 68)" }} />
+        <Icon size={14} style={{ color: "var(--acc-ink)" }} />
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-[10px] font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.06em" }}>
+        <p className="text-[10px] font-label" style={{ color: "var(--t-5)", letterSpacing: "0.06em" }}>
           {label.toUpperCase()}
         </p>
-        <p className="text-sm font-medium truncate" style={{ color: "oklch(0.20 0.008 65)" }}>
+        <p className="text-sm font-medium truncate" style={{ color: "var(--t-2)" }}>
           {value}
         </p>
       </div>
@@ -525,10 +525,10 @@ function ActionButton({
       whileTap={{ scale: 0.96 }}
       onClick={onClick}
       className="rounded-2xl py-3 flex items-center justify-center gap-2"
-      style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.62 0.09 68 / 25%)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
+      style={{ background: "var(--s-card)", border: "1px solid oklch(0.62 0.09 68 / 25%)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
     >
-      <Icon size={14} style={{ color: "oklch(0.42 0.09 68)" }} />
-      <span className="text-sm font-label" style={{ color: "oklch(0.42 0.09 68)", letterSpacing: "0.04em", fontWeight: 600 }}>
+      <Icon size={14} style={{ color: "var(--acc-ink)" }} />
+      <span className="text-sm font-label" style={{ color: "var(--acc-ink)", letterSpacing: "0.04em", fontWeight: 600 }}>
         {label}
       </span>
     </motion.button>

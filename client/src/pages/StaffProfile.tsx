@@ -53,7 +53,7 @@ export default function StaffProfile() {
   if (isLoading) {
     return (
       <div className="mobile-container flex items-center justify-center min-h-screen">
-        <Loader2 size={20} className="animate-spin" style={{ color: "oklch(0.52 0.010 68)" }} />
+        <Loader2 size={20} className="animate-spin" style={{ color: "var(--t-5)" }} />
       </div>
     );
   }
@@ -61,11 +61,11 @@ export default function StaffProfile() {
   if (isError) {
     return (
       <div className="mobile-container flex flex-col items-center justify-center min-h-screen gap-3 px-6 text-center">
-        <p style={{ color: "oklch(0.52 0.010 68)" }}>Couldn't load this staff member. Check your connection.</p>
+        <p style={{ color: "var(--t-5)" }}>Couldn't load this staff member. Check your connection.</p>
         <button
           onClick={() => refetch()}
           className="px-4 py-2 rounded-xl text-sm font-label"
-          style={{ background: "oklch(0.72 0.09 68)", color: "oklch(1 0 0)", letterSpacing: "0.04em" }}
+          style={{ background: "var(--acc-bright)", color: "oklch(1 0 0)", letterSpacing: "0.04em" }}
         >
           Retry
         </button>
@@ -75,7 +75,7 @@ export default function StaffProfile() {
   if (!staff) {
     return (
       <div className="mobile-container flex items-center justify-center min-h-screen">
-        <p style={{ color: "oklch(0.52 0.010 68)" }}>Staff member not found</p>
+        <p style={{ color: "var(--t-5)" }}>Staff member not found</p>
       </div>
     );
   }
@@ -101,7 +101,7 @@ export default function StaffProfile() {
           background: "linear-gradient(135deg, oklch(0.23 0.018 65) 0%, oklch(0.12 0.006 285) 100%)",
         }}
       >
-        <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg, transparent, oklch(0.72 0.09 68), transparent)" }} />
+        <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg, transparent, var(--acc-bright), transparent)" }} />
         <div className="flex items-start justify-between mb-4">
           <motion.button
             whileTap={{ scale: 0.9 }}
@@ -109,14 +109,14 @@ export default function StaffProfile() {
             className="w-9 h-9 flex items-center justify-center rounded-full"
             style={{ background: "oklch(1 0 0 / 15%)", border: "1px solid oklch(1 0 0 / 20%)" }}
           >
-            <span style={{ color: "oklch(0.78 0.09 68)", fontSize: "18px" }}>‹</span>
+            <span style={{ color: "var(--acc-bright)", fontSize: "18px" }}>‹</span>
           </motion.button>
           {canEdit && (
             <motion.button
               whileTap={{ scale: 0.92 }}
               onClick={() => setEditOpen(true)}
               className="flex items-center gap-1.5 h-9 px-3.5 rounded-full text-xs font-label"
-              style={{ background: "oklch(1 0 0 / 15%)", border: "1px solid oklch(1 0 0 / 20%)", color: "oklch(0.82 0.09 68)", letterSpacing: "0.04em" }}
+              style={{ background: "oklch(1 0 0 / 15%)", border: "1px solid oklch(1 0 0 / 20%)", color: "var(--acc-bright)", letterSpacing: "0.04em" }}
             >
               <Pencil size={13} />
               Edit
@@ -129,7 +129,7 @@ export default function StaffProfile() {
             className="w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-bold shrink-0"
             style={{
               background: "linear-gradient(135deg, oklch(0.62 0.09 68 / 35%), oklch(0.55 0.08 65 / 28%))",
-              color: "oklch(0.82 0.09 68)",
+              color: "var(--acc-bright)",
               border: "2px solid oklch(0.72 0.09 68 / 35%)",
             }}
           >
@@ -137,11 +137,11 @@ export default function StaffProfile() {
           </div>
           <div>
             <h2 className="font-display text-2xl font-semibold text-white">{staff.name}</h2>
-            <p className="text-sm mt-0.5" style={{ color: "oklch(0.78 0.09 68)" }}>{staff.job_title}</p>
+            <p className="text-sm mt-0.5" style={{ color: "var(--acc-bright)" }}>{staff.job_title}</p>
             <div className="flex items-center gap-2 mt-2">
               <span className="status-pill" style={{ background: sc.bg, color: sc.color }}>{sc.label}</span>
               {currentRating !== "—" && (
-                <span className="text-xs font-label px-2 py-0.5 rounded-full" style={{ background: "oklch(0.72 0.09 68 / 18%)", color: "oklch(0.82 0.09 68)" }}>
+                <span className="text-xs font-label px-2 py-0.5 rounded-full" style={{ background: "oklch(0.72 0.09 68 / 18%)", color: "var(--acc-bright)" }}>
                   KPI: {currentRating}
                 </span>
               )}
@@ -156,23 +156,23 @@ export default function StaffProfile() {
             { label: "Medical Leave", value: staff.leave_balance_medical, unit: "days" },
             { label: "Service", value: serviceYears(staff.join_date), unit: "years" },
           ].map((s) => (
-            <div key={s.label} className="rounded-xl p-3 text-center" style={{ background: "oklch(0.93 0.008 75)" }}>
-              <p className="text-lg font-display font-semibold text-neutral-900">{s.value}</p>
-              <p className="text-[9px] font-label mt-0.5" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.04em" }}>{s.label}</p>
+            <div key={s.label} className="rounded-xl p-3 text-center" style={{ background: "var(--b-2)" }}>
+              <p className="text-lg font-display font-semibold text-[color:var(--t-1)]">{s.value}</p>
+              <p className="text-[9px] font-label mt-0.5" style={{ color: "var(--t-5)", letterSpacing: "0.04em" }}>{s.label}</p>
             </div>
           ))}
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex" style={{ borderBottom: "1px solid oklch(0.90 0.010 75)" }}>
+      <div className="flex" style={{ borderBottom: "1px solid var(--b-1)" }}>
         {tabs.map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
             className="flex-1 py-3 text-xs font-label relative"
             style={{
-              color: activeTab === tab ? "oklch(0.42 0.09 68)" : "oklch(0.45 0.008 65)",
+              color: activeTab === tab ? "var(--acc-ink)" : "var(--t-4)",
               letterSpacing: "0.04em",
               fontWeight: activeTab === tab ? 600 : 400,
             }}
@@ -182,7 +182,7 @@ export default function StaffProfile() {
               <motion.div
                 layoutId="staffTabIndicator"
                 className="absolute bottom-0 left-1/4 right-1/4 h-0.5 rounded-full"
-                style={{ background: "oklch(0.72 0.09 68)" }}
+                style={{ background: "var(--acc-bright)" }}
               />
             )}
           </button>
@@ -193,31 +193,31 @@ export default function StaffProfile() {
       <div className="px-4 py-4 pb-24">
         {activeTab === "Profile" && (
           <div className="space-y-4">
-            <div className="rounded-2xl p-4 space-y-3" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
-              <h4 className="font-display text-base font-semibold text-neutral-900">Personal Information</h4>
+            <div className="rounded-2xl p-4 space-y-3" style={{ background: "var(--s-card)", border: "1px solid var(--b-1)" }}>
+              <h4 className="font-display text-base font-semibold text-[color:var(--t-1)]">Personal Information</h4>
               {[
                 { label: "Staff ID", value: staff.id, icon: Award },
                 { label: "Role", value: staff.role, icon: null },
                 { label: "Department", value: staff.dept, icon: null },
                 { label: "Join Date", value: formatJoinDate(staff.join_date), icon: Calendar },
               ].map((item) => (
-                <div key={item.label} className="flex items-center justify-between py-1" style={{ borderBottom: "1px solid oklch(0.93 0.008 75)" }}>
-                  <span className="text-xs" style={{ color: "oklch(0.52 0.010 68)" }}>{item.label}</span>
-                  <span className="text-xs font-medium" style={{ color: "oklch(0.20 0.008 65)" }}>{item.value}</span>
+                <div key={item.label} className="flex items-center justify-between py-1" style={{ borderBottom: "1px solid var(--b-2)" }}>
+                  <span className="text-xs" style={{ color: "var(--t-5)" }}>{item.label}</span>
+                  <span className="text-xs font-medium" style={{ color: "var(--t-2)" }}>{item.value}</span>
                 </div>
               ))}
             </div>
 
-            <div className="rounded-2xl p-4 space-y-3" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
-              <h4 className="font-display text-base font-semibold text-neutral-900">Contact</h4>
+            <div className="rounded-2xl p-4 space-y-3" style={{ background: "var(--s-card)", border: "1px solid var(--b-1)" }}>
+              <h4 className="font-display text-base font-semibold text-[color:var(--t-1)]">Contact</h4>
               <motion.button
                 whileTap={{ scale: 0.97 }}
                 className="w-full flex items-center gap-3 py-2"
               >
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "oklch(0.62 0.09 68 / 12%)" }}>
-                  <Phone size={14} style={{ color: "oklch(0.52 0.09 68)" }} />
+                  <Phone size={14} style={{ color: "var(--acc)" }} />
                 </div>
-                <span className="text-sm" style={{ color: "oklch(0.25 0.008 65)" }}>{staff.phone ?? "—"}</span>
+                <span className="text-sm" style={{ color: "var(--t-2)" }}>{staff.phone ?? "—"}</span>
               </motion.button>
               <motion.button
                 whileTap={{ scale: 0.97 }}
@@ -226,13 +226,13 @@ export default function StaffProfile() {
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "oklch(0.70 0.09 240 / 15%)" }}>
                   <Mail size={14} style={{ color: "oklch(0.70 0.09 240)" }} />
                 </div>
-                <span className="text-sm" style={{ color: "oklch(0.25 0.008 65)" }}>{staff.email}</span>
+                <span className="text-sm" style={{ color: "var(--t-2)" }}>{staff.email}</span>
               </motion.button>
               <div className="w-full flex items-center gap-3 py-2">
                 <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "oklch(0.55 0.09 145 / 15%)" }}>
                   <MessageCircle size={14} style={{ color: "oklch(0.45 0.09 145)" }} />
                 </div>
-                <span className="text-sm" style={{ color: "oklch(0.25 0.008 65)" }}>
+                <span className="text-sm" style={{ color: "var(--t-2)" }}>
                   WhatsApp reminders {staff.whatsapp_opt_in ? "on" : "off"}
                 </span>
               </div>
@@ -240,10 +240,10 @@ export default function StaffProfile() {
 
             {/* Admin: remove / reactivate (soft delete via status) */}
             {canEditAll && (
-              <div className="rounded-2xl p-4 mt-3" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
+              <div className="rounded-2xl p-4 mt-3" style={{ background: "var(--s-card)", border: "1px solid var(--b-1)" }}>
                 {staff.status === "inactive" ? (
                   <>
-                    <p className="text-[11px] mb-2.5" style={{ color: "oklch(0.52 0.010 68)" }}>
+                    <p className="text-[11px] mb-2.5" style={{ color: "var(--t-5)" }}>
                       This staff member is removed from the active roster and has no access. Reactivate to restore access.
                     </p>
                     <button
@@ -256,12 +256,12 @@ export default function StaffProfile() {
                     </button>
                   </>
                 ) : isOwnRow ? (
-                  <p className="text-[11px]" style={{ color: "oklch(0.52 0.010 68)" }}>
+                  <p className="text-[11px]" style={{ color: "var(--t-5)" }}>
                     You can't remove your own account.
                   </p>
                 ) : (
                   <>
-                    <p className="text-[11px] mb-2.5" style={{ color: "oklch(0.52 0.010 68)" }}>
+                    <p className="text-[11px] mb-2.5" style={{ color: "var(--t-5)" }}>
                       Removing revokes access immediately and takes them off the active roster. Their KPI, leave, and audit history are kept, and they can be reactivated later.
                     </p>
                     <button
@@ -282,18 +282,18 @@ export default function StaffProfile() {
         {activeTab === "Leave" && (
           <div className="space-y-3">
             {/* Leave balance */}
-            <div className="rounded-2xl p-4" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
-              <h4 className="font-display text-base font-semibold text-neutral-900 mb-3">Leave Balance 2026</h4>
+            <div className="rounded-2xl p-4" style={{ background: "var(--s-card)", border: "1px solid var(--b-1)" }}>
+              <h4 className="font-display text-base font-semibold text-[color:var(--t-1)] mb-3">Leave Balance 2026</h4>
               {[
                 { type: "Annual Leave", remaining: staff.leave_balance_annual, total: LEAVE_ENTITLEMENT.annual, color: "oklch(0.70 0.09 240)" },
                 { type: "Medical Leave", remaining: staff.leave_balance_medical, total: LEAVE_ENTITLEMENT.medical, color: "oklch(0.68 0.12 25)" },
               ].map((lb) => (
                 <div key={lb.type} className="mb-3">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs" style={{ color: "oklch(0.52 0.010 68)" }}>{lb.type}</span>
+                    <span className="text-xs" style={{ color: "var(--t-5)" }}>{lb.type}</span>
                     <span className="text-xs font-semibold" style={{ color: lb.color }}>{lb.remaining}/{lb.total} days left</span>
                   </div>
-                  <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "oklch(0.90 0.010 75)" }}>
+                  <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--b-1)" }}>
                     <div
                       className="h-full rounded-full"
                       style={{ width: `${Math.max(0, Math.min(100, (lb.remaining / lb.total) * 100))}%`, background: lb.color }}
@@ -305,28 +305,28 @@ export default function StaffProfile() {
 
             {/* Leave history */}
             <div>
-              <p className="text-xs font-label mb-2" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.06em" }}>LEAVE HISTORY</p>
+              <p className="text-xs font-label mb-2" style={{ color: "var(--t-5)", letterSpacing: "0.06em" }}>LEAVE HISTORY</p>
               {staffLeave.length > 0 ? staffLeave.map((leave) => {
                 const lsc = statusConfig[leave.status as keyof typeof statusConfig] ?? DEFAULT_STATUS_CONFIG;
                 return (
                   <div
                     key={leave.id}
                     className="rounded-xl p-3 mb-2"
-                    style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}
+                    style={{ background: "var(--s-card)", border: "1px solid var(--b-1)" }}
                   >
                     <div className="flex items-start justify-between">
                       <div>
-                        <p className="text-sm font-semibold text-neutral-900">{leave.leave_type}</p>
-                        <p className="text-xs mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>{leave.startDateLabel} — {leave.endDateLabel} ({leave.days}d)</p>
-                        <p className="text-xs mt-1" style={{ color: "oklch(0.52 0.010 68)" }}>{leave.reason}</p>
+                        <p className="text-sm font-semibold text-[color:var(--t-1)]">{leave.leave_type}</p>
+                        <p className="text-xs mt-0.5" style={{ color: "var(--t-5)" }}>{leave.startDateLabel} — {leave.endDateLabel} ({leave.days}d)</p>
+                        <p className="text-xs mt-1" style={{ color: "var(--t-5)" }}>{leave.reason}</p>
                       </div>
                       <span className="status-pill" style={{ background: lsc.bg, color: lsc.color }}>{lsc.label}</span>
                     </div>
                   </div>
                 );
               }) : (
-                <div className="rounded-xl p-6 text-center" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
-                  <p className="text-sm" style={{ color: "oklch(0.52 0.010 68)" }}>No leave records found</p>
+                <div className="rounded-xl p-6 text-center" style={{ background: "var(--s-card)", border: "1px solid var(--b-1)" }}>
+                  <p className="text-sm" style={{ color: "var(--t-5)" }}>No leave records found</p>
                 </div>
               )}
             </div>
@@ -340,17 +340,17 @@ export default function StaffProfile() {
               className="rounded-2xl p-5 text-center"
               style={{ background: "linear-gradient(135deg, oklch(0.62 0.09 68 / 12%), oklch(0.55 0.08 65 / 10%))", border: "1px solid oklch(0.62 0.09 68 / 15%)" }}
             >
-              <p className="text-xs font-label mb-1" style={{ color: "oklch(0.52 0.09 68)", letterSpacing: "0.08em" }}>CURRENT RATING</p>
-              <p className="text-6xl font-display font-semibold" style={{ color: "oklch(0.52 0.09 68)" }}>{currentRating}</p>
-              <p className="text-sm mt-1" style={{ color: "oklch(0.52 0.010 68)" }}>
+              <p className="text-xs font-label mb-1" style={{ color: "var(--acc)", letterSpacing: "0.08em" }}>CURRENT RATING</p>
+              <p className="text-6xl font-display font-semibold" style={{ color: "var(--acc)" }}>{currentRating}</p>
+              <p className="text-sm mt-1" style={{ color: "var(--t-5)" }}>
                 {currentScore !== undefined ? `Score: ${currentScore}/100` : "Not yet rated"}
               </p>
             </div>
 
             {/* KPI breakdown — most recent month's parts */}
             {latestKpi && (
-              <div className="rounded-2xl p-4" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
-                <h4 className="font-display text-base font-semibold text-neutral-900 mb-3">
+              <div className="rounded-2xl p-4" style={{ background: "var(--s-card)", border: "1px solid var(--b-1)" }}>
+                <h4 className="font-display text-base font-semibold text-[color:var(--t-1)] mb-3">
                   Score Breakdown — {MONTHS_SHORT[latestKpi.month - 1]} {latestKpi.year}
                 </h4>
                 {[
@@ -360,13 +360,13 @@ export default function StaffProfile() {
                 ].map((part) => (
                   <div key={part.name} className="mb-3">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs" style={{ color: "oklch(0.52 0.010 68)" }}>{part.name}</span>
-                      <span className="text-xs font-semibold" style={{ color: "oklch(0.52 0.09 68)" }}>{part.score}/{part.max}</span>
+                      <span className="text-xs" style={{ color: "var(--t-5)" }}>{part.name}</span>
+                      <span className="text-xs font-semibold" style={{ color: "var(--acc)" }}>{part.score}/{part.max}</span>
                     </div>
-                    <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "oklch(0.90 0.010 75)" }}>
+                    <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--b-1)" }}>
                       <div
                         className="h-full rounded-full"
-                        style={{ width: `${(part.score / part.max) * 100}%`, background: "linear-gradient(90deg, oklch(0.72 0.09 68), oklch(0.82 0.07 68))" }}
+                        style={{ width: `${(part.score / part.max) * 100}%`, background: "linear-gradient(90deg, var(--acc-bright), oklch(0.82 0.07 68))" }}
                       />
                     </div>
                   </div>
@@ -375,8 +375,8 @@ export default function StaffProfile() {
             )}
 
             {/* Monthly grid */}
-            <div className="rounded-2xl p-4" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
-              <h4 className="font-display text-base font-semibold text-neutral-900 mb-3">Monthly Scores {new Date().getFullYear()}</h4>
+            <div className="rounded-2xl p-4" style={{ background: "var(--s-card)", border: "1px solid var(--b-1)" }}>
+              <h4 className="font-display text-base font-semibold text-[color:var(--t-1)] mb-3">Monthly Scores {new Date().getFullYear()}</h4>
               <div className="grid grid-cols-6 gap-2">
                 {MONTHS_SHORT.map((month, i) => {
                   const rec = kpiRecords.find((k) => k.year === new Date().getFullYear() && k.month === i + 1);
@@ -386,12 +386,12 @@ export default function StaffProfile() {
                       key={month}
                       className="rounded-lg p-2 text-center"
                       style={{
-                        background: rating === null ? "oklch(0.96 0.006 75)" : rating === "A" ? "oklch(0.62 0.09 68 / 15%)" : rating === "B" ? "oklch(0.70 0.09 240 / 20%)" : "oklch(0.68 0.12 25 / 20%)",
-                        border: rating === null ? "1px solid oklch(0.93 0.008 75)" : "none",
+                        background: rating === null ? "var(--s-2)" : rating === "A" ? "oklch(0.62 0.09 68 / 15%)" : rating === "B" ? "oklch(0.70 0.09 240 / 20%)" : "oklch(0.68 0.12 25 / 20%)",
+                        border: rating === null ? "1px solid var(--b-2)" : "none",
                       }}
                     >
-                      <p className="text-[9px] font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.04em" }}>{month}</p>
-                      <p className="text-sm font-semibold mt-0.5" style={{ color: rating === null ? "oklch(0.52 0.010 68)" : rating === "A" ? "oklch(0.72 0.09 68)" : rating === "B" ? "oklch(0.70 0.09 240)" : "oklch(0.68 0.12 25)" }}>
+                      <p className="text-[9px] font-label" style={{ color: "var(--t-5)", letterSpacing: "0.04em" }}>{month}</p>
+                      <p className="text-sm font-semibold mt-0.5" style={{ color: rating === null ? "var(--t-5)" : rating === "A" ? "var(--acc-bright)" : rating === "B" ? "oklch(0.70 0.09 240)" : "oklch(0.68 0.12 25)" }}>
                         {rating ?? "—"}
                       </p>
                     </div>

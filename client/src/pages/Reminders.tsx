@@ -109,7 +109,7 @@ export default function Reminders() {
   }
 
   return (
-    <div className="mobile-container" style={{ background: "oklch(0.985 0.004 80)" }}>
+    <div className="mobile-container" style={{ background: "var(--s-page)" }}>
       <AppHeader title="Reminders" subtitle="DAILY · WEEKLY SOP" bgImage={HERO_BG} showBack showNotification />
 
       <div className="px-4 py-4 space-y-5 pb-24 lg:px-8 lg:py-7 lg:space-y-6">
@@ -120,7 +120,7 @@ export default function Reminders() {
             label="Today"
             primary={`${summary.todayCompleted}/${summary.todayCompleted + summary.todayPending}`}
             secondary={summary.todayPending > 0 ? `${summary.todayPending} pending upload` : "All caught up"}
-            tint="oklch(0.42 0.09 68)"
+            tint="var(--acc-ink)"
             tintBg="oklch(0.62 0.09 68 / 10%)"
           />
           <KpiCard
@@ -158,7 +158,7 @@ export default function Reminders() {
           ) : (
             <div className="space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-3 lg:items-start">
               {todayItems.map((r, i) => (
-                <div key={r.id} className="rounded-2xl overflow-hidden" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}>
+                <div key={r.id} className="rounded-2xl overflow-hidden" style={{ background: "var(--s-card)", border: "1px solid var(--b-1)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}>
                   <ReminderItem
                     reminder={r}
                     staff={staff}
@@ -192,7 +192,7 @@ export default function Reminders() {
             />
             <div className="space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-3 lg:items-start">
               {overdueItems.map((r, i) => (
-                <div key={r.id} className="rounded-2xl overflow-hidden" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.60 0.12 25 / 30%)", boxShadow: "0 1px 12px oklch(0.60 0.12 25 / 8%)" }}>
+                <div key={r.id} className="rounded-2xl overflow-hidden" style={{ background: "var(--s-card)", border: "1px solid oklch(0.60 0.12 25 / 30%)", boxShadow: "0 1px 12px oklch(0.60 0.12 25 / 8%)" }}>
                   <ReminderItem
                     reminder={r}
                     staff={staff}
@@ -220,7 +220,7 @@ export default function Reminders() {
           ) : (
             <div className="space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-3 lg:items-start">
               {upcomingItems.map((r, i) => (
-                <div key={r.id} className="rounded-2xl overflow-hidden" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}>
+                <div key={r.id} className="rounded-2xl overflow-hidden" style={{ background: "var(--s-card)", border: "1px solid var(--b-1)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}>
                   <ReminderItem
                     reminder={r}
                     staff={staff}
@@ -238,8 +238,8 @@ export default function Reminders() {
         <section>
           <SectionHeader title="14-DAY SITE PHOTO GRID" subtitle="Per active site · green = uploaded" icon={Camera} />
           {photoMaps.length === 0 ? (
-            <div className="rounded-2xl p-4" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}>
-              <p className="text-xs text-center py-3" style={{ color: "oklch(0.52 0.010 68)" }}>
+            <div className="rounded-2xl p-4" style={{ background: "var(--s-card)", border: "1px solid var(--b-1)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}>
+              <p className="text-xs text-center py-3" style={{ color: "var(--t-5)" }}>
                 No active sites — photo SOP only applies during BUILD phase.
               </p>
             </div>
@@ -252,13 +252,13 @@ export default function Reminders() {
                 const uploaded = days.filter((d) => map.photos[d]?.uploaded).length;
                 const pct = (uploaded / days.length) * 100;
                 return (
-                  <div key={map.projectId} className="rounded-2xl p-4 space-y-4" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}>
+                  <div key={map.projectId} className="rounded-2xl p-4 space-y-4" style={{ background: "var(--s-card)", border: "1px solid var(--b-1)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}>
                     <div>
                       <div className="flex items-center justify-between mb-1.5">
-                        <p className="text-xs font-semibold" style={{ color: "oklch(0.20 0.008 65)" }}>
+                        <p className="text-xs font-semibold" style={{ color: "var(--t-2)" }}>
                           {project.name}
                         </p>
-                        <span className="text-[10px] font-display font-semibold" style={{ color: "oklch(0.42 0.09 68)" }}>
+                        <span className="text-[10px] font-display font-semibold" style={{ color: "var(--acc-ink)" }}>
                           {uploaded}/{days.length} ({pct.toFixed(0)}%)
                         </span>
                       </div>
@@ -280,7 +280,7 @@ export default function Reminders() {
                                 background: photo?.uploaded
                                   ? "oklch(0.55 0.09 145 / 80%)"
                                   : "oklch(0.60 0.12 25 / 60%)",
-                                border: isToday ? "1.5px solid oklch(0.42 0.09 68)" : "none",
+                                border: isToday ? "1.5px solid var(--acc-ink)" : "none",
                                 color: "white",
                                 fontSize: "8px",
                                 fontWeight: 600,
@@ -292,10 +292,10 @@ export default function Reminders() {
                         })}
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 pt-2" style={{ borderTop: "1px solid oklch(0.93 0.008 75)" }}>
+                    <div className="flex items-center gap-3 pt-2" style={{ borderTop: "1px solid var(--b-2)" }}>
                       <LegendDot color="oklch(0.55 0.09 145 / 80%)" label="Uploaded" />
                       <LegendDot color="oklch(0.60 0.12 25 / 60%)" label="Missed" />
-                      <LegendDot color="oklch(1 0 0)" border="oklch(0.42 0.09 68)" label="Today" />
+                      <LegendDot color="oklch(1 0 0)" border="var(--acc-ink)" label="Today" />
                     </div>
                   </div>
                 );
@@ -304,7 +304,7 @@ export default function Reminders() {
           )}
         </section>
 
-        <p className="text-[10px] text-center font-label pt-2" style={{ color: "oklch(0.65 0.008 68)", letterSpacing: "0.06em" }}>
+        <p className="text-[10px] text-center font-label pt-2" style={{ color: "var(--t-6)", letterSpacing: "0.06em" }}>
           SPAZEHAUS · DAILY + WEEKLY REMINDER SOP · 2026 ANNUAL MEETING
         </p>
       </div>
@@ -328,14 +328,14 @@ export default function Reminders() {
         >
           <div
             className="rounded-2xl px-6 py-5 flex items-center gap-3 shadow-2xl"
-            style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}
+            style={{ background: "var(--s-card)", border: "1px solid var(--b-1)" }}
           >
-            <Loader2 size={18} className="animate-spin" style={{ color: "oklch(0.42 0.09 68)" }} />
+            <Loader2 size={18} className="animate-spin" style={{ color: "var(--acc-ink)" }} />
             <div>
-              <p className="text-sm font-semibold" style={{ color: "oklch(0.14 0.008 65)" }}>
+              <p className="text-sm font-semibold" style={{ color: "var(--t-1)" }}>
                 Uploading photo…
               </p>
-              <p className="text-xs mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>
+              <p className="text-xs mt-0.5" style={{ color: "var(--t-5)" }}>
                 {uploadFor.projectName} · {uploadFor.date}
               </p>
             </div>
@@ -344,7 +344,7 @@ export default function Reminders() {
               className="ml-3"
               aria-label="Dismiss"
             >
-              <X size={14} style={{ color: "oklch(0.52 0.010 68)" }} />
+              <X size={14} style={{ color: "var(--t-5)" }} />
             </button>
           </div>
         </div>
@@ -380,8 +380,8 @@ function KpiCard({
       transition={urgent ? { repeat: Infinity, duration: 2.4 } : undefined}
       className="rounded-2xl p-3"
       style={{
-        background: "oklch(1 0 0)",
-        border: urgent ? `1px solid ${tint}` : "1px solid oklch(0.90 0.010 75)",
+        background: "var(--s-card)",
+        border: urgent ? `1px solid ${tint}` : "1px solid var(--b-1)",
         boxShadow: urgent ? `0 1px 12px ${tintBg}` : "0 1px 8px oklch(0 0 0 / 0.04)",
       }}
     >
@@ -389,14 +389,14 @@ function KpiCard({
         <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: tintBg }}>
           <Icon size={14} style={{ color: tint }} />
         </div>
-        <p className="text-[10px] font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.06em" }}>
+        <p className="text-[10px] font-label" style={{ color: "var(--t-5)", letterSpacing: "0.06em" }}>
           {label.toUpperCase()}
         </p>
       </div>
-      <p className="font-display text-lg font-semibold leading-none truncate" style={{ color: urgent ? tint : "oklch(0.14 0.008 65)" }}>
+      <p className="font-display text-lg font-semibold leading-none truncate" style={{ color: urgent ? tint : "var(--t-1)" }}>
         {primary}
       </p>
-      <p className="text-[10px] mt-1 truncate" style={{ color: "oklch(0.52 0.010 68)" }}>
+      <p className="text-[10px] mt-1 truncate" style={{ color: "var(--t-5)" }}>
         {secondary}
       </p>
     </motion.div>
@@ -416,7 +416,7 @@ function SectionHeader({
   tint?: string;
   tintBg?: string;
 }) {
-  const c = tint || "oklch(0.42 0.09 68)";
+  const c = tint || "var(--acc-ink)";
   const cb = tintBg || "oklch(0.62 0.09 68 / 10%)";
   return (
     <div className="flex items-center gap-3 mb-3">
@@ -424,10 +424,10 @@ function SectionHeader({
         <Icon size={16} style={{ color: c }} />
       </div>
       <div>
-        <p className="font-label text-xs" style={{ color: "oklch(0.20 0.008 65)", letterSpacing: "0.10em", fontWeight: 700 }}>
+        <p className="font-label text-xs" style={{ color: "var(--t-2)", letterSpacing: "0.10em", fontWeight: 700 }}>
           {title}
         </p>
-        <p className="text-[10px]" style={{ color: "oklch(0.52 0.010 68)" }}>{subtitle}</p>
+        <p className="text-[10px]" style={{ color: "var(--t-5)" }}>{subtitle}</p>
       </div>
     </div>
   );
@@ -435,8 +435,8 @@ function SectionHeader({
 
 function Empty({ message }: { message: string }) {
   return (
-    <div className="rounded-2xl p-6 text-center" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
-      <p className="text-xs" style={{ color: "oklch(0.52 0.010 68)" }}>{message}</p>
+    <div className="rounded-2xl p-6 text-center" style={{ background: "var(--s-card)", border: "1px solid var(--b-1)" }}>
+      <p className="text-xs" style={{ color: "var(--t-5)" }}>{message}</p>
     </div>
   );
 }
@@ -462,7 +462,7 @@ function ReminderItem({
   return (
     <div
       className="px-3 py-3 flex items-center gap-3"
-      style={{ borderBottom: isLast ? "none" : "1px solid oklch(0.95 0.008 75)" }}
+      style={{ borderBottom: isLast ? "none" : "1px solid var(--s-2)" }}
     >
       <button
         onClick={onCardClick}
@@ -476,7 +476,7 @@ function ReminderItem({
           <Icon size={15} style={{ color: tc.color }} />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold truncate" style={{ color: "oklch(0.14 0.008 65)" }}>
+          <p className="text-sm font-semibold truncate" style={{ color: "var(--t-1)" }}>
             {reminder.title}
           </p>
           <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
@@ -486,17 +486,17 @@ function ReminderItem({
             >
               {sc.label.toUpperCase()}
             </span>
-            <span className="text-[10px]" style={{ color: "oklch(0.52 0.010 68)" }}>
+            <span className="text-[10px]" style={{ color: "var(--t-5)" }}>
               · {reminder.dueDate}
             </span>
             {assignee && (
-              <span className="text-[10px]" style={{ color: "oklch(0.52 0.010 68)" }}>
+              <span className="text-[10px]" style={{ color: "var(--t-5)" }}>
                 · {assignee.name}
               </span>
             )}
           </div>
           {reminder.note && (
-            <p className="text-[10px] mt-0.5 truncate" style={{ color: "oklch(0.55 0.008 65)" }}>
+            <p className="text-[10px] mt-0.5 truncate" style={{ color: "var(--t-5)" }}>
               {reminder.note}
             </p>
           )}
@@ -511,7 +511,7 @@ function ReminderItem({
           className="px-3 py-1.5 rounded-lg shrink-0 flex items-center gap-1"
           style={{
             background: reminder.status === "overdue" ? "oklch(0.60 0.12 25 / 12%)" : "oklch(0.62 0.09 68 / 12%)",
-            color: reminder.status === "overdue" ? "oklch(0.50 0.12 25)" : "oklch(0.42 0.09 68)",
+            color: reminder.status === "overdue" ? "oklch(0.50 0.12 25)" : "var(--acc-ink)",
           }}
         >
           {reminder.type === "daily-site-photo" ? (
@@ -535,7 +535,7 @@ function LegendDot({ color, label, border }: { color: string; label: string; bor
         className="w-3 h-3 rounded-sm"
         style={{ background: color, border: border ? `1.5px solid ${border}` : "none" }}
       />
-      <span className="text-[10px]" style={{ color: "oklch(0.52 0.010 68)" }}>{label}</span>
+      <span className="text-[10px]" style={{ color: "var(--t-5)" }}>{label}</span>
     </div>
   );
 }

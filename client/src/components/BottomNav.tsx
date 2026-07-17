@@ -28,7 +28,7 @@ export default function BottomNav() {
       className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] z-50 lg:hidden"
       style={{
         background: "oklch(1 0 0 / 0.97)",
-        borderTop: "1px solid oklch(0.90 0.010 75)",
+        borderTop: "1px solid var(--b-1)",
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
         boxShadow: "0 -4px 24px oklch(0 0 0 / 0.06)",
@@ -56,14 +56,14 @@ export default function BottomNav() {
               <Icon
                 size={20}
                 style={{
-                  color: active ? "oklch(0.52 0.09 68)" : "oklch(0.65 0.008 68)",
+                  color: active ? "var(--acc)" : "var(--t-6)",
                   strokeWidth: active ? 2 : 1.5,
                 }}
               />
               <span
                 className="text-[10px] font-label"
                 style={{
-                  color: active ? "oklch(0.52 0.09 68)" : "oklch(0.65 0.008 68)",
+                  color: active ? "var(--acc)" : "var(--t-6)",
                   letterSpacing: "0.04em",
                   fontWeight: active ? 700 : 400,
                 }}

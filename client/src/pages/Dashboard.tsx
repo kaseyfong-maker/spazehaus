@@ -61,14 +61,14 @@ export default function Dashboard() {
   const hasUrgent = ckpt.overdueCount > 0 || ckpt.thisWeekCount > 0 || ckpt.pendingSignsCount > 0;
 
   const stats = [
-    { label: "Active Projects", value: activeProjects, icon: FolderOpen, color: "oklch(0.52 0.09 68)", bg: "oklch(0.62 0.09 68 / 10%)" },
+    { label: "Active Projects", value: activeProjects, icon: FolderOpen, color: "var(--acc)", bg: "oklch(0.62 0.09 68 / 10%)" },
     { label: "Team Members", value: totalStaff, icon: Users, color: "oklch(0.45 0.09 240)", bg: "oklch(0.55 0.09 240 / 10%)" },
     { label: "Pending Review", value: pendingReview, icon: ClipboardCheck, color: "oklch(0.55 0.10 55)", bg: "oklch(0.65 0.10 55 / 10%)" },
     { label: "Completed", value: completedThisMonth, icon: TrendingUp, color: "oklch(0.45 0.09 145)", bg: "oklch(0.55 0.09 145 / 10%)" },
   ];
 
   const quickActions = [
-    { label: "New Project", icon: Plus, color: "oklch(0.52 0.09 68)", bg: "oklch(0.62 0.09 68 / 10%)", path: "/projects/new" },
+    { label: "New Project", icon: Plus, color: "var(--acc)", bg: "oklch(0.62 0.09 68 / 10%)", path: "/projects/new" },
     { label: "Checkpoints", icon: AlertCircle, color: "oklch(0.50 0.12 25)", bg: "oklch(0.60 0.12 25 / 10%)", path: "/checkpoints" },
     { label: "Reminders", icon: Camera, color: "oklch(0.45 0.09 145)", bg: "oklch(0.55 0.09 145 / 10%)", path: "/reminders" },
     { label: "Customers", icon: Users, color: "oklch(0.45 0.09 240)", bg: "oklch(0.55 0.09 240 / 10%)", path: "/customers" },
@@ -84,7 +84,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="mobile-container" data-testid="dashboard-root" style={{ background: "oklch(0.985 0.004 80)" }}>
+    <div className="mobile-container" data-testid="dashboard-root" style={{ background: "var(--s-page)" }}>
       {/* Hero Header — keeps dark overlay for contrast over image */}
       <div
         className="relative overflow-hidden"
@@ -94,13 +94,13 @@ export default function Dashboard() {
         }}
       >
         {/* Gold accent line */}
-        <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg, transparent, oklch(0.72 0.09 68), transparent)" }} />
+        <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg, transparent, var(--acc-bright), transparent)" }} />
 
         <div className="px-4 pt-4 pb-6">
           {/* Top bar */}
           <div className="flex items-center justify-between mb-5">
             <div>
-              <p className="text-xs font-label" style={{ color: "oklch(0.72 0.09 68)", letterSpacing: "0.12em" }}>SPAZEHAUS</p>
+              <p className="text-xs font-label" style={{ color: "var(--acc-bright)", letterSpacing: "0.12em" }}>SPAZEHAUS</p>
               <h1 className="font-display text-2xl font-semibold text-white leading-tight">Management</h1>
             </div>
             <div className="flex items-center gap-2">
@@ -111,12 +111,12 @@ export default function Dashboard() {
                 style={{ background: "oklch(1 0 0 / 12%)", border: "1px solid oklch(1 0 0 / 18%)" }}
               >
                 <Bell size={16} className="text-white" />
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full" style={{ background: "oklch(0.72 0.09 68)" }} />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full" style={{ background: "var(--acc-bright)" }} />
               </motion.button>
               <div
                 data-testid="hero-avatar"
                 className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold"
-                style={{ background: "linear-gradient(135deg, oklch(0.62 0.09 68), oklch(0.52 0.08 65))", color: "white" }}
+                style={{ background: "linear-gradient(135deg, var(--acc-strong), var(--acc-2))", color: "white" }}
               >
                 {staff?.avatar_code ?? "—"}
               </div>
@@ -127,7 +127,7 @@ export default function Dashboard() {
           <div className="mb-5">
             <p className="text-sm text-white/70">Good morning,</p>
             <p data-testid="hero-greeting" className="font-display text-xl font-semibold text-white">{staff?.name ?? ""}</p>
-            <p data-testid="hero-jobtitle" className="text-xs mt-0.5" style={{ color: "oklch(0.72 0.09 68)" }}>{staff?.job_title ?? ""}</p>
+            <p data-testid="hero-jobtitle" className="text-xs mt-0.5" style={{ color: "var(--acc-bright)" }}>{staff?.job_title ?? ""}</p>
           </div>
 
           {/* Search bar */}
@@ -148,7 +148,7 @@ export default function Dashboard() {
         initial="hidden"
         animate="visible"
         className="px-4 py-5 pb-28 space-y-6 lg:px-8 lg:py-7"
-        style={{ background: "oklch(0.985 0.004 80)" }}
+        style={{ background: "var(--s-page)" }}
       >
         {projectsError && (
           <div
@@ -180,7 +180,7 @@ export default function Dashboard() {
                 <div
                   key={s.label}
                   className="rounded-2xl p-4 flex items-center gap-3"
-                  style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
+                  style={{ background: "var(--s-card)", border: "1px solid var(--b-1)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
                 >
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: s.bg }}>
                     <Icon size={18} style={{ color: s.color }} />
@@ -189,9 +189,9 @@ export default function Dashboard() {
                     <p
                       data-testid={`stat-${s.label.toLowerCase().replace(/\s+/g, "-")}`}
                       className="text-2xl font-display font-bold"
-                      style={{ color: "oklch(0.14 0.008 65)" }}
+                      style={{ color: "var(--t-1)" }}
                     >{s.value}</p>
-                    <p className="text-xs leading-tight" style={{ color: "oklch(0.52 0.010 68)" }}>{s.label}</p>
+                    <p className="text-xs leading-tight" style={{ color: "var(--t-5)" }}>{s.label}</p>
                   </div>
                 </div>
               );
@@ -208,7 +208,7 @@ export default function Dashboard() {
                 onClick={() => navigate("/checkpoints")}
                 data-testid="checkpoints-viewall"
                 className="flex items-center gap-1 text-xs font-label"
-                style={{ color: "oklch(0.52 0.09 68)", letterSpacing: "0.04em" }}
+                style={{ color: "var(--acc)", letterSpacing: "0.04em" }}
               >
                 View All <ChevronRight size={12} />
               </button>
@@ -225,7 +225,7 @@ export default function Dashboard() {
                   : "oklch(1 0 0)",
                 border: ckpt.overdueCount > 0
                   ? "1px solid oklch(0.60 0.12 25 / 30%)"
-                  : "1px solid oklch(0.90 0.010 75)",
+                  : "1px solid var(--b-1)",
                 boxShadow: ckpt.overdueCount > 0
                   ? "0 1px 12px oklch(0.60 0.12 25 / 12%)"
                   : "0 1px 8px oklch(0 0 0 / 0.04)",
@@ -243,55 +243,55 @@ export default function Dashboard() {
                   <AlertCircle
                     size={18}
                     style={{
-                      color: ckpt.overdueCount > 0 ? "oklch(0.50 0.12 25)" : "oklch(0.42 0.09 68)",
+                      color: ckpt.overdueCount > 0 ? "oklch(0.50 0.12 25)" : "var(--acc-ink)",
                     }}
                   />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p data-testid="ckpt-status" className="text-sm font-semibold" style={{ color: "oklch(0.14 0.008 65)" }}>
+                  <p data-testid="ckpt-status" className="text-sm font-semibold" style={{ color: "var(--t-1)" }}>
                     {ckpt.overdueCount > 0 ? "Action required" : "All on track"}
                   </p>
-                  <p className="text-xs mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>
+                  <p className="text-xs mt-0.5" style={{ color: "var(--t-5)" }}>
                     Payment Collection · Document Sign SOP
                   </p>
                 </div>
-                <ChevronRight size={14} style={{ color: "oklch(0.65 0.008 68)" }} />
+                <ChevronRight size={14} style={{ color: "var(--t-6)" }} />
               </div>
 
               <div className="grid grid-cols-3 gap-2">
                 <div
                   className="rounded-xl p-2.5 text-center"
                   style={{
-                    background: ckpt.overdueCount > 0 ? "oklch(0.60 0.12 25 / 8%)" : "oklch(0.985 0.004 80)",
+                    background: ckpt.overdueCount > 0 ? "oklch(0.60 0.12 25 / 8%)" : "var(--s-page)",
                   }}
                 >
                   <div className="flex items-center justify-center gap-1 mb-0.5">
-                    <Coins size={10} style={{ color: ckpt.overdueCount > 0 ? "oklch(0.50 0.12 25)" : "oklch(0.55 0.008 65)" }} />
-                    <p className="text-[9px] font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.04em" }}>OVERDUE</p>
+                    <Coins size={10} style={{ color: ckpt.overdueCount > 0 ? "oklch(0.50 0.12 25)" : "var(--t-5)" }} />
+                    <p className="text-[9px] font-label" style={{ color: "var(--t-5)", letterSpacing: "0.04em" }}>OVERDUE</p>
                   </div>
                   <p
                     data-testid="ckpt-overdue"
                     className="font-display text-lg font-bold"
-                    style={{ color: ckpt.overdueCount > 0 ? "oklch(0.50 0.12 25)" : "oklch(0.30 0.008 65)" }}
+                    style={{ color: ckpt.overdueCount > 0 ? "oklch(0.50 0.12 25)" : "var(--t-3)" }}
                   >
                     {ckpt.overdueCount}
                   </p>
                 </div>
-                <div className="rounded-xl p-2.5 text-center" style={{ background: "oklch(0.985 0.004 80)" }}>
+                <div className="rounded-xl p-2.5 text-center" style={{ background: "var(--s-page)" }}>
                   <div className="flex items-center justify-center gap-1 mb-0.5">
-                    <CalendarCheck size={10} style={{ color: "oklch(0.55 0.008 65)" }} />
-                    <p className="text-[9px] font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.04em" }}>THIS WEEK</p>
+                    <CalendarCheck size={10} style={{ color: "var(--t-5)" }} />
+                    <p className="text-[9px] font-label" style={{ color: "var(--t-5)", letterSpacing: "0.04em" }}>THIS WEEK</p>
                   </div>
-                  <p data-testid="ckpt-thisweek" className="font-display text-lg font-bold" style={{ color: "oklch(0.30 0.008 65)" }}>
+                  <p data-testid="ckpt-thisweek" className="font-display text-lg font-bold" style={{ color: "var(--t-3)" }}>
                     {ckpt.thisWeekCount}
                   </p>
                 </div>
-                <div className="rounded-xl p-2.5 text-center" style={{ background: "oklch(0.985 0.004 80)" }}>
+                <div className="rounded-xl p-2.5 text-center" style={{ background: "var(--s-page)" }}>
                   <div className="flex items-center justify-center gap-1 mb-0.5">
-                    <PenSquare size={10} style={{ color: "oklch(0.55 0.008 65)" }} />
-                    <p className="text-[9px] font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.04em" }}>SIGNS</p>
+                    <PenSquare size={10} style={{ color: "var(--t-5)" }} />
+                    <p className="text-[9px] font-label" style={{ color: "var(--t-5)", letterSpacing: "0.04em" }}>SIGNS</p>
                   </div>
-                  <p data-testid="ckpt-signs" className="font-display text-lg font-bold" style={{ color: "oklch(0.30 0.008 65)" }}>
+                  <p data-testid="ckpt-signs" className="font-display text-lg font-bold" style={{ color: "var(--t-3)" }}>
                     {ckpt.pendingSignsCount}
                   </p>
                 </div>
@@ -299,12 +299,12 @@ export default function Dashboard() {
 
               <div
                 className="flex items-center justify-between mt-3 pt-3"
-                style={{ borderTop: "1px solid oklch(0.93 0.008 75)" }}
+                style={{ borderTop: "1px solid var(--b-2)" }}
               >
-                <span className="text-[10px] font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.06em" }}>
+                <span className="text-[10px] font-label" style={{ color: "var(--t-5)", letterSpacing: "0.06em" }}>
                   TOTAL OUTSTANDING
                 </span>
-                <span data-testid="ckpt-outstanding" className="font-display text-sm font-semibold" style={{ color: "oklch(0.42 0.09 68)" }}>
+                <span data-testid="ckpt-outstanding" className="font-display text-sm font-semibold" style={{ color: "var(--acc-ink)" }}>
                   {formatRM(ckpt.outstandingRM)}
                 </span>
               </div>
@@ -326,12 +326,12 @@ export default function Dashboard() {
                   data-testid="quick-action"
                   data-action={action.path}
                   className="flex flex-col items-center gap-2 py-4 rounded-2xl"
-                  style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
+                  style={{ background: "var(--s-card)", border: "1px solid var(--b-1)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
                 >
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: action.bg }}>
                     <Icon size={18} style={{ color: action.color }} />
                   </div>
-                  <span className="text-[11px] font-label text-center leading-tight" style={{ color: "oklch(0.35 0.008 65)", letterSpacing: "0.02em" }}>{action.label}</span>
+                  <span className="text-[11px] font-label text-center leading-tight" style={{ color: "var(--t-3)", letterSpacing: "0.02em" }}>{action.label}</span>
                 </motion.button>
               );
             })}
@@ -346,7 +346,7 @@ export default function Dashboard() {
               onClick={() => navigate("/projects")}
               data-testid="projects-viewall"
               className="flex items-center gap-1 text-xs font-label"
-              style={{ color: "oklch(0.52 0.09 68)", letterSpacing: "0.04em" }}
+              style={{ color: "var(--acc)", letterSpacing: "0.04em" }}
             >
               View All <ChevronRight size={12} />
             </button>
@@ -363,12 +363,12 @@ export default function Dashboard() {
                 data-testid="project-card"
                 data-project-id={project.id}
                 className="rounded-2xl p-4"
-                style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
+                style={{ background: "var(--s-card)", border: "1px solid var(--b-1)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
               >
                 <div className="flex items-start justify-between mb-2.5">
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold truncate" style={{ color: "oklch(0.14 0.008 65)" }}>{project.name}</p>
-                    <p className="text-xs mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>{project.client}</p>
+                    <p className="text-sm font-semibold truncate" style={{ color: "var(--t-1)" }}>{project.name}</p>
+                    <p className="text-xs mt-0.5" style={{ color: "var(--t-5)" }}>{project.client}</p>
                   </div>
                   <span
                     data-testid="project-status"
@@ -376,7 +376,7 @@ export default function Dashboard() {
                     style={{
                       background: project.status === "active" ? "oklch(0.62 0.09 68 / 12%)" :
                         project.status === "completed" ? "oklch(0.55 0.09 145 / 12%)" : "oklch(0.55 0.09 240 / 12%)",
-                      color: project.status === "active" ? "oklch(0.42 0.09 68)" :
+                      color: project.status === "active" ? "var(--acc-ink)" :
                         project.status === "completed" ? "oklch(0.40 0.09 145)" : "oklch(0.40 0.09 240)",
                     }}
                   >
@@ -384,16 +384,16 @@ export default function Dashboard() {
                   </span>
                 </div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-xs" style={{ color: "oklch(0.52 0.010 68)" }}>{project.progress}% complete</span>
-                  <span className="text-xs" style={{ color: "oklch(0.52 0.010 68)" }}>{project.tasksCompleted}/{project.taskCount} tasks</span>
+                  <span className="text-xs" style={{ color: "var(--t-5)" }}>{project.progress}% complete</span>
+                  <span className="text-xs" style={{ color: "var(--t-5)" }}>{project.tasksCompleted}/{project.taskCount} tasks</span>
                 </div>
-                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "oklch(0.92 0.008 75)" }}>
+                <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--b-2)" }}>
                   <motion.div
                     initial={{ width: 0 }}
                     animate={{ width: `${project.progress}%` }}
                     transition={{ duration: 0.8, delay: i * 0.1 }}
                     className="h-full rounded-full"
-                    style={{ background: "linear-gradient(90deg, oklch(0.62 0.09 68), oklch(0.72 0.09 68))" }}
+                    style={{ background: "linear-gradient(90deg, var(--acc-strong), var(--acc-bright))" }}
                   />
                 </div>
               </motion.div>
@@ -408,19 +408,19 @@ export default function Dashboard() {
             <button
               onClick={() => navigate("/company/audit")}
               className="flex items-center gap-1 text-xs font-label"
-              style={{ color: "oklch(0.52 0.09 68)", letterSpacing: "0.04em" }}
+              style={{ color: "var(--acc)", letterSpacing: "0.04em" }}
             >
               View All <ChevronRight size={12} />
             </button>
           </div>
           <div
             className="rounded-2xl overflow-hidden"
-            style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
+            style={{ background: "var(--s-card)", border: "1px solid var(--b-1)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
             data-testid="recent-activity"
           >
             {recentActivity.length === 0 ? (
               <div className="px-4 py-6 text-center" data-testid="recent-activity-empty">
-                <p className="text-xs" style={{ color: "oklch(0.52 0.010 68)" }}>No recent activity</p>
+                <p className="text-xs" style={{ color: "var(--t-5)" }}>No recent activity</p>
               </div>
             ) : (
               recentActivity.map((entry, i) => (
@@ -428,19 +428,19 @@ export default function Dashboard() {
                   key={entry.id}
                   data-testid="activity-item"
                   className="px-4 py-3 flex items-start gap-3"
-                  style={{ borderBottom: i < recentActivity.length - 1 ? "1px solid oklch(0.93 0.008 75)" : "none" }}
+                  style={{ borderBottom: i < recentActivity.length - 1 ? "1px solid var(--b-2)" : "none" }}
                 >
                   <div
                     className="w-1.5 h-1.5 rounded-full shrink-0 mt-1.5"
-                    style={{ background: activityDot[entry.action] || "oklch(0.52 0.09 68)" }}
+                    style={{ background: activityDot[entry.action] || "var(--acc)" }}
                   />
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs leading-relaxed" style={{ color: "oklch(0.30 0.008 65)" }}>{summarizeAudit(entry)}</p>
-                    <p className="text-[10px] mt-0.5" style={{ color: "oklch(0.55 0.008 65)" }}>
+                    <p className="text-xs leading-relaxed" style={{ color: "var(--t-3)" }}>{summarizeAudit(entry)}</p>
+                    <p className="text-[10px] mt-0.5" style={{ color: "var(--t-5)" }}>
                       {entry.actor?.name ?? (entry.changed_by ? "Unknown user" : "System")}
                     </p>
                   </div>
-                  <span className="text-[10px] shrink-0" style={{ color: "oklch(0.65 0.008 68)" }}>{relativeTime(entry.changed_at)}</span>
+                  <span className="text-[10px] shrink-0" style={{ color: "var(--t-6)" }}>{relativeTime(entry.changed_at)}</span>
                 </div>
               ))
             )}
@@ -458,12 +458,12 @@ export default function Dashboard() {
             >
               <div className="flex items-start gap-3">
                 <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0" style={{ background: "oklch(0.62 0.09 68 / 15%)" }}>
-                  <Bell size={14} style={{ color: "oklch(0.52 0.09 68)" }} />
+                  <Bell size={14} style={{ color: "var(--acc)" }} />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm font-semibold" style={{ color: "oklch(0.14 0.008 65)" }}>{announcements[0].title}</p>
-                  <p className="text-xs mt-1 leading-relaxed" style={{ color: "oklch(0.40 0.008 65)" }}>{announcements[0].content.substring(0, 100)}…</p>
-                  <p className="text-[10px] mt-1.5 font-label" style={{ color: "oklch(0.52 0.09 68)", letterSpacing: "0.04em" }}>{announcements[0].publishedDateLabel}</p>
+                  <p className="text-sm font-semibold" style={{ color: "var(--t-1)" }}>{announcements[0].title}</p>
+                  <p className="text-xs mt-1 leading-relaxed" style={{ color: "var(--t-4)" }}>{announcements[0].content.substring(0, 100)}…</p>
+                  <p className="text-[10px] mt-1.5 font-label" style={{ color: "var(--acc)", letterSpacing: "0.04em" }}>{announcements[0].publishedDateLabel}</p>
                 </div>
               </div>
             </div>
