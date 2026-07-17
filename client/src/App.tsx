@@ -38,16 +38,6 @@ import Company from "./pages/Company";
 import CalendarPage from "./pages/CalendarPage";
 import Profile from "./pages/Profile";
 
-/**
- * Like `React.lazy`, but resilient to stale chunks after a deploy. When a new
- * build ships, Vite rotates the hashed chunk filenames and deletes the old
- * ones — so an already-open tab that navigates to a lazy route asks the server
- * for a now-404 filename and throws "Failed to fetch dynamically imported
- * module". Instead of crashing into the ErrorBoundary, we trigger ONE full
- * reload (which re-fetches fresh HTML + current chunk names). A sessionStorage
- * flag guards against reload loops: if the import still fails after the reload
- * (a genuine error, not staleness), we rethrow and let the ErrorBoundary show.
- */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mirrors React.lazy's own ComponentType<any> signature
 function lazyWithReload<T extends ComponentType<any>>(
   factory: () => Promise<{ default: T }>,
@@ -58,11 +48,7 @@ function lazyWithReload<T extends ComponentType<any>>(
     try {
       return await factory();
     } catch (err) {
-      // Auto-reload once to recover from a stale chunk after a deploy — but only
-      // if we haven't just reloaded. A stale-deploy failure happens long after
-      // any prior reload so it still self-heals; repeated failures within the
-      // cooldown (a genuinely flaky network) fall through to the ErrorBoundary
-      // instead of reload-looping.
+      // Auto-reload once to recover from a stale chunk 
       const last = Number(sessionStorage.getItem(RELOAD_TS) || 0);
       const now = Date.now();
       if (now - last > COOLDOWN_MS) {
@@ -92,9 +78,13 @@ const CreateQuotation  = lazyWithReload(() => import("./pages/CreateQuotation"))
 const Checkpoints      = lazyWithReload(() => import("./pages/Checkpoints"));
 const CustomerDatabase = lazyWithReload(() => import("./pages/CustomerDatabase"));
 const CustomerDetail   = lazyWithReload(() => import("./pages/CustomerDetail"));
+const CreateCustomer   = lazyWithReload(() => import("./pages/CreateCustomer"));
 const RemindersPage    = lazyWithReload(() => import("./pages/Reminders"));
 const PerformanceReport = lazyWithReload(() => import("./pages/PerformanceReport"));
 const CreateStaff      = lazyWithReload(() => import("./pages/CreateStaff"));
+const Notifications    = lazyWithReload(() => import("./pages/Notifications"));
+const Security         = lazyWithReload(() => import("./pages/Security"));
+const Help             = lazyWithReload(() => import("./pages/Help"));
 // Public — reachable without a Supabase Auth session via /portal/:token.
 const ClientPortal     = lazyWithReload(() => import("./pages/ClientPortal"));
 
@@ -140,6 +130,9 @@ function AppLayout() {
             <Route path="/company" component={Company} />
             <Route path="/calendar" component={CalendarPage} />
             <Route path="/profile" component={Profile} />
+            <Route path="/notifications" component={Notifications} />
+            <Route path="/security" component={Security} />
+            <Route path="/help" component={Help} />
 
             {/* Project sub-pages */}
             <Route path="/projects/new" component={CreateProject} />
@@ -165,6 +158,7 @@ function AppLayout() {
 
             {/* Customer Database — Inquiry → Awarded funnel + categories */}
             <Route path="/customers" component={CustomerDatabase} />
+            <Route path="/customers/new" component={CreateCustomer} />
             <Route path="/customers/:id" component={CustomerDetail} />
 
             {/* Reminders — Daily site photo + Weekly cadence SOP */}

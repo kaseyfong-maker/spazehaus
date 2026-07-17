@@ -7,19 +7,20 @@ import { motion } from "framer-motion";
 import { useLocation } from "wouter";
 import { useStaffKpiRecords } from "@/lib/queries";
 import { useAuth } from "@/contexts/AuthContext";
-import { ChevronRight, Bell, Shield, HelpCircle, LogOut, Moon, Globe } from "lucide-react";
+import { ChevronRight, Bell, Shield, HelpCircle, LogOut, Moon, Sun } from "lucide-react";
+import { useTheme } from "@/lib/theme";
 import { toast } from "sonner";
 
-const menuItems = [
-  { icon: Bell, label: "Notifications", subtitle: "Push & in-app alerts", color: "oklch(0.52 0.09 68)" },
-  { icon: Moon, label: "Appearance", subtitle: "Dark mode (default)", color: "oklch(0.70 0.09 240)" },
-  { icon: Globe, label: "Language", subtitle: "English (Malaysia)", color: "oklch(0.80 0.12 68)" },
-  { icon: Shield, label: "Privacy & Security", subtitle: "Password, 2FA", color: "oklch(0.60 0.07 145)" },
-  { icon: HelpCircle, label: "Help & Support", subtitle: "FAQ, contact us", color: "oklch(0.68 0.12 25)" },
+const menuItems: { icon: typeof Bell; label: string; subtitle: string; color: string; to?: string }[] = [
+  { icon: Bell, label: "Notifications", subtitle: "In-app alerts", color: "var(--acc)", to: "/notifications" },
+  { icon: Moon, label: "Appearance", subtitle: "Light mode", color: "oklch(0.70 0.09 240)" },
+  { icon: Shield, label: "Privacy & Security", subtitle: "Two-factor, sessions", color: "oklch(0.60 0.07 145)", to: "/security" },
+  { icon: HelpCircle, label: "Help & Support", subtitle: "FAQ, contact us", color: "oklch(0.68 0.12 25)", to: "/help" },
 ];
 
 export default function Profile() {
   const [, navigate] = useLocation();
+  const { theme, toggle: toggleTheme } = useTheme();
   const { staff, signOut } = useAuth();
   const { data: kpiRecords = [] } = useStaffKpiRecords(staff?.id);
   const [signingOut, setSigningOut] = useState(false);
@@ -44,7 +45,7 @@ export default function Profile() {
         className="relative pt-12 pb-6 px-4 lg:pt-14 lg:pb-10"
         style={{ background: "linear-gradient(135deg, oklch(0.23 0.018 65) 0%, oklch(0.12 0.006 285) 100%)" }}
       >
-        <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg, transparent, oklch(0.72 0.09 68), transparent)" }} />
+        <div className="absolute top-0 left-0 right-0 h-0.5" style={{ background: "linear-gradient(90deg, transparent, var(--acc-bright), transparent)" }} />
 
         <div className="flex flex-col items-center text-center">
           <motion.div
@@ -53,15 +54,15 @@ export default function Profile() {
             className="w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-bold mb-3"
             style={{
               background: "linear-gradient(135deg, oklch(0.62 0.09 68 / 35%), oklch(0.55 0.08 65 / 28%))",
-              color: "oklch(0.82 0.09 68)",
+              color: "var(--acc-bright)",
               border: "2px solid oklch(0.72 0.09 68 / 35%)",
             }}
           >
             {staff.avatar_code}
           </motion.div>
           <h2 className="font-display text-2xl font-semibold text-white">{staff.name}</h2>
-          <p className="text-sm mt-1" style={{ color: "oklch(0.78 0.09 68)" }}>{staff.job_title}</p>
-          <p className="text-xs mt-0.5" style={{ color: "oklch(0.74 0.012 68)" }}>{staff.dept} Department · {staff.id}</p>
+          <p className="text-sm mt-1" style={{ color: "var(--acc-bright)" }}>{staff.job_title}</p>
+          <p className="text-xs mt-0.5" style={{ color: "var(--t-7)" }}>{staff.dept} Department · {staff.id}</p>
 
           {/* KPI badge */}
           {currentRating !== "—" && (
@@ -69,8 +70,8 @@ export default function Profile() {
               className="mt-3 px-4 py-1.5 rounded-full flex items-center gap-2"
               style={{ background: "oklch(0.72 0.09 68 / 18%)", border: "1px solid oklch(0.72 0.09 68 / 30%)" }}
             >
-              <span className="text-xs font-label" style={{ color: "oklch(0.82 0.09 68)", letterSpacing: "0.04em" }}>KPI RATING</span>
-              <span className="text-sm font-display font-bold" style={{ color: "oklch(0.82 0.09 68)" }}>{currentRating}</span>
+              <span className="text-xs font-label" style={{ color: "var(--acc-bright)", letterSpacing: "0.04em" }}>KPI RATING</span>
+              <span className="text-sm font-display font-bold" style={{ color: "var(--acc-bright)" }}>{currentRating}</span>
             </div>
           )}
         </div>
@@ -80,16 +81,16 @@ export default function Profile() {
         {/* Left column — identity & stats */}
         <div className="space-y-5">
         {/* Contact info */}
-        <div className="rounded-2xl p-4 space-y-2" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
+        <div className="rounded-2xl p-4 space-y-2" style={{ background: "var(--s-card)", border: "1px solid var(--b-1)" }}>
           {[
             { label: "Email", value: staff.email },
             { label: "Phone", value: staff.phone ?? "—" },
             { label: "Role", value: staff.role },
             { label: "Status", value: staff.status },
           ].map((item) => (
-            <div key={item.label} className="flex items-center justify-between py-1" style={{ borderBottom: "1px solid oklch(0.93 0.008 75)" }}>
-              <span className="text-xs" style={{ color: "oklch(0.52 0.010 68)" }}>{item.label}</span>
-              <span className="text-xs" style={{ color: "oklch(0.25 0.008 65)" }}>{item.value}</span>
+            <div key={item.label} className="flex items-center justify-between py-1" style={{ borderBottom: "1px solid var(--b-2)" }}>
+              <span className="text-xs" style={{ color: "var(--t-5)" }}>{item.label}</span>
+              <span className="text-xs" style={{ color: "var(--t-2)" }}>{item.value}</span>
             </div>
           ))}
         </div>
@@ -98,12 +99,12 @@ export default function Profile() {
         <div className="grid grid-cols-3 gap-2">
           {[
             { label: "Annual Leave", value: `${staff.leave_balance_annual}d`, color: "oklch(0.70 0.09 240)" },
-            { label: "Medical Leave", value: `${staff.leave_balance_medical}d`, color: "oklch(0.52 0.09 68)" },
+            { label: "Medical Leave", value: `${staff.leave_balance_medical}d`, color: "var(--acc)" },
             { label: "Score", value: currentScore !== undefined ? String(currentScore) : "—", color: "oklch(0.60 0.07 145)" },
           ].map((s) => (
-            <div key={s.label} className="rounded-xl p-3 text-center" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
+            <div key={s.label} className="rounded-xl p-3 text-center" style={{ background: "var(--s-card)", border: "1px solid var(--b-1)" }}>
               <p className="text-xl font-display font-semibold" style={{ color: s.color }}>{s.value}</p>
-              <p className="text-[10px] font-label mt-0.5" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.04em" }}>{s.label}</p>
+              <p className="text-[10px] font-label mt-0.5" style={{ color: "var(--t-5)", letterSpacing: "0.04em" }}>{s.label}</p>
             </div>
           ))}
         </div>
@@ -112,25 +113,34 @@ export default function Profile() {
         {/* Right column — settings & account */}
         <div className="space-y-5">
         {/* Settings menu */}
-        <div className="rounded-2xl overflow-hidden" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
+        <div className="rounded-2xl overflow-hidden" style={{ background: "var(--s-card)", border: "1px solid var(--b-1)" }}>
           {menuItems.map((item, i) => {
-            const Icon = item.icon;
+            const isAppearance = item.label === "Appearance";
+            const Icon = isAppearance ? (theme === "dark" ? Sun : Moon) : item.icon;
+            const subtitle = isAppearance ? (theme === "dark" ? "Dark mode" : "Light mode") : item.subtitle;
             return (
               <motion.button
                 key={item.label}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => toast.info(`${item.label} — coming soon`)}
+                data-testid={isAppearance ? "theme-toggle" : undefined}
+                onClick={() => isAppearance ? toggleTheme() : item.to ? navigate(item.to) : toast.info(`${item.label} — coming soon`)}
                 className="w-full flex items-center gap-3 px-4 py-3.5 text-left"
-                style={{ borderBottom: i < menuItems.length - 1 ? "1px solid oklch(0.93 0.008 75)" : "none" }}
+                style={{ borderBottom: i < menuItems.length - 1 ? "1px solid var(--b-2)" : "none" }}
               >
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: "oklch(0.96 0.006 75)" }}>
+                <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: "var(--s-2)" }}>
                   <Icon size={15} style={{ color: item.color }} />
                 </div>
                 <div className="flex-1">
-                  <p className="text-sm text-neutral-900">{item.label}</p>
-                  <p className="text-xs" style={{ color: "oklch(0.52 0.010 68)" }}>{item.subtitle}</p>
+                  <p className="text-sm text-[color:var(--t-1)]">{item.label}</p>
+                  <p className="text-xs" style={{ color: "var(--t-5)" }}>{subtitle}</p>
                 </div>
-                <ChevronRight size={14} style={{ color: "oklch(0.52 0.010 68)" }} />
+                {isAppearance ? (
+                  <span className="text-[11px] font-label px-2 py-1 rounded-full" style={{ background: "var(--s-2)", color: "var(--acc-ink)", letterSpacing: "0.04em" }}>
+                    {theme === "dark" ? "DARK" : "LIGHT"}
+                  </span>
+                ) : (
+                  <ChevronRight size={14} style={{ color: "var(--t-5)" }} />
+                )}
               </motion.button>
             );
           })}
@@ -155,7 +165,7 @@ export default function Profile() {
           </span>
         </motion.button>
 
-        <p className="text-center text-[10px] font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.06em" }}>SPAZEHAUS MANAGEMENT APP v1.0.0</p>
+        <p className="text-center text-[10px] font-label" style={{ color: "var(--t-5)", letterSpacing: "0.06em" }}>SPAZEHAUS MANAGEMENT APP v1.0.0</p>
         </div>
       </div>
     </div>
