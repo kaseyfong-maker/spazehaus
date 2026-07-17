@@ -54,7 +54,7 @@ bun run check        # runs tsc --noEmit, must exit 0
 | Backend        | Supabase (Postgres + Auth + Storage + Edge Functions) |
 | Auth           | Supabase magic-link (passwordless email)              |
 | Error tracking | Sentry (env-gated — no-op without DSN)               |
-| Deploy         | Vercel (auto-deploys `main` branch)                 |
+| Deploy         | Vercel (auto-deploys`main` branch)                  |
 
 **Mobile-first** — designed around a 430px frame with a bottom nav (Home / Projects / Company / Calendar / Profile).
 
