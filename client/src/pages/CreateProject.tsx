@@ -5,10 +5,15 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "wouter";
-import { Check } from "lucide-react";
+import { Check, ImagePlus } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
-import { useCreateProject } from "@/lib/queries";
+import { useCreateProject, useInquiries } from "@/lib/queries";
+import SearchableSelect from "@/components/SearchableSelect";
 import { toast } from "sonner";
+
+// Map a CRM customer category onto the wizard's project-type buttons.
+const categoryToType = (cat: string): string =>
+  cat === "Commercial" || cat === "F&B" || cat === "Office" ? "Commercial" : "Residential";
 
 const steps = [
   { id: 1, title: "Client Details", subtitle: "Who is this project for?" },
@@ -28,7 +33,21 @@ const roomOptions = ["Living Room", "Master Bedroom", "Bedroom 2", "Bedroom 3", 
 export default function CreateProject() {
   const [, navigate] = useLocation();
   const createProject = useCreateProject();
+  const { data: inquiries = [] } = useInquiries();
   const [step, setStep] = useState(1);
+  const [linkInquiryId, setLinkInquiryId] = useState("");
+  // Optional cover image (kept out of `form` since it's a File, not text).
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  const onPickImage = (file: File | null) => {
+    if (imagePreview) URL.revokeObjectURL(imagePreview);
+    if (!file) { setImageFile(null); setImagePreview(null); return; }
+    if (!file.type.startsWith("image/")) { toast.error("Please choose an image file"); return; }
+    if (file.size > 10 * 1024 * 1024) { toast.error("Image must be under 10 MB"); return; }
+    setImageFile(file);
+    setImagePreview(URL.createObjectURL(file));
+  };
   const [form, setForm] = useState({
     clientName: "", clientContact: "", clientEmail: "",
     projectName: "", projectType: "Residential", propertyType: "Condominium",
@@ -38,6 +57,33 @@ export default function CreateProject() {
   });
 
   const update = (key: string, value: string | string[]) => setForm((f) => ({ ...f, [key]: value }));
+
+  // Customers still in the pipeline (not already awarded) can seed a new project.
+  const eligibleCustomers = inquiries.filter(
+    (i) => !i.awardedProjectId && (i.stage === "new-inquiry" || i.stage === "showroom-meet"),
+  );
+
+  const onPickCustomer = (inqId: string) => {
+    setLinkInquiryId(inqId);
+    if (!inqId) return;
+    const inq = inquiries.find((i) => i.id === inqId);
+    if (!inq) return;
+    const type = categoryToType(inq.category);
+    const propList = propertyTypes[type as keyof typeof propertyTypes] ?? [];
+    const propType = propList.includes(inq.property_type) ? inq.property_type : (propList[0] ?? "");
+    setForm((f) => ({
+      ...f,
+      clientName: inq.client_name ?? f.clientName,
+      clientContact: inq.contact ?? f.clientContact,
+      clientEmail: inq.email ?? f.clientEmail,
+      projectType: type,
+      propertyType: propType,
+      location: inq.location ?? f.location,
+      size: inq.estimated_size != null ? String(inq.estimated_size) : f.size,
+      budget: inq.estimated_budget != null ? String(inq.estimated_budget) : f.budget,
+      projectName: f.projectName || (inq.property_type ? `${inq.client_name} — ${inq.property_type}` : f.projectName),
+    }));
+  };
 
   const toggleRoom = (room: string) => {
     const rooms = form.selectedRooms.includes(room)
@@ -75,6 +121,8 @@ export default function CreateProject() {
         targetDate: form.targetDate.trim() || null,
         areas: form.selectedRooms,
         description: form.notes.trim() || null,
+        linkInquiryId: linkInquiryId || null,
+        imageFile,
       });
       toast.success("Project created successfully!", { description: `${project.name} (${project.id}) has been added.` });
       navigate(`/projects/${project.id}`);
@@ -84,9 +132,9 @@ export default function CreateProject() {
   };
 
   const inputStyle = {
-    background: "oklch(0.96 0.006 75)",
-    border: "1px solid oklch(0.90 0.010 75)",
-    color: "oklch(0.20 0.008 65)",
+    background: "var(--s-2)",
+    border: "1px solid var(--b-1)",
+    color: "var(--t-2)",
     borderRadius: "0.75rem",
     padding: "0.75rem 1rem",
     fontSize: "0.875rem",
@@ -94,7 +142,7 @@ export default function CreateProject() {
     outline: "none",
   } as React.CSSProperties;
 
-  const labelStyle = { color: "oklch(0.52 0.010 68)", fontSize: "0.75rem", marginBottom: "0.375rem", display: "block", fontFamily: "Raleway, sans-serif", letterSpacing: "0.04em" } as React.CSSProperties;
+  const labelStyle = { color: "var(--t-5)", fontSize: "0.75rem", marginBottom: "0.375rem", display: "block", fontFamily: "Raleway, sans-serif", letterSpacing: "0.04em" } as React.CSSProperties;
 
   return (
     <div className="mobile-container">
@@ -109,23 +157,23 @@ export default function CreateProject() {
                 <div
                   className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
                   style={{
-                    background: step > s.id ? "oklch(0.72 0.09 68)" : step === s.id ? "oklch(0.62 0.09 68 / 15%)" : "oklch(0.96 0.006 75)",
-                    border: step >= s.id ? "1px solid oklch(0.72 0.09 68)" : "1px solid oklch(0.90 0.010 75)",
-                    color: step > s.id ? "oklch(1 0 0)" : step === s.id ? "oklch(0.42 0.09 68)" : "oklch(0.45 0.008 65)",
+                    background: step > s.id ? "var(--acc-bright)" : step === s.id ? "oklch(0.62 0.09 68 / 15%)" : "var(--s-2)",
+                    border: step >= s.id ? "1px solid var(--acc-bright)" : "1px solid var(--b-1)",
+                    color: step > s.id ? "oklch(1 0 0)" : step === s.id ? "var(--acc-ink)" : "var(--t-4)",
                   }}
                 >
                   {step > s.id ? <Check size={12} /> : s.id}
                 </div>
                 {i < steps.length - 1 && (
-                  <div className="w-8 h-0.5 mx-1" style={{ background: step > s.id ? "oklch(0.72 0.09 68)" : "oklch(0.90 0.010 75)" }} />
+                  <div className="w-8 h-0.5 mx-1" style={{ background: step > s.id ? "var(--acc-bright)" : "var(--b-1)" }} />
                 )}
               </div>
             ))}
           </div>
           <div>
-            <p className="text-xs font-label" style={{ color: "oklch(0.52 0.09 68)", letterSpacing: "0.08em" }}>STEP {step} OF {steps.length}</p>
-            <h2 className="font-display text-xl font-semibold text-neutral-900">{steps[step - 1].title}</h2>
-            <p className="text-xs mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>{steps[step - 1].subtitle}</p>
+            <p className="text-xs font-label" style={{ color: "var(--acc)", letterSpacing: "0.08em" }}>STEP {step} OF {steps.length}</p>
+            <h2 className="font-display text-xl font-semibold text-[color:var(--t-1)]">{steps[step - 1].title}</h2>
+            <p className="text-xs mt-0.5" style={{ color: "var(--t-5)" }}>{steps[step - 1].subtitle}</p>
           </div>
         </div>
 
@@ -140,6 +188,34 @@ export default function CreateProject() {
           >
             {step === 1 && (
               <>
+                {/* Optional CRM link — pick an existing customer to prefill + link back. */}
+                <div className="rounded-xl p-3.5" style={{ background: "oklch(0.62 0.09 68 / 7%)", border: "1px solid oklch(0.62 0.09 68 / 22%)" }}>
+                  <label style={labelStyle}>LINK TO CUSTOMER</label>
+                  <SearchableSelect
+                    testId="cp-link-customer"
+                    value={linkInquiryId}
+                    onChange={onPickCustomer}
+                    placeholder="None — new walk-in client"
+                    searchPlaceholder="Search customer name or location…"
+                    clearLabel="None — new walk-in client"
+                    emptyText="No matching open customers"
+                    options={eligibleCustomers.map((c) => ({
+                      value: c.id,
+                      label: c.client_name,
+                      sublabel: `${c.category} · ${c.location}`,
+                    }))}
+                  />
+                  <p className="text-[11px] mt-1.5" style={{ color: "var(--t-5)" }}>
+                    {linkInquiryId
+                      ? "Client details prefilled below — this project will be linked to the customer and marked as Awarded."
+                      : "Optional — pick a pipeline customer to prefill their details, or leave as a walk-in."}
+                  </p>
+                  {eligibleCustomers.length === 0 && (
+                    <p className="text-[11px] mt-1" style={{ color: "var(--t-5)" }}>
+                      No open customers yet. Add one from the Customers page first.
+                    </p>
+                  )}
+                </div>
                 <div>
                   <label style={labelStyle}>CLIENT NAME *</label>
                   <input data-testid="cp-client-name" style={inputStyle} placeholder="e.g. Mr. & Mrs. Lim" value={form.clientName} onChange={(e) => update("clientName", e.target.value)} />
@@ -170,9 +246,9 @@ export default function CreateProject() {
                         onClick={() => update("projectType", t)}
                         className="flex-1 py-2.5 rounded-xl text-xs font-label"
                         style={{
-                          background: form.projectType === t ? "oklch(0.72 0.09 68)" : "oklch(0.96 0.006 75)",
-                          color: form.projectType === t ? "oklch(1 0 0)" : "oklch(0.52 0.010 68)",
-                          border: form.projectType === t ? "none" : "1px solid oklch(0.90 0.010 75)",
+                          background: form.projectType === t ? "var(--acc-bright)" : "var(--s-2)",
+                          color: form.projectType === t ? "oklch(1 0 0)" : "var(--t-5)",
+                          border: form.projectType === t ? "none" : "1px solid var(--b-1)",
                           letterSpacing: "0.04em",
                         }}
                       >
@@ -190,9 +266,9 @@ export default function CreateProject() {
                         onClick={() => update("propertyType", t)}
                         className="px-3 py-1.5 rounded-full text-xs font-label"
                         style={{
-                          background: form.propertyType === t ? "oklch(0.62 0.09 68 / 15%)" : "oklch(0.96 0.006 75)",
-                          color: form.propertyType === t ? "oklch(0.42 0.09 68)" : "oklch(0.45 0.008 65)",
-                          border: form.propertyType === t ? "1px solid oklch(0.72 0.09 68 / 40%)" : "1px solid oklch(0.90 0.010 75)",
+                          background: form.propertyType === t ? "oklch(0.62 0.09 68 / 15%)" : "var(--s-2)",
+                          color: form.propertyType === t ? "var(--acc-ink)" : "var(--t-4)",
+                          border: form.propertyType === t ? "1px solid oklch(0.72 0.09 68 / 40%)" : "1px solid var(--b-1)",
                         }}
                       >
                         {t}
@@ -230,6 +306,41 @@ export default function CreateProject() {
             {step === 3 && (
               <>
                 <div>
+                  <label style={labelStyle}>COVER IMAGE</label>
+                  <p className="text-xs mb-2" style={{ color: "var(--t-5)" }}>
+                    Optional — leave empty to use the default cover for this project type.
+                  </p>
+                  {imagePreview ? (
+                    <div className="relative rounded-xl overflow-hidden" style={{ border: "1px solid var(--b-1)" }}>
+                      <img src={imagePreview} alt="Cover preview" className="w-full h-40 object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => onPickImage(null)}
+                        className="absolute top-2 right-2 px-2.5 py-1 rounded-lg text-xs font-label"
+                        style={{ background: "oklch(0 0 0 / 55%)", color: "oklch(1 0 0)" }}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ) : (
+                    <label
+                      className="flex flex-col items-center justify-center gap-1.5 h-40 cursor-pointer rounded-xl"
+                      style={{ background: "var(--s-2)", border: "1px dashed var(--b-strong)" }}
+                    >
+                      <ImagePlus size={22} style={{ color: "var(--t-5)" }} />
+                      <span className="text-xs font-label" style={{ color: "var(--t-4)" }}>Tap to upload an image</span>
+                      <span className="text-[10px]" style={{ color: "var(--t-5)" }}>JPG, PNG or WebP · up to 10 MB</span>
+                      <input
+                        data-testid="cp-cover-image"
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        className="hidden"
+                        onChange={(e) => onPickImage(e.target.files?.[0] ?? null)}
+                      />
+                    </label>
+                  )}
+                </div>
+                <div>
                   <label style={labelStyle}>SELECT AREAS / ROOMS *</label>
                   <div className="flex flex-wrap gap-2">
                     {roomOptions.map((room) => (
@@ -238,9 +349,9 @@ export default function CreateProject() {
                         onClick={() => toggleRoom(room)}
                         className="px-3 py-1.5 rounded-full text-xs font-label"
                         style={{
-                          background: form.selectedRooms.includes(room) ? "oklch(0.62 0.09 68 / 15%)" : "oklch(0.96 0.006 75)",
-                          color: form.selectedRooms.includes(room) ? "oklch(0.42 0.09 68)" : "oklch(0.45 0.008 65)",
-                          border: form.selectedRooms.includes(room) ? "1px solid oklch(0.72 0.09 68 / 40%)" : "1px solid oklch(0.90 0.010 75)",
+                          background: form.selectedRooms.includes(room) ? "oklch(0.62 0.09 68 / 15%)" : "var(--s-2)",
+                          color: form.selectedRooms.includes(room) ? "var(--acc-ink)" : "var(--t-4)",
+                          border: form.selectedRooms.includes(room) ? "1px solid oklch(0.72 0.09 68 / 40%)" : "1px solid var(--b-1)",
                         }}
                       >
                         {form.selectedRooms.includes(room) ? "✓ " : ""}{room}
@@ -248,7 +359,7 @@ export default function CreateProject() {
                     ))}
                   </div>
                   {form.selectedRooms.length > 0 && (
-                    <p className="text-xs mt-2" style={{ color: "oklch(0.52 0.09 68)" }}>{form.selectedRooms.length} areas selected</p>
+                    <p className="text-xs mt-2" style={{ color: "var(--acc)" }}>{form.selectedRooms.length} areas selected</p>
                   )}
                 </div>
                 <div>
@@ -270,15 +381,15 @@ export default function CreateProject() {
                   { title: "Project Details", fields: [{ label: "Project Name", value: form.projectName || "—" }, { label: "Type", value: `${form.projectType} · ${form.propertyType}` }, { label: "Location", value: form.location || "—" }, { label: "Size", value: form.size ? `${form.size} sqft` : "—" }, { label: "Budget", value: form.budget ? `RM ${Number(form.budget).toLocaleString()}` : "—" }] },
                   { title: "Areas & Scope", fields: [{ label: "Areas Selected", value: form.selectedRooms.length > 0 ? form.selectedRooms.join(", ") : "—" }] },
                 ].map((section, si) => (
-                  <div key={si} className="rounded-2xl p-4" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
+                  <div key={si} className="rounded-2xl p-4" style={{ background: "var(--s-card)", border: "1px solid var(--b-1)" }}>
                     <div className="flex items-center justify-between mb-3">
-                      <h4 className="font-display text-base font-semibold text-neutral-900">{section.title}</h4>
-                      <button onClick={() => setStep(si + 1)} className="text-xs font-label" style={{ color: "oklch(0.52 0.09 68)" }}>Edit</button>
+                      <h4 className="font-display text-base font-semibold text-[color:var(--t-1)]">{section.title}</h4>
+                      <button onClick={() => setStep(si + 1)} className="text-xs font-label" style={{ color: "var(--acc)" }}>Edit</button>
                     </div>
                     {section.fields.map((f) => (
-                      <div key={f.label} className="flex items-start justify-between py-1.5" style={{ borderBottom: "1px solid oklch(0.93 0.008 75)" }}>
-                        <span className="text-xs" style={{ color: "oklch(0.52 0.010 68)" }}>{f.label}</span>
-                        <span className="text-xs font-medium text-right max-w-[55%]" style={{ color: "oklch(0.20 0.008 65)" }}>{f.value}</span>
+                      <div key={f.label} className="flex items-start justify-between py-1.5" style={{ borderBottom: "1px solid var(--b-2)" }}>
+                        <span className="text-xs" style={{ color: "var(--t-5)" }}>{f.label}</span>
+                        <span className="text-xs font-medium text-right max-w-[55%]" style={{ color: "var(--t-2)" }}>{f.value}</span>
                       </div>
                     ))}
                   </div>
@@ -292,14 +403,14 @@ export default function CreateProject() {
       {/* Navigation buttons */}
       <div
         className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] px-4 py-4 flex gap-3 lg:static lg:translate-x-0 lg:max-w-none"
-        style={{ background: "oklch(1 0 0)", borderTop: "1px solid oklch(0.90 0.010 75)", backdropFilter: "blur(16px)" }}
+        style={{ background: "var(--s-card)", borderTop: "1px solid var(--b-1)", backdropFilter: "blur(16px)" }}
       >
         {step > 1 && (
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={() => setStep((s) => s - 1)}
             className="flex-1 py-3.5 rounded-xl text-sm font-label"
-            style={{ background: "oklch(0.96 0.006 75)", color: "oklch(0.35 0.008 65)", border: "1px solid oklch(0.90 0.010 75)", letterSpacing: "0.04em" }}
+            style={{ background: "var(--s-2)", color: "var(--t-3)", border: "1px solid var(--b-1)", letterSpacing: "0.04em" }}
           >
             Back
           </motion.button>
@@ -310,7 +421,7 @@ export default function CreateProject() {
           disabled={createProject.isPending}
           data-testid="cp-next"
           className="flex-1 py-3.5 rounded-xl text-sm font-label font-semibold"
-          style={{ background: "linear-gradient(135deg, oklch(0.72 0.09 68), oklch(0.55 0.08 65))", color: "oklch(1 0 0)", letterSpacing: "0.04em", opacity: createProject.isPending ? 0.6 : 1 }}
+          style={{ background: "linear-gradient(135deg, var(--acc-bright), var(--acc-2))", color: "oklch(1 0 0)", letterSpacing: "0.04em", opacity: createProject.isPending ? 0.6 : 1 }}
         >
           {step < 4 ? "Continue" : createProject.isPending ? "Creating…" : "Create Project"}
         </motion.button>

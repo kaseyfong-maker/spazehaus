@@ -9,6 +9,7 @@ import { useLocation } from "wouter";
 import { Plus, Trash2, Check } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
 import { useProjects, useQuotations, useCreateQuotation } from "@/lib/queries";
+import SearchableSelect from "@/components/SearchableSelect";
 import { LineItem, computeTotals, formatRM, categoryColors } from "@/lib/quotationData";
 import type { QuotationType } from "@/lib/dbTypes";
 import { toast } from "sonner";
@@ -24,9 +25,9 @@ const CATEGORIES = ["Design", "Material", "Labour", "Furniture", "Electrical", "
 const UNITS = ["sqft", "unit", "set", "ft", "lump sum", "m", "m²", "lot", "pcs"];
 
 const inputStyle = {
-  background: "oklch(0.96 0.006 75)",
-  border: "1px solid oklch(0.90 0.010 75)",
-  color: "oklch(0.20 0.008 65)",
+  background: "var(--s-2)",
+  border: "1px solid var(--b-1)",
+  color: "var(--t-2)",
   borderRadius: "0.75rem",
   padding: "0.65rem 0.875rem",
   fontSize: "0.8125rem",
@@ -35,7 +36,7 @@ const inputStyle = {
 } as React.CSSProperties;
 
 const labelStyle = {
-  color: "oklch(0.52 0.010 68)",
+  color: "var(--t-5)",
   fontSize: "0.6875rem",
   marginBottom: "0.3rem",
   display: "block",
@@ -181,22 +182,22 @@ export default function CreateQuotation() {
                 <div
                   className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
                   style={{
-                    background: step > s.id ? "oklch(0.72 0.09 68)" : step === s.id ? "oklch(0.62 0.09 68 / 15%)" : "oklch(0.96 0.006 75)",
-                    border: step >= s.id ? "1px solid oklch(0.72 0.09 68)" : "1px solid oklch(0.90 0.010 75)",
-                    color: step > s.id ? "oklch(1 0 0)" : step === s.id ? "oklch(0.42 0.09 68)" : "oklch(0.45 0.008 65)",
+                    background: step > s.id ? "var(--acc-bright)" : step === s.id ? "oklch(0.62 0.09 68 / 15%)" : "var(--s-2)",
+                    border: step >= s.id ? "1px solid var(--acc-bright)" : "1px solid var(--b-1)",
+                    color: step > s.id ? "oklch(1 0 0)" : step === s.id ? "var(--acc-ink)" : "var(--t-4)",
                   }}
                 >
                   {step > s.id ? <Check size={12} /> : s.id}
                 </div>
                 {i < steps.length - 1 && (
-                  <div className="w-12 h-0.5 mx-1" style={{ background: step > s.id ? "oklch(0.72 0.09 68)" : "oklch(0.90 0.010 75)" }} />
+                  <div className="w-12 h-0.5 mx-1" style={{ background: step > s.id ? "var(--acc-bright)" : "var(--b-1)" }} />
                 )}
               </div>
             ))}
           </div>
-          <p className="text-xs font-label" style={{ color: "oklch(0.52 0.09 68)", letterSpacing: "0.08em" }}>STEP {step} OF {steps.length}</p>
-          <h2 className="font-display text-xl font-semibold text-neutral-900">{steps[step - 1].title}</h2>
-          <p className="text-xs mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>{steps[step - 1].subtitle}</p>
+          <p className="text-xs font-label" style={{ color: "var(--acc)", letterSpacing: "0.08em" }}>STEP {step} OF {steps.length}</p>
+          <h2 className="font-display text-xl font-semibold text-[color:var(--t-1)]">{steps[step - 1].title}</h2>
+          <p className="text-xs mt-0.5" style={{ color: "var(--t-5)" }}>{steps[step - 1].subtitle}</p>
         </div>
 
         <AnimatePresence mode="wait">
@@ -220,9 +221,9 @@ export default function CreateQuotation() {
                         onClick={() => setDocInfo((d) => ({ ...d, type: t }))}
                         className="flex-1 py-2.5 rounded-xl text-[11px] font-label"
                         style={{
-                          background: docInfo.type === t ? "oklch(0.72 0.09 68)" : "oklch(0.96 0.006 75)",
-                          color: docInfo.type === t ? "oklch(1 0 0)" : "oklch(0.52 0.010 68)",
-                          border: docInfo.type === t ? "none" : "1px solid oklch(0.90 0.010 75)",
+                          background: docInfo.type === t ? "var(--acc-bright)" : "var(--s-2)",
+                          color: docInfo.type === t ? "oklch(1 0 0)" : "var(--t-5)",
+                          border: docInfo.type === t ? "none" : "1px solid var(--b-1)",
                           letterSpacing: "0.03em",
                         }}
                       >
@@ -234,18 +235,14 @@ export default function CreateQuotation() {
 
                 <div>
                   <label style={labelStyle}>LINKED PROJECT *</label>
-                  <select
-                    data-testid="cq-project"
-                    style={selectStyle}
+                  <SearchableSelect
+                    testId="cq-project"
                     value={docInfo.projectId}
-                    onChange={(e) => setDocInfo((d) => ({ ...d, projectId: e.target.value }))}
-                  >
-                    {projects.map((p) => (
-                      <option key={p.id} value={p.id} style={{ background: "oklch(0.96 0.006 75)" }}>
-                        {p.name} — {p.client}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(v) => setDocInfo((d) => ({ ...d, projectId: v }))}
+                    placeholder="Select a project…"
+                    searchPlaceholder="Search project or client…"
+                    options={projects.map((p) => ({ value: p.id, label: `${p.name} — ${p.client}`, sublabel: p.location }))}
+                  />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
@@ -273,9 +270,9 @@ export default function CreateQuotation() {
                         onClick={() => setDocInfo((d) => ({ ...d, taxRate: r }))}
                         className="flex-1 py-2 rounded-xl text-xs font-label"
                         style={{
-                          background: docInfo.taxRate === r ? "oklch(0.62 0.09 68 / 15%)" : "oklch(0.96 0.006 75)",
-                          color: docInfo.taxRate === r ? "oklch(0.42 0.09 68)" : "oklch(0.45 0.008 65)",
-                          border: docInfo.taxRate === r ? "1px solid oklch(0.72 0.09 68 / 40%)" : "1px solid oklch(0.90 0.010 75)",
+                          background: docInfo.taxRate === r ? "oklch(0.62 0.09 68 / 15%)" : "var(--s-2)",
+                          color: docInfo.taxRate === r ? "var(--acc-ink)" : "var(--t-4)",
+                          border: docInfo.taxRate === r ? "1px solid oklch(0.72 0.09 68 / 40%)" : "1px solid var(--b-1)",
                         }}
                       >
                         {r}%
@@ -308,10 +305,10 @@ export default function CreateQuotation() {
             {step === 2 && (
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <p className="text-xs font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.06em" }}>{items.length} LINE ITEMS</p>
+                  <p className="text-xs font-label" style={{ color: "var(--t-5)", letterSpacing: "0.06em" }}>{items.length} LINE ITEMS</p>
                   <div className="text-right">
-                    <p className="text-xs" style={{ color: "oklch(0.52 0.010 68)" }}>Running total</p>
-                    <p className="text-sm font-semibold" style={{ color: "oklch(0.52 0.09 68)" }}>{formatRM(subtotal)}</p>
+                    <p className="text-xs" style={{ color: "var(--t-5)" }}>Running total</p>
+                    <p className="text-sm font-semibold" style={{ color: "var(--acc)" }}>{formatRM(subtotal)}</p>
                   </div>
                 </div>
 
@@ -322,22 +319,22 @@ export default function CreateQuotation() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: i * 0.04 }}
                     className="rounded-2xl p-3 space-y-2.5"
-                    style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}
+                    style={{ background: "var(--s-card)", border: "1px solid var(--b-1)" }}
                   >
                     {/* Item header */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span
                           className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold"
-                          style={{ background: "oklch(0.62 0.09 68 / 15%)", color: "oklch(0.52 0.09 68)" }}
+                          style={{ background: "oklch(0.62 0.09 68 / 15%)", color: "var(--acc)" }}
                         >
                           {i + 1}
                         </span>
                         <span
                           className="text-[10px] font-label px-2 py-0.5 rounded-full"
                           style={{
-                            background: `${categoryColors[item.category] || "oklch(0.72 0.09 68)"} / 15%`,
-                            color: categoryColors[item.category] || "oklch(0.72 0.09 68)",
+                            background: `${categoryColors[item.category] || "var(--acc-bright)"} / 15%`,
+                            color: categoryColors[item.category] || "var(--acc-bright)",
                             letterSpacing: "0.04em",
                           }}
                         >
@@ -357,7 +354,7 @@ export default function CreateQuotation() {
                       <div>
                         <label style={labelStyle}>CATEGORY</label>
                         <select style={selectStyle} value={item.category} onChange={(e) => updateItem(item.id, "category", e.target.value)}>
-                          {CATEGORIES.map((c) => <option key={c} value={c} style={{ background: "oklch(0.96 0.006 75)" }}>{c}</option>)}
+                          {CATEGORIES.map((c) => <option key={c} value={c} style={{ background: "var(--s-2)" }}>{c}</option>)}
                         </select>
                       </div>
                     </div>
@@ -375,7 +372,7 @@ export default function CreateQuotation() {
                       <div>
                         <label style={labelStyle}>UNIT</label>
                         <select style={selectStyle} value={item.unit} onChange={(e) => updateItem(item.id, "unit", e.target.value)}>
-                          {UNITS.map((u) => <option key={u} value={u} style={{ background: "oklch(0.96 0.006 75)" }}>{u}</option>)}
+                          {UNITS.map((u) => <option key={u} value={u} style={{ background: "var(--s-2)" }}>{u}</option>)}
                         </select>
                       </div>
                       <div>
@@ -390,7 +387,7 @@ export default function CreateQuotation() {
 
                     {/* Line total */}
                     <div className="flex justify-end">
-                      <span className="text-xs font-semibold" style={{ color: "oklch(0.52 0.09 68)" }}>
+                      <span className="text-xs font-semibold" style={{ color: "var(--acc)" }}>
                         = {formatRM(item.qty * item.unitPrice * (1 - item.discount / 100))}
                       </span>
                     </div>
@@ -401,7 +398,7 @@ export default function CreateQuotation() {
                   whileTap={{ scale: 0.95 }}
                   onClick={addItem}
                   className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-dashed"
-                  style={{ borderColor: "oklch(0.62 0.09 68 / 25%)", color: "oklch(0.52 0.09 68)" }}
+                  style={{ borderColor: "oklch(0.62 0.09 68 / 25%)", color: "var(--acc)" }}
                 >
                   <Plus size={15} />
                   <span className="text-sm font-label" style={{ letterSpacing: "0.04em" }}>Add Line Item</span>
@@ -413,14 +410,14 @@ export default function CreateQuotation() {
             {step === 3 && (
               <div className="space-y-4">
                 {/* Document header preview */}
-                <div className="rounded-2xl p-4" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
+                <div className="rounded-2xl p-4" style={{ background: "var(--s-card)", border: "1px solid var(--b-1)" }}>
                   <div className="flex items-start justify-between mb-3">
                     <div>
-                      <p className="text-xs font-label" style={{ color: "oklch(0.52 0.09 68)", letterSpacing: "0.08em" }}>SPAZEHAUS DESIGN SDN BHD</p>
-                      <h3 className="font-display text-xl font-semibold text-neutral-900 mt-0.5">{docInfo.type}</h3>
+                      <p className="text-xs font-label" style={{ color: "var(--acc)", letterSpacing: "0.08em" }}>SPAZEHAUS DESIGN SDN BHD</p>
+                      <h3 className="font-display text-xl font-semibold text-[color:var(--t-1)] mt-0.5">{docInfo.type}</h3>
                     </div>
                     <div className="text-right">
-                      <p className="text-xs font-label" style={{ color: "oklch(0.52 0.010 68)" }}>Date: {docInfo.issueDate}</p>
+                      <p className="text-xs font-label" style={{ color: "var(--t-5)" }}>Date: {docInfo.issueDate}</p>
                       {docInfo.type === "Invoice" && docInfo.dueDate && (
                         <p className="text-xs" style={{ color: "oklch(0.68 0.12 25)" }}>Due: {docInfo.dueDate}</p>
                       )}
@@ -431,32 +428,32 @@ export default function CreateQuotation() {
                     { label: "Client", value: selectedProject.client },
                     { label: "Tax Rate", value: `${docInfo.taxRate}%` },
                   ].map((item) => (
-                    <div key={item.label} className="flex items-center justify-between py-1.5" style={{ borderBottom: "1px solid oklch(0.93 0.008 75)" }}>
-                      <span className="text-xs" style={{ color: "oklch(0.52 0.010 68)" }}>{item.label}</span>
-                      <span className="text-xs font-medium text-neutral-900">{item.value}</span>
+                    <div key={item.label} className="flex items-center justify-between py-1.5" style={{ borderBottom: "1px solid var(--b-2)" }}>
+                      <span className="text-xs" style={{ color: "var(--t-5)" }}>{item.label}</span>
+                      <span className="text-xs font-medium text-[color:var(--t-1)]">{item.value}</span>
                     </div>
                   ))}
                 </div>
 
                 {/* Items by area */}
-                <div className="rounded-2xl overflow-hidden" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
-                  <div className="px-4 py-3" style={{ borderBottom: "1px solid oklch(0.90 0.010 75)" }}>
-                    <p className="text-xs font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.06em" }}>LINE ITEMS ({items.length})</p>
+                <div className="rounded-2xl overflow-hidden" style={{ background: "var(--s-card)", border: "1px solid var(--b-1)" }}>
+                  <div className="px-4 py-3" style={{ borderBottom: "1px solid var(--b-1)" }}>
+                    <p className="text-xs font-label" style={{ color: "var(--t-5)", letterSpacing: "0.06em" }}>LINE ITEMS ({items.length})</p>
                   </div>
                   {Object.entries(groupedByArea).map(([area, areaItems]) => (
                     <div key={area}>
-                      <div className="px-4 py-2" style={{ background: "oklch(0.97 0.004 80)" }}>
-                        <p className="text-[10px] font-label" style={{ color: "oklch(0.52 0.09 68)", letterSpacing: "0.06em" }}>{area.toUpperCase()}</p>
+                      <div className="px-4 py-2" style={{ background: "var(--s-3)" }}>
+                        <p className="text-[10px] font-label" style={{ color: "var(--acc)", letterSpacing: "0.06em" }}>{area.toUpperCase()}</p>
                       </div>
                       {areaItems.map((item) => (
                         <div key={item.id} className="px-4 py-2.5 flex items-start justify-between" style={{ borderBottom: "1px solid oklch(1 0 0 / 5%)" }}>
                           <div className="flex-1 min-w-0 pr-3">
-                            <p className="text-xs text-neutral-900 leading-snug">{item.description || "(No description)"}</p>
-                            <p className="text-[10px] mt-0.5" style={{ color: "oklch(0.52 0.010 68)" }}>
+                            <p className="text-xs text-[color:var(--t-1)] leading-snug">{item.description || "(No description)"}</p>
+                            <p className="text-[10px] mt-0.5" style={{ color: "var(--t-5)" }}>
                               {item.qty} {item.unit} × RM {item.unitPrice.toLocaleString()}{item.discount > 0 ? ` (${item.discount}% off)` : ""}
                             </p>
                           </div>
-                          <p className="text-xs font-semibold shrink-0" style={{ color: "oklch(0.52 0.09 68)" }}>
+                          <p className="text-xs font-semibold shrink-0" style={{ color: "var(--acc)" }}>
                             {formatRM(item.qty * item.unitPrice * (1 - item.discount / 100))}
                           </p>
                         </div>
@@ -466,20 +463,20 @@ export default function CreateQuotation() {
                 </div>
 
                 {/* Totals */}
-                <div className="rounded-2xl p-4 space-y-2" style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}>
+                <div className="rounded-2xl p-4 space-y-2" style={{ background: "var(--s-card)", border: "1px solid var(--b-1)" }}>
                   <div className="flex justify-between">
-                    <span className="text-sm" style={{ color: "oklch(0.52 0.010 68)" }}>Subtotal</span>
-                    <span className="text-sm text-neutral-900">{formatRM(subtotal)}</span>
+                    <span className="text-sm" style={{ color: "var(--t-5)" }}>Subtotal</span>
+                    <span className="text-sm text-[color:var(--t-1)]">{formatRM(subtotal)}</span>
                   </div>
                   {Number(docInfo.taxRate) > 0 && (
                     <div className="flex justify-between">
-                      <span className="text-sm" style={{ color: "oklch(0.52 0.010 68)" }}>Tax ({docInfo.taxRate}%)</span>
-                      <span className="text-sm text-neutral-900">{formatRM(taxAmount)}</span>
+                      <span className="text-sm" style={{ color: "var(--t-5)" }}>Tax ({docInfo.taxRate}%)</span>
+                      <span className="text-sm text-[color:var(--t-1)]">{formatRM(taxAmount)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between pt-2" style={{ borderTop: "1px solid oklch(0.90 0.010 75)" }}>
-                    <span className="text-base font-semibold text-neutral-900">Total</span>
-                    <span className="text-base font-display font-bold" style={{ color: "oklch(0.52 0.09 68)" }}>{formatRM(total)}</span>
+                  <div className="flex justify-between pt-2" style={{ borderTop: "1px solid var(--b-1)" }}>
+                    <span className="text-base font-semibold text-[color:var(--t-1)]">Total</span>
+                    <span className="text-base font-display font-bold" style={{ color: "var(--acc)" }}>{formatRM(total)}</span>
                   </div>
                 </div>
               </div>
@@ -491,14 +488,14 @@ export default function CreateQuotation() {
       {/* Navigation */}
       <div
         className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] px-4 py-4 flex gap-3 lg:static lg:translate-x-0 lg:max-w-none"
-        style={{ background: "oklch(1 0 0)", borderTop: "1px solid oklch(0.90 0.010 75)", backdropFilter: "blur(16px)" }}
+        style={{ background: "var(--s-card)", borderTop: "1px solid var(--b-1)", backdropFilter: "blur(16px)" }}
       >
         {step > 1 && (
           <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={() => setStep((s) => s - 1)}
             className="flex-1 py-3.5 rounded-xl text-sm font-label"
-            style={{ background: "oklch(0.96 0.006 75)", color: "oklch(0.35 0.008 65)", border: "1px solid oklch(0.90 0.010 75)", letterSpacing: "0.04em" }}
+            style={{ background: "var(--s-2)", color: "var(--t-3)", border: "1px solid var(--b-1)", letterSpacing: "0.04em" }}
           >
             Back
           </motion.button>
@@ -509,7 +506,7 @@ export default function CreateQuotation() {
           disabled={step === 3 && createQuotation.isPending}
           data-testid="cq-next"
           className="flex-1 py-3.5 rounded-xl text-sm font-label font-semibold"
-          style={{ background: "linear-gradient(135deg, oklch(0.72 0.09 68), oklch(0.55 0.08 65))", color: "oklch(1 0 0)", letterSpacing: "0.04em", opacity: step === 3 && createQuotation.isPending ? 0.7 : 1 }}
+          style={{ background: "linear-gradient(135deg, var(--acc-bright), var(--acc-2))", color: "oklch(1 0 0)", letterSpacing: "0.04em", opacity: step === 3 && createQuotation.isPending ? 0.7 : 1 }}
         >
           {step < 3 ? "Continue" : createQuotation.isPending ? "Creating…" : "Create Document"}
         </motion.button>

@@ -9,8 +9,10 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useLocation } from "wouter";
-import { Search, ChevronRight, TrendingUp, Users, Award, XCircle } from "lucide-react";
+import { Search, ChevronRight, TrendingUp, Users, Award, XCircle, UserPlus } from "lucide-react";
 import AppHeader from "@/components/AppHeader";
+import { usePagination } from "@/hooks/usePagination";
+import PaginationBar from "@/components/PaginationBar";
 import {
   stageConfig,
   categoryConfig,
@@ -67,10 +69,27 @@ export default function CustomerDatabase() {
     })
     // Sort: most recently updated first
     .sort((a, b) => b.lastUpdated.localeCompare(a.lastUpdated));
+  const pg = usePagination(filtered, 9, `${filter}|${search}`);
 
   return (
-    <div className="mobile-container" style={{ background: "oklch(0.985 0.004 80)" }}>
-      <AppHeader title="Customers" subtitle="DATABASE · CRM" bgImage={HERO_BG} showBack showNotification />
+    <div className="mobile-container" style={{ background: "var(--s-page)" }}>
+      <AppHeader
+        title="Customers"
+        subtitle="DATABASE · CRM"
+        bgImage={HERO_BG}
+        showBack
+        showNotification
+        rightAction={
+          <button
+            data-testid="new-customer-btn"
+            onClick={() => navigate("/customers/new")}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-label font-semibold"
+            style={{ background: "var(--acc-strong)", color: "oklch(1 0 0)", letterSpacing: "0.04em" }}
+          >
+            <UserPlus size={14} /> New
+          </button>
+        }
+      />
 
       <div className="px-4 py-4 space-y-5 pb-24 lg:px-8 lg:py-7">
         {/* KPI strip */}
@@ -80,7 +99,7 @@ export default function CustomerDatabase() {
             label="Total Inquiries"
             primary={String(summary.total)}
             secondary={`${summary.active} active in pipeline`}
-            tint="oklch(0.42 0.09 68)"
+            tint="var(--acc-ink)"
             tintBg="oklch(0.62 0.09 68 / 10%)"
           />
           <KpiCard
@@ -112,13 +131,13 @@ export default function CustomerDatabase() {
         {/* Funnel */}
         <div
           className="rounded-2xl p-4"
-          style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
+          style={{ background: "var(--s-card)", border: "1px solid var(--b-1)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
         >
           <div className="flex items-center justify-between mb-3">
-            <p className="font-label text-xs" style={{ color: "oklch(0.20 0.008 65)", letterSpacing: "0.10em", fontWeight: 700 }}>
+            <p className="font-label text-xs" style={{ color: "var(--t-2)", letterSpacing: "0.10em", fontWeight: 700 }}>
               CONVERSION FUNNEL
             </p>
-            <span className="text-[10px] font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.04em" }}>
+            <span className="text-[10px] font-label" style={{ color: "var(--t-5)", letterSpacing: "0.04em" }}>
               INQUIRY → AWARDED
             </span>
           </div>
@@ -129,10 +148,10 @@ export default function CustomerDatabase() {
               return (
                 <div key={f.key}>
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs" style={{ color: "oklch(0.30 0.008 65)" }}>{f.label}</span>
+                    <span className="text-xs" style={{ color: "var(--t-3)" }}>{f.label}</span>
                     <span className="text-xs font-display font-semibold" style={{ color: sc.color }}>{f.value}</span>
                   </div>
-                  <div className="h-2.5 rounded-full overflow-hidden" style={{ background: "oklch(0.92 0.008 75)" }}>
+                  <div className="h-2.5 rounded-full overflow-hidden" style={{ background: "var(--b-2)" }}>
                     <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${pct}%` }}
@@ -147,9 +166,9 @@ export default function CustomerDatabase() {
           </div>
           <div
             className="mt-3 pt-3 flex items-center justify-between"
-            style={{ borderTop: "1px solid oklch(0.93 0.008 75)" }}
+            style={{ borderTop: "1px solid var(--b-2)" }}
           >
-            <span className="text-[10px] font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.06em" }}>
+            <span className="text-[10px] font-label" style={{ color: "var(--t-5)", letterSpacing: "0.06em" }}>
               CONVERSION
             </span>
             <span className="font-display text-sm font-semibold" style={{ color: "oklch(0.38 0.09 145)" }}>
@@ -161,9 +180,9 @@ export default function CustomerDatabase() {
         {/* Categories breakdown */}
         <div
           className="rounded-2xl p-4"
-          style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
+          style={{ background: "var(--s-card)", border: "1px solid var(--b-1)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
         >
-          <p className="font-label text-xs mb-3" style={{ color: "oklch(0.20 0.008 65)", letterSpacing: "0.10em", fontWeight: 700 }}>
+          <p className="font-label text-xs mb-3" style={{ color: "var(--t-2)", letterSpacing: "0.10em", fontWeight: 700 }}>
             CUSTOMER CATEGORIES
           </p>
           <div className="grid grid-cols-5 gap-2">
@@ -194,7 +213,7 @@ export default function CustomerDatabase() {
         {/* Filter tabs */}
         <div
           className="flex rounded-xl p-1"
-          style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}
+          style={{ background: "var(--s-card)", border: "1px solid var(--b-1)" }}
         >
           {filterTabs.map((t) => {
             const active = filter === t;
@@ -211,7 +230,7 @@ export default function CustomerDatabase() {
                 className="flex-1 py-2 text-xs font-label rounded-lg transition-colors flex items-center justify-center gap-1"
                 style={{
                   background: active ? "oklch(0.62 0.09 68 / 10%)" : "transparent",
-                  color: active ? "oklch(0.42 0.09 68)" : "oklch(0.52 0.010 68)",
+                  color: active ? "var(--acc-ink)" : "var(--t-5)",
                   letterSpacing: "0.04em",
                   fontWeight: active ? 700 : 400,
                 }}
@@ -226,15 +245,15 @@ export default function CustomerDatabase() {
         {/* Search */}
         <div
           className="flex items-center gap-2 px-3 py-2.5 rounded-xl"
-          style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}
+          style={{ background: "var(--s-card)", border: "1px solid var(--b-1)" }}
         >
-          <Search size={14} style={{ color: "oklch(0.65 0.008 68)" }} />
+          <Search size={14} style={{ color: "var(--t-6)" }} />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search name, location, category…"
             className="flex-1 bg-transparent outline-none text-sm"
-            style={{ color: "oklch(0.20 0.008 65)" }}
+            style={{ color: "var(--t-2)" }}
           />
         </div>
 
@@ -242,15 +261,15 @@ export default function CustomerDatabase() {
         {filtered.length === 0 ? (
           <div
             className="rounded-2xl p-8 text-center"
-            style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)" }}
+            style={{ background: "var(--s-card)", border: "1px solid var(--b-1)" }}
           >
-            <Users size={28} className="mx-auto mb-3" style={{ color: "oklch(0.75 0.008 68)" }} />
-            <p className="text-sm font-semibold mb-1" style={{ color: "oklch(0.14 0.008 65)" }}>No matches</p>
-            <p className="text-xs" style={{ color: "oklch(0.52 0.010 68)" }}>Try a different filter or search term</p>
+            <Users size={28} className="mx-auto mb-3" style={{ color: "var(--t-7)" }} />
+            <p className="text-sm font-semibold mb-1" style={{ color: "var(--t-1)" }}>No matches</p>
+            <p className="text-xs" style={{ color: "var(--t-5)" }}>Try a different filter or search term</p>
           </div>
         ) : (
           <div className="space-y-2.5 lg:space-y-0 lg:grid lg:grid-cols-2 xl:grid-cols-3 lg:gap-3 lg:items-start">
-            {filtered.map((inq, i) => {
+            {pg.pageItems.map((inq, i) => {
               const sc = stageConfig[inq.stage];
               const cc = categoryConfig[inq.category];
               const tc = tierConfig[inq.tier];
@@ -272,7 +291,7 @@ export default function CustomerDatabase() {
                   data-testid="customer-card"
                   data-inquiry-id={inq.id}
                   className="w-full rounded-2xl p-4 flex items-start gap-3 text-left"
-                  style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
+                  style={{ background: "var(--s-card)", border: "1px solid var(--b-1)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
                 >
                   <div
                     className="w-11 h-11 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
@@ -286,7 +305,7 @@ export default function CustomerDatabase() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <p className="text-sm font-semibold truncate" style={{ color: "oklch(0.14 0.008 65)" }}>
+                      <p className="text-sm font-semibold truncate" style={{ color: "var(--t-1)" }}>
                         {inq.client}
                       </p>
                       {inq.tier !== "Standard" && (
@@ -305,7 +324,7 @@ export default function CustomerDatabase() {
                       >
                         {inq.category}
                       </span>
-                      <span className="text-[11px]" style={{ color: "oklch(0.52 0.010 68)" }}>
+                      <span className="text-[11px]" style={{ color: "var(--t-5)" }}>
                         · {inq.propertyType} · {inq.location.split(",")[0]}
                       </span>
                     </div>
@@ -329,14 +348,16 @@ export default function CustomerDatabase() {
                       )}
                     </div>
                   </div>
-                  <ChevronRight size={14} className="shrink-0 mt-1" style={{ color: "oklch(0.65 0.008 68)" }} />
+                  <ChevronRight size={14} className="shrink-0 mt-1" style={{ color: "var(--t-6)" }} />
                 </motion.button>
               );
             })}
           </div>
         )}
 
-        <p className="text-[10px] text-center font-label pt-2" style={{ color: "oklch(0.65 0.008 68)", letterSpacing: "0.06em" }}>
+        <PaginationBar page={pg.page} pageCount={pg.pageCount} onPage={pg.setPage} from={pg.from} to={pg.to} total={pg.total} label="customers" />
+
+        <p className="text-[10px] text-center font-label pt-2" style={{ color: "var(--t-6)", letterSpacing: "0.06em" }}>
           SPAZEHAUS · CUSTOMER DATABASE · 2026 ANNUAL MEETING SOP
         </p>
       </div>
@@ -366,20 +387,20 @@ function KpiCard({
   return (
     <div
       className="rounded-2xl p-3"
-      style={{ background: "oklch(1 0 0)", border: "1px solid oklch(0.90 0.010 75)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
+      style={{ background: "var(--s-card)", border: "1px solid var(--b-1)", boxShadow: "0 1px 8px oklch(0 0 0 / 0.04)" }}
     >
       <div className="flex items-center gap-2 mb-1.5">
         <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ background: tintBg }}>
           <Icon size={14} style={{ color: tint }} />
         </div>
-        <p className="text-[10px] font-label" style={{ color: "oklch(0.52 0.010 68)", letterSpacing: "0.06em" }}>
+        <p className="text-[10px] font-label" style={{ color: "var(--t-5)", letterSpacing: "0.06em" }}>
           {label.toUpperCase()}
         </p>
       </div>
-      <p className="font-display text-lg font-semibold leading-none truncate" style={{ color: "oklch(0.14 0.008 65)" }}>
+      <p className="font-display text-lg font-semibold leading-none truncate" style={{ color: "var(--t-1)" }}>
         {primary}
       </p>
-      <p className="text-[10px] mt-1 truncate" style={{ color: "oklch(0.52 0.010 68)" }}>
+      <p className="text-[10px] mt-1 truncate" style={{ color: "var(--t-5)" }}>
         {secondary}
       </p>
     </div>
