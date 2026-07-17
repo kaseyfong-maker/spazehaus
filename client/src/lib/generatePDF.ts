@@ -1,20 +1,23 @@
 /*
  * SPAZEHAUS PDF GENERATOR
  * Uses jsPDF + jspdf-autotable to produce branded quotation/invoice PDFs
- * Design: Dark-branded PDF with Spazehaus identity (gold accents, clean layout)
+ * Design: Light-mode PDF — white background, dark ink text, Spazehaus gold accent.
+ * (Print/document convention: light is more legible + toner-friendly than dark.)
  */
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { computeTotals, formatRM } from "./quotationData";
 import type { QuotationWithItems } from "./queries";
 
-// Brand colors as RGB arrays for jsPDF
-const GOLD = [201, 169, 110] as [number, number, number];        // #C9A96E
-const CHARCOAL = [26, 26, 26] as [number, number, number];       // #1A1A1A
-const DARK_CARD = [30, 30, 30] as [number, number, number];      // #1E1E1E
-const WARM_WHITE = [245, 242, 238] as [number, number, number];  // #F5F2EE
-const MUTED = [120, 115, 108] as [number, number, number];       // muted text
-const LIGHT_BORDER = [50, 50, 50] as [number, number, number];   // subtle border
+// Brand colors as RGB arrays for jsPDF — LIGHT theme
+const GOLD = [176, 141, 74] as [number, number, number];         // #B08D4A — deepened for contrast on white
+const PAGE_BG = [255, 255, 255] as [number, number, number];     // white page
+const CARD_BG = [246, 247, 249] as [number, number, number];     // light-gray panels
+const AREA_TINT = [247, 242, 233] as [number, number, number];   // faint warm/gold tint for area sub-headers
+const INK = [26, 26, 26] as [number, number, number];            // near-black headings / values
+const WHITE = [255, 255, 255] as [number, number, number];       // text on the gold chips
+const MUTED = [110, 110, 110] as [number, number, number];       // secondary text
+const LIGHT_BORDER = [223, 226, 230] as [number, number, number];// hairline borders on white
 
 const COMPANY_INFO = {
   name: "SPAZEHAUS DESIGN SDN BHD",
@@ -36,11 +39,11 @@ export async function generateQuotationPDF(quotation: QuotationWithItems): Promi
   const { subtotal, taxAmount, total } = computeTotals(quotation.items, quotation.taxRate);
 
   // ── BACKGROUND ──────────────────────────────────────────────────────────────
-  doc.setFillColor(...CHARCOAL);
+  doc.setFillColor(...PAGE_BG);
   doc.rect(0, 0, pageW, pageH, "F");
 
   // ── HEADER BAND ─────────────────────────────────────────────────────────────
-  doc.setFillColor(...DARK_CARD);
+  doc.setFillColor(...CARD_BG);
   doc.rect(0, 0, pageW, 52, "F");
 
   // Gold accent line at top
@@ -64,7 +67,7 @@ export async function generateQuotationPDF(quotation: QuotationWithItems): Promi
   // Document type (right side)
   doc.setFont("helvetica", "bold");
   doc.setFontSize(22);
-  doc.setTextColor(...WARM_WHITE);
+  doc.setTextColor(...INK);
   const docTypeText = quotation.type.toUpperCase();
   const docTypeW = doc.getTextWidth(docTypeText);
   doc.text(docTypeText, pageW - margin - docTypeW, 20);
@@ -101,22 +104,24 @@ export async function generateQuotationPDF(quotation: QuotationWithItems): Promi
   const colW = contentW / 2 - 5;
 
   // Bill To box
-  doc.setFillColor(...DARK_CARD);
-  doc.roundedRect(margin, y, colW, 38, 2, 2, "F");
+  doc.setFillColor(...CARD_BG);
+  doc.setDrawColor(...LIGHT_BORDER);
+  doc.setLineWidth(0.2);
+  doc.roundedRect(margin, y, colW, 38, 2, 2, "FD");
   doc.setFillColor(...GOLD);
   doc.roundedRect(margin, y, colW, 6, 2, 2, "F");
   doc.rect(margin, y + 3, colW, 3, "F"); // flatten bottom of top bar
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(7);
-  doc.setTextColor(...CHARCOAL);
+  doc.setTextColor(...WHITE);
   doc.setCharSpace(1.5);
   doc.text("BILL TO", margin + 4, y + 4.5);
   doc.setCharSpace(0);
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
-  doc.setTextColor(...WARM_WHITE);
+  doc.setTextColor(...INK);
   doc.text(quotation.client, margin + 4, y + 13);
 
   doc.setFont("helvetica", "normal");
@@ -131,8 +136,10 @@ export async function generateQuotationPDF(quotation: QuotationWithItems): Promi
 
   // Dates box (right column)
   const rightX = margin + colW + 10;
-  doc.setFillColor(...DARK_CARD);
-  doc.roundedRect(rightX, y, colW, 38, 2, 2, "F");
+  doc.setFillColor(...CARD_BG);
+  doc.setDrawColor(...LIGHT_BORDER);
+  doc.setLineWidth(0.2);
+  doc.roundedRect(rightX, y, colW, 38, 2, 2, "FD");
 
   const dateRows = [
     { label: "Issue Date", value: quotation.issueDate },
@@ -150,7 +157,7 @@ export async function generateQuotationPDF(quotation: QuotationWithItems): Promi
     doc.text(row.label, rightX + 4, rowY);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(7.5);
-    doc.setTextColor(...WARM_WHITE);
+    doc.setTextColor(...INK);
     const valW = doc.getTextWidth(row.value);
     doc.text(row.value, rightX + colW - 4 - valW, rowY);
     if (i < dateRows.length - 1) {
@@ -173,7 +180,7 @@ export async function generateQuotationPDF(quotation: QuotationWithItems): Promi
 
     // Area sub-header row
     tableBody.push([
-      { content: area.toUpperCase(), colSpan: 6, styles: { fillColor: [40, 40, 40] as [number, number, number], textColor: GOLD, fontStyle: "bold", fontSize: 7, cellPadding: { top: 3, bottom: 3, left: 4, right: 4 }, font: "helvetica" } } as any,
+      { content: area.toUpperCase(), colSpan: 6, styles: { fillColor: AREA_TINT, textColor: GOLD, fontStyle: "bold", fontSize: 7, cellPadding: { top: 3, bottom: 3, left: 4, right: 4 }, font: "helvetica" } } as any,
     ]);
 
     areaItems.forEach((item, idx) => {
@@ -196,8 +203,8 @@ export async function generateQuotationPDF(quotation: QuotationWithItems): Promi
     margin: { left: margin, right: margin },
     tableWidth: contentW,
     styles: {
-      fillColor: DARK_CARD,
-      textColor: WARM_WHITE,
+      fillColor: CARD_BG,
+      textColor: INK,
       fontSize: 7.5,
       cellPadding: { top: 3.5, bottom: 3.5, left: 4, right: 4 },
       lineColor: LIGHT_BORDER,
@@ -205,8 +212,8 @@ export async function generateQuotationPDF(quotation: QuotationWithItems): Promi
       font: "helvetica",
     },
     headStyles: {
-      fillColor: [35, 35, 35] as [number, number, number],
-      textColor: GOLD,
+      fillColor: GOLD,
+      textColor: WHITE,
       fontStyle: "bold",
       fontSize: 7,
       cellPadding: { top: 4, bottom: 4, left: 4, right: 4 },
@@ -221,12 +228,12 @@ export async function generateQuotationPDF(quotation: QuotationWithItems): Promi
       5: { cellWidth: 30, halign: "right", fontStyle: "bold" },
     },
     alternateRowStyles: {
-      fillColor: [32, 32, 32] as [number, number, number],
+      fillColor: CARD_BG,
     },
     didParseCell: (data) => {
       // Style area header rows
       if (data.row.raw && Array.isArray(data.row.raw) && data.row.raw.length === 1) {
-        data.cell.styles.fillColor = [40, 40, 40];
+        data.cell.styles.fillColor = AREA_TINT;
         data.cell.styles.textColor = GOLD;
       }
     },
@@ -239,22 +246,24 @@ export async function generateQuotationPDF(quotation: QuotationWithItems): Promi
   const totalsW = 75;
   let totalsY = finalY;
 
-  doc.setFillColor(...DARK_CARD);
-  doc.roundedRect(totalsX, totalsY, totalsW, quotation.taxRate > 0 ? 34 : 26, 2, 2, "F");
+  doc.setFillColor(...CARD_BG);
+  doc.setDrawColor(...LIGHT_BORDER);
+  doc.setLineWidth(0.2);
+  doc.roundedRect(totalsX, totalsY, totalsW, quotation.taxRate > 0 ? 34 : 26, 2, 2, "FD");
 
   // Subtotal row
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(...MUTED);
   doc.text("Subtotal", totalsX + 5, totalsY + 8);
-  doc.setTextColor(...WARM_WHITE);
+  doc.setTextColor(...INK);
   const subW = doc.getTextWidth(formatRM(subtotal));
   doc.text(formatRM(subtotal), totalsX + totalsW - 5 - subW, totalsY + 8);
 
   if (quotation.taxRate > 0) {
     doc.setTextColor(...MUTED);
     doc.text(`Tax (${quotation.taxRate}%)`, totalsX + 5, totalsY + 17);
-    doc.setTextColor(...WARM_WHITE);
+    doc.setTextColor(...INK);
     const taxW = doc.getTextWidth(formatRM(taxAmount));
     doc.text(formatRM(taxAmount), totalsX + totalsW - 5 - taxW, totalsY + 17);
     totalsY += 9;
@@ -277,14 +286,16 @@ export async function generateQuotationPDF(quotation: QuotationWithItems): Promi
   let notesY = (doc as any).lastAutoTable.finalY + 50;
   if (notesY > pageH - 60) {
     doc.addPage();
-    doc.setFillColor(...CHARCOAL);
+    doc.setFillColor(...PAGE_BG);
     doc.rect(0, 0, pageW, pageH, "F");
     notesY = 20;
   }
 
   if (quotation.notes) {
-    doc.setFillColor(...DARK_CARD);
-    doc.roundedRect(margin, notesY, contentW / 2 - 5, 40, 2, 2, "F");
+    doc.setFillColor(...CARD_BG);
+    doc.setDrawColor(...LIGHT_BORDER);
+  doc.setLineWidth(0.2);
+  doc.roundedRect(margin, notesY, contentW / 2 - 5, 40, 2, 2, "FD");
 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(7);
@@ -302,8 +313,10 @@ export async function generateQuotationPDF(quotation: QuotationWithItems): Promi
 
   if (quotation.terms) {
     const termsX = margin + contentW / 2 + 5;
-    doc.setFillColor(...DARK_CARD);
-    doc.roundedRect(termsX, notesY, contentW / 2 - 5, 40, 2, 2, "F");
+    doc.setFillColor(...CARD_BG);
+    doc.setDrawColor(...LIGHT_BORDER);
+  doc.setLineWidth(0.2);
+  doc.roundedRect(termsX, notesY, contentW / 2 - 5, 40, 2, 2, "FD");
 
     doc.setFont("helvetica", "bold");
     doc.setFontSize(7);
