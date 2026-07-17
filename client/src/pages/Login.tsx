@@ -39,6 +39,31 @@ export default function Login() {
     }
   }, []);
 
+  // ── Dev-only password sign-in ──────────────────────────────────────────────
+  // Lets you (and automated tests) sign in at localhost without the email
+  // round-trip. Gated by import.meta.env.DEV, so this whole block is compiled
+  // out of production builds. Set a password first with:
+  //   node scripts/dev-set-password.mjs you@email.com 'Passw0rd'
+  const devEnabled = import.meta.env.DEV;
+  const devPrefillEmail = (import.meta.env as Record<string, string | undefined>).VITE_DEV_LOGIN_EMAIL ?? "";
+  const [devEmail, setDevEmail] = useState(devPrefillEmail);
+  const [devPassword, setDevPassword] = useState("");
+  const [devBusy, setDevBusy] = useState(false);
+  const [devErr, setDevErr] = useState<string | null>(null);
+
+  async function handleDevSignIn(e: React.FormEvent) {
+    e.preventDefault();
+    setDevErr(null);
+    setDevBusy(true);
+    const { error } = await supabase.auth.signInWithPassword({
+      email: devEmail.trim().toLowerCase(),
+      password: devPassword,
+    });
+    setDevBusy(false);
+    if (error) setDevErr(error.message);
+    // On success, AuthContext's onAuthStateChange fires → AuthGate redirects.
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const trimmed = email.trim().toLowerCase();
@@ -205,6 +230,42 @@ export default function Login() {
               <p className="text-[10px] text-center" style={{ color: "oklch(0.85 0 0 / 0.5)" }}>
                 We'll email you a one-tap sign-in link. No password needed.
               </p>
+            </form>
+          )}
+
+          {/* Dev-only local sign-in — compiled out of production builds. */}
+          {devEnabled && (
+            <form onSubmit={handleDevSignIn} className="mt-6 pt-5 space-y-2" style={{ borderTop: "1px solid oklch(1 0 0 / 0.12)" }}>
+              <p className="text-[10px] text-center font-label" style={{ color: "oklch(0.85 0 0 / 0.5)", letterSpacing: "0.10em" }}>DEVELOPMENT SIGN-IN</p>
+              <input
+                type="email"
+                placeholder="admin email"
+                value={devEmail}
+                onChange={(e) => setDevEmail(e.target.value)}
+                data-testid="dev-email"
+                className="w-full px-3 py-2.5 rounded-lg text-sm text-white placeholder:text-white/40 outline-none"
+                style={{ background: "oklch(1 0 0 / 0.06)", border: "1px solid oklch(1 0 0 / 0.15)" }}
+              />
+              <input
+                type="password"
+                placeholder="dev password"
+                value={devPassword}
+                onChange={(e) => { setDevPassword(e.target.value); if (devErr) setDevErr(null); }}
+                data-testid="dev-password"
+                className="w-full px-3 py-2.5 rounded-lg text-sm text-white placeholder:text-white/40 outline-none"
+                style={{ background: "oklch(1 0 0 / 0.06)", border: "1px solid oklch(1 0 0 / 0.15)" }}
+              />
+              {devErr && <p className="text-[10px]" style={{ color: "oklch(0.72 0.14 25)" }}>{devErr}</p>}
+              <button
+                type="submit"
+                disabled={devBusy}
+                data-testid="dev-signin"
+                className="w-full py-2.5 rounded-lg text-sm font-label"
+                style={{ background: "oklch(1 0 0 / 0.10)", color: "oklch(1 0 0)", border: "1px solid oklch(1 0 0 / 0.18)", letterSpacing: "0.06em", opacity: devBusy ? 0.6 : 1 }}
+              >
+                {devBusy ? "Signing in…" : "DEV SIGN IN"}
+              </button>
+              <p className="text-[10px] text-center" style={{ color: "oklch(0.85 0 0 / 0.4)" }}>Local only — hidden in production builds.</p>
             </form>
           )}
 
