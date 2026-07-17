@@ -29,10 +29,17 @@ import type {
   SitePhotoRow,
   SalesTargetRow,
   CalendarEventRow,
+  CalendarEventStaffRow,
+  CalendarEventType,
   KpiRecordRow,
   AuditLogRow,
   AuditAction,
   ContactLogEntryDb,
+  ProjectTaskRow,
+  ProjectReviewRow,
+  CustomerCategory,
+  CustomerTier,
+  InquiryStage,
 } from "@/lib/dbTypes";
 import type { TablesUpdate, TablesInsert } from "@/lib/database.types";
 import type { PaymentGate, SignatureKey } from "@/lib/lifecycleData";
@@ -75,8 +82,11 @@ export type Project = {
   priority: string;
   progress: number;
   designer: string;            // resolved name (joined from staff)
+  designerId?: string;         // raw staff id (for the full roster)
   pm: string;                  // resolved name
+  pmId?: string;               // raw staff id (for the full roster)
   team: string[];              // avatar codes
+  heroImage?: string;          // public URL of the uploaded cover (undefined → use default)
   photoCount: number;
   taskCount: number;
   tasksCompleted: number;
@@ -170,8 +180,13 @@ function mapProject(row: ProjectWithStaffJoin): Project {
     priority: row.priority,
     progress: row.progress,
     designer: row.designer?.name ?? "",
+    designerId: row.designer?.id ?? undefined,
     pm: row.pm?.name ?? "",
+    pmId: row.pm?.id ?? undefined,
     team: row.team ?? [],
+    heroImage: row.image_path
+      ? supabase.storage.from("project-images").getPublicUrl(row.image_path).data.publicUrl
+      : undefined,
     photoCount: row.photo_count,
     taskCount: row.task_count,
     tasksCompleted: row.tasks_completed,
@@ -248,6 +263,8 @@ export const qk = {
   projects: ["projects"] as const,
   project: (id: string) => ["projects", id] as const,
   projectLifecycle: (id: string) => ["projects", id, "lifecycle"] as const,
+  projectTasks: (id: string) => ["project_tasks", id] as const,
+  projectReviews: (id: string) => ["project_reviews", id] as const,
   openPayments: ["payments", "open"] as const,
   openSignatures: ["signatures", "open"] as const,
   inquiries: ["inquiries"] as const,
@@ -261,6 +278,8 @@ export const qk = {
   kpiRecords: ["kpi_records"] as const,
   staffKpi: (id: string) => ["kpi_records", id] as const,
   calendarEvents: ["calendar_events"] as const,
+  calendarEventStaff: ["calendar_event_staff"] as const,
+  notificationPrefs: (staffId: string) => ["notification_preferences", staffId] as const,
   sitePhotos: ["site_photos"] as const,
   projectSitePhotos: (id: string) => ["site_photos", id] as const,
   auditLog: (filters?: AuditLogFilters) => ["audit_log", filters ?? {}] as const,
@@ -300,6 +319,56 @@ export function useAllStaff() {
 }
 
 // ─── PROJECTS ───────────────────────────────────────────────────────────────
+
+/**
+ * Resolve a project's `team` tokens to staff rows. Tolerant of BOTH the new
+ * `staff.id` format and the legacy `avatar_code` format, so existing rows keep
+ * working. Each token maps to exactly ONE staff member (id match preferred),
+ * results de-duped, order preserved.
+ */
+export function resolveTeamMembers(team: string[] | null | undefined, staff: StaffRow[]): StaffRow[] {
+  if (!team || team.length === 0) return [];
+  const byId = new Map(staff.map((s) => [s.id, s]));
+  const byCode = new Map<string, StaffRow>();
+  for (const s of staff) if (!byCode.has(s.avatar_code)) byCode.set(s.avatar_code, s);
+  const seen = new Set<string>();
+  const out: StaffRow[] = [];
+  for (const token of team) {
+    const member = byId.get(token) ?? byCode.get(token);
+    if (member && !seen.has(member.id)) {
+      seen.add(member.id);
+      out.push(member);
+    }
+  }
+  return out;
+}
+
+export type ProjectRosterRole = "Lead Designer" | "PM" | "Team";
+export type ProjectRosterMember = { staff: StaffRow; role: ProjectRosterRole };
+
+/**
+ * The FULL people-on-this-project roster — single source of truth for every
+ * "team" view. `project.team` alone only holds the *extra* members; the Lead
+ * Designer (`designerId`) and PM (`pmId`) live in their own columns and were
+ * previously invisible on cards / dropdowns. Merges all three, designer + PM
+ * first, then team, deduped + order-preserved.
+ */
+export function resolveProjectRoster(
+  project: Pick<Project, "team" | "designerId" | "pmId">,
+  staff: StaffRow[],
+): ProjectRosterMember[] {
+  const seen = new Set<string>();
+  const out: ProjectRosterMember[] = [];
+  const push = (s: StaffRow | undefined, role: ProjectRosterRole) => {
+    if (!s || seen.has(s.id)) return;
+    seen.add(s.id);
+    out.push({ staff: s, role });
+  };
+  push(staff.find((s) => s.id === project.designerId), "Lead Designer");
+  push(staff.find((s) => s.id === project.pmId), "PM");
+  resolveTeamMembers(project.team, staff).forEach((m) => push(m, "Team"));
+  return out;
+}
 
 const PROJECT_SELECT = `
   *,
@@ -414,6 +483,8 @@ export type CreateProjectArgs = {
   targetDate?: string | null;      // DD/MM/YYYY
   areas?: string[];
   description?: string | null;
+  linkInquiryId?: string | null;   // optional: link back to a customer/inquiry (sets awarded_project_id)
+  imageFile?: File | null;         // optional cover image → project-images bucket; empty = default
 };
 
 /** Create a brand-new project from the wizard. Server-side gating: the
@@ -454,6 +525,7 @@ export function useCreateProject() {
         lifecycle_started_at: new Date().toISOString(),
       };
 
+      let created: ProjectRow | null = null;
       for (let attempt = 0; attempt < 5; attempt++) {
         const id = `PRJ${String(maxNum + 1 + attempt).padStart(3, "0")}`;
         const { data, error } = await supabase
@@ -461,13 +533,52 @@ export function useCreateProject() {
           .insert({ ...base, id })
           .select()
           .single();
-        if (!error) return data as ProjectRow;
+        if (!error) { created = data as ProjectRow; break; }
         if (error.code !== "23505") throw error; // 23505 = unique_violation → next id
       }
-      throw new Error("Could not allocate a unique project id after several attempts. Please retry.");
+      if (!created) {
+        throw new Error("Could not allocate a unique project id after several attempts. Please retry.");
+      }
+
+      // Optional cover image — upload now that we have the id, then patch image_path.
+      // Non-fatal: if the upload fails the project still exists and the app falls
+      // back to the built-in default cover.
+      if (args.imageFile) {
+        const ext = args.imageFile.name.split(".").pop()?.toLowerCase() ?? "jpg";
+        const path = `${created.id}/cover-${Date.now()}.${ext}`;
+        const { error: upErr } = await supabase.storage
+          .from("project-images")
+          .upload(path, args.imageFile, { upsert: true, contentType: args.imageFile.type });
+        if (!upErr) {
+          const { data: upd } = await supabase
+            .from("projects")
+            .update({ image_path: path })
+            .eq("id", created.id)
+            .select()
+            .single();
+          if (upd) created = upd as ProjectRow;
+        }
+      }
+
+      // Optional CRM link: mark the source customer/inquiry as awarded and point
+      // it at this project so the customer page shows the "AWARDED PROJECT" banner.
+      // Non-fatal: the project already exists even if the back-link fails.
+      if (args.linkInquiryId) {
+        await supabase
+          .from("inquiries")
+          .update({
+            awarded_project_id: created.id,
+            stage: "awarded",
+            awarded_date: new Date().toISOString().slice(0, 10),
+            last_updated: new Date().toISOString().slice(0, 10),
+          })
+          .eq("id", args.linkInquiryId);
+      }
+      return created;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: qk.projects });
+      qc.invalidateQueries({ queryKey: qk.inquiries });
     },
   });
 }
@@ -475,6 +586,185 @@ export function useCreateProject() {
 /** Returns true when the role may edit project metadata — OPS tier, same as
  *  the payment/signature write gate (`canEditPayments`). */
 export const canEditProject = canEditPayments;
+
+// ─── PROJECT TASKS ──────────────────────────────────────────────────────────
+
+export type ProjectTaskStatus = "pending" | "in-progress" | "completed";
+
+/** All tasks for one project, ordered by sort_order then creation. */
+export function useProjectTasks(projectId: string | undefined) {
+  return useQuery({
+    queryKey: qk.projectTasks(projectId ?? ""),
+    enabled: Boolean(projectId),
+    queryFn: async (): Promise<ProjectTaskRow[]> => {
+      const { data, error } = await supabase
+        .from("project_tasks")
+        .select("*")
+        .eq("project_id", projectId ?? "")
+        .order("sort_order")
+        .order("created_at");
+      if (error) throw error;
+      return (data ?? []) as ProjectTaskRow[];
+    },
+  });
+}
+
+export type CreateTaskArgs = {
+  projectId: string;
+  title: string;
+  area?: string | null;
+  status?: ProjectTaskStatus;
+  assigneeId?: string | null;
+  dueDate?: string | null;      // YYYY-MM-DD
+  sortOrder?: number;
+  createdBy?: string | null;
+};
+
+export function useCreateTask() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: CreateTaskArgs): Promise<ProjectTaskRow> => {
+      const base: Omit<TablesInsert<"project_tasks">, "id"> = {
+        project_id: args.projectId,
+        title: args.title.trim(),
+        area: args.area?.trim() || null,
+        status: args.status ?? "pending",
+        assignee_id: args.assigneeId || null,
+        due_date: args.dueDate || null,
+        sort_order: args.sortOrder ?? 0,
+        created_by: args.createdBy || null,
+      };
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const id = `TSK-${Date.now().toString(36)}${attempt}`;
+        const { data, error } = await supabase.from("project_tasks").insert({ ...base, id }).select().single();
+        if (!error) return data as ProjectTaskRow;
+        if (error.code !== "23505") throw error;
+      }
+      throw new Error("Could not create the task. Please retry.");
+    },
+    onSuccess: (_row, args) => {
+      qc.invalidateQueries({ queryKey: qk.projectTasks(args.projectId) });
+      // Task counts roll up onto the project row (20260710000004 trigger) — refresh
+      // the project list/dashboard cards + detail so X/Y tasks & progress stay in sync.
+      qc.invalidateQueries({ queryKey: qk.projects });
+      qc.invalidateQueries({ queryKey: qk.project(args.projectId) });
+    },
+  });
+}
+
+export type UpdateTaskArgs = {
+  id: string;
+  projectId: string;            // for cache invalidation
+  title?: string;
+  area?: string | null;
+  status?: ProjectTaskStatus;
+  assigneeId?: string | null;
+  dueDate?: string | null;
+};
+
+export function useUpdateTask() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: UpdateTaskArgs): Promise<void> => {
+      const patch: TablesUpdate<"project_tasks"> = {};
+      if (args.title !== undefined) patch.title = args.title.trim();
+      if (args.area !== undefined) patch.area = args.area?.trim() || null;
+      if (args.status !== undefined) patch.status = args.status;
+      if (args.assigneeId !== undefined) patch.assignee_id = args.assigneeId || null;
+      if (args.dueDate !== undefined) patch.due_date = args.dueDate || null;
+      const { data, error } = await supabase.from("project_tasks").update(patch).eq("id", args.id).select();
+      if (error) throw error;
+      if (!data || data.length === 0) throw new Error("You don't have permission to edit tasks.");
+    },
+    onSuccess: (_v, args) => {
+      qc.invalidateQueries({ queryKey: qk.projectTasks(args.projectId) });
+      qc.invalidateQueries({ queryKey: qk.projects });
+      qc.invalidateQueries({ queryKey: qk.project(args.projectId) });
+    },
+  });
+}
+
+export function useDeleteTask() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: { id: string; projectId: string }): Promise<void> => {
+      const { data, error } = await supabase.from("project_tasks").delete().eq("id", args.id).select();
+      if (error) throw error;
+      if (!data || data.length === 0) throw new Error("You don't have permission to delete tasks.");
+    },
+    onSuccess: (_v, args) => {
+      qc.invalidateQueries({ queryKey: qk.projectTasks(args.projectId) });
+      qc.invalidateQueries({ queryKey: qk.projects });
+      qc.invalidateQueries({ queryKey: qk.project(args.projectId) });
+    },
+  });
+}
+
+// ─── PROJECT REVIEWS ────────────────────────────────────────────────────────
+
+export function useProjectReviews(projectId: string | undefined) {
+  return useQuery({
+    queryKey: qk.projectReviews(projectId ?? ""),
+    enabled: Boolean(projectId),
+    queryFn: async (): Promise<ProjectReviewRow[]> => {
+      const { data, error } = await supabase
+        .from("project_reviews")
+        .select("*")
+        .eq("project_id", projectId ?? "")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as ProjectReviewRow[];
+    },
+  });
+}
+
+export type CreateReviewArgs = {
+  projectId: string;
+  rating: number;               // 1..5
+  reviewerName?: string | null;
+  comment?: string | null;
+  createdBy?: string | null;
+};
+
+export function useCreateReview() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: CreateReviewArgs): Promise<ProjectReviewRow> => {
+      const rating = Math.max(1, Math.min(5, Math.round(args.rating)));
+      const base: Omit<TablesInsert<"project_reviews">, "id"> = {
+        project_id: args.projectId,
+        rating,
+        reviewer_name: args.reviewerName?.trim() || null,
+        comment: args.comment?.trim() || null,
+        created_by: args.createdBy || null,
+      };
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const id = `REV-${Date.now().toString(36)}${attempt}`;
+        const { data, error } = await supabase.from("project_reviews").insert({ ...base, id }).select().single();
+        if (!error) return data as ProjectReviewRow;
+        if (error.code !== "23505") throw error;
+      }
+      throw new Error("Could not save the review. Please retry.");
+    },
+    onSuccess: (_row, args) => {
+      qc.invalidateQueries({ queryKey: qk.projectReviews(args.projectId) });
+    },
+  });
+}
+
+export function useDeleteReview() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: { id: string; projectId: string }): Promise<void> => {
+      const { data, error } = await supabase.from("project_reviews").delete().eq("id", args.id).select();
+      if (error) throw error;
+      if (!data || data.length === 0) throw new Error("You don't have permission to delete reviews.");
+    },
+    onSuccess: (_v, args) => {
+      qc.invalidateQueries({ queryKey: qk.projectReviews(args.projectId) });
+    },
+  });
+}
 
 // ─── LIFECYCLE (PAYMENTS + SIGNATURES PER PROJECT) ──────────────────────────
 
@@ -960,6 +1250,77 @@ export function useInquiry(id: string | undefined) {
   });
 }
 
+/** Fields captured by the New Customer form (CreateCustomer.tsx). A customer IS
+ *  an inquiry — the CRM's pre-sales record that can later convert into a project. */
+export type CreateInquiryArgs = {
+  clientName: string;
+  contact?: string | null;
+  email?: string | null;
+  category: CustomerCategory;
+  tier: CustomerTier;
+  source?: string;
+  propertyType: string;
+  location: string;
+  estimatedSize?: number | null;
+  estimatedBudget?: number | null;
+  stage?: InquiryStage;              // default new-inquiry
+  assignedToId?: string | null;
+  notes?: string | null;
+};
+
+/** Create a brand-new customer/inquiry. Insert is allowed for any authenticated
+ *  user (`inquiries_insert_any_authenticated` RLS policy). The `INQ###` id isn't
+ *  DB-generated — compute the next one from the current max and retry on a
+ *  unique-violation (concurrent-create race), mirroring `useCreateProject`. */
+export function useCreateInquiry() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: CreateInquiryArgs): Promise<InquiryRow> => {
+      const { data: existing, error: listErr } = await supabase.from("inquiries").select("id");
+      if (listErr) throw listErr;
+      const maxNum = (existing ?? []).reduce((max, r) => {
+        const m = /^INQ(\d+)$/.exec(r.id);
+        return m ? Math.max(max, parseInt(m[1], 10)) : max;
+      }, 0);
+
+      const today = new Date().toISOString().slice(0, 10);
+      const base: Omit<TablesInsert<"inquiries">, "id"> = {
+        inquiry_date: today,
+        client_name: args.clientName,
+        contact: args.contact ?? null,
+        email: args.email ?? null,
+        category: args.category,
+        tier: args.tier,
+        source: args.source ?? "Direct",
+        property_type: args.propertyType,
+        location: args.location,
+        estimated_size: args.estimatedSize ?? null,
+        estimated_budget: args.estimatedBudget ?? null,
+        stage: args.stage ?? "new-inquiry",
+        assigned_to_id: args.assignedToId ?? null,
+        notes: args.notes ?? null,
+        contact_log: [],
+        last_updated: today,
+      };
+
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const id = `INQ${String(maxNum + 1 + attempt).padStart(3, "0")}`;
+        const { data, error } = await supabase
+          .from("inquiries")
+          .insert({ ...base, id })
+          .select()
+          .single();
+        if (!error) return data as InquiryRow;
+        if (error.code !== "23505") throw error; // 23505 = unique_violation → next id
+      }
+      throw new Error("Could not allocate a unique customer id after several attempts. Please retry.");
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.inquiries });
+    },
+  });
+}
+
 // ─── CONVERT INQUIRY MUTATION ───────────────────────────────────────────────
 
 export type ConvertInquiryArgs = {
@@ -1396,6 +1757,90 @@ export function useAdvanceCandidate() {
   });
 }
 
+export type CreateCandidateArgs = {
+  name: string;
+  appliedForRole: string;
+  source: string;
+  experience?: string | null;
+  portfolioUrl?: string | null;
+  notes?: string | null;
+};
+
+/** Add a candidate to the recruitment pipeline. Admin/ops per candidates_write RLS. */
+export function useCreateCandidate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: CreateCandidateArgs): Promise<CandidateRow> => {
+      const id = `CAN-${Date.now().toString(36).toUpperCase()}`;
+      const payload: TablesInsert<"candidates"> = {
+        id,
+        name: args.name.trim(),
+        applied_for_role: args.appliedForRole.trim(),
+        source: args.source,
+        stage: "Sourced",
+        applied_date: new Date().toISOString().slice(0, 10),
+        experience: args.experience?.trim() || null,
+        portfolio_url: args.portfolioUrl?.trim() || null,
+        notes: args.notes?.trim() || null,
+      };
+      const { data, error } = await supabase.from("candidates").insert(payload).select().single();
+      if (error) throw error;
+      return data as CandidateRow;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.candidates });
+    },
+  });
+}
+
+export type UpdateCandidateArgs = {
+  id: string;
+  name?: string;
+  appliedForRole?: string;
+  source?: string;
+  stage?: string;
+  experience?: string | null;
+  portfolioUrl?: string | null;
+  notes?: string | null;
+};
+
+/** Edit an existing candidate (fix a wrong name/role, correct the stage, etc.). */
+export function useUpdateCandidate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: UpdateCandidateArgs): Promise<void> => {
+      const patch: TablesUpdate<"candidates"> = {};
+      if (args.name !== undefined) patch.name = args.name.trim();
+      if (args.appliedForRole !== undefined) patch.applied_for_role = args.appliedForRole.trim();
+      if (args.source !== undefined) patch.source = args.source;
+      if (args.stage !== undefined) patch.stage = args.stage;
+      if (args.experience !== undefined) patch.experience = args.experience?.trim() || null;
+      if (args.portfolioUrl !== undefined) patch.portfolio_url = args.portfolioUrl?.trim() || null;
+      if (args.notes !== undefined) patch.notes = args.notes?.trim() || null;
+      const { data, error } = await supabase.from("candidates").update(patch).eq("id", args.id).select();
+      if (error) throw error;
+      if (!data || data.length === 0) throw new Error("You don't have permission to update candidates.");
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.candidates });
+    },
+  });
+}
+
+/** Remove a candidate from the pipeline (e.g. after they're hired + added as staff). */
+export function useDeleteCandidate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string): Promise<void> => {
+      const { error } = await supabase.from("candidates").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.candidates });
+    },
+  });
+}
+
 // ─── ANNOUNCEMENTS ──────────────────────────────────────────────────────────
 
 export type Announcement = AnnouncementRow & {
@@ -1424,6 +1869,109 @@ export function useAnnouncements() {
       if (staffRes.error) throw staffRes.error;
       const staffById = new Map(((staffRes.data ?? []) as StaffRow[]).map((s) => [s.id, s]));
       return ((annRes.data ?? []) as AnnouncementRow[]).map((r) => mapAnnouncement(r, staffById));
+    },
+  });
+}
+
+export type CreateAnnouncementArgs = {
+  title: string;
+  content: string;
+  priority: "high" | "medium" | "low";
+  authorId: string;
+};
+
+/** Publish a new announcement. Server-side `announcements_write_admin` RLS
+ *  restricts this to the ADMIN tier; the UI hides the compose button for others. */
+export function useCreateAnnouncement() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: CreateAnnouncementArgs): Promise<AnnouncementRow> => {
+      const id = `ANN-${Date.now().toString(36).toUpperCase()}`;
+      const payload: TablesInsert<"announcements"> = {
+        id,
+        title: args.title.trim(),
+        content: args.content.trim(),
+        priority: args.priority,
+        author_id: args.authorId,
+        published_date: new Date().toISOString().slice(0, 10),
+      };
+      const { data, error } = await supabase.from("announcements").insert(payload).select().single();
+      if (error) throw error;
+      return data as AnnouncementRow;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.announcements });
+    },
+  });
+}
+
+// ─── NOTIFICATION PREFERENCES ───────────────────────────────────────────────
+
+export type NotificationPrefs = {
+  notifications_enabled: boolean;
+  reminders: boolean;
+  announcements: boolean;
+  payment_alerts: boolean;
+  task_updates: boolean;
+};
+
+/** Defaults used when a staff member has never saved preferences (no row yet). */
+export const DEFAULT_NOTIFICATION_PREFS: NotificationPrefs = {
+  notifications_enabled: true,
+  reminders: true,
+  announcements: true,
+  payment_alerts: true,
+  task_updates: true,
+};
+
+export function useNotificationPrefs(staffId: string | undefined) {
+  return useQuery({
+    queryKey: qk.notificationPrefs(staffId ?? ""),
+    enabled: !!staffId,
+    queryFn: async (): Promise<NotificationPrefs> => {
+      const { data, error } = await supabase
+        .from("notification_preferences")
+        .select("*")
+        .eq("staff_id", staffId!)
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) return DEFAULT_NOTIFICATION_PREFS;
+      return {
+        notifications_enabled: data.notifications_enabled,
+        reminders: data.reminders,
+        announcements: data.announcements,
+        payment_alerts: data.payment_alerts,
+        task_updates: data.task_updates,
+      };
+    },
+  });
+}
+
+export function useUpdateNotificationPrefs(staffId: string | undefined) {
+  const qc = useQueryClient();
+  const key = qk.notificationPrefs(staffId ?? "");
+  return useMutation({
+    mutationFn: async (prefs: NotificationPrefs): Promise<NotificationPrefs> => {
+      if (!staffId) throw new Error("No staff profile loaded");
+      const payload: TablesInsert<"notification_preferences"> = { staff_id: staffId, ...prefs };
+      const { error } = await supabase
+        .from("notification_preferences")
+        .upsert(payload, { onConflict: "staff_id" });
+      if (error) throw error;
+      return prefs;
+    },
+    // Optimistic: flip the toggle instantly in the UI, roll back if the write fails.
+    onMutate: async (next) => {
+      await qc.cancelQueries({ queryKey: key });
+      const prev = qc.getQueryData<NotificationPrefs>(key);
+      qc.setQueryData(key, next);
+      return { prev };
+    },
+    onError: (_e, _next, ctx) => {
+      if (ctx?.prev) qc.setQueryData(key, ctx.prev);
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: key });
     },
   });
 }
@@ -1491,6 +2039,68 @@ export function useCalendarEvents() {
         .order("event_date");
       if (error) throw error;
       return (data ?? []) as CalendarEventRow[];
+    },
+  });
+}
+
+/** Fetch all event ↔ staff assignments (junction table). */
+export function useCalendarEventStaff() {
+  return useQuery({
+    queryKey: qk.calendarEventStaff,
+    queryFn: async (): Promise<CalendarEventStaffRow[]> => {
+      const { data, error } = await supabase.from("calendar_event_staff").select("*");
+      if (error) throw error;
+      return (data ?? []) as CalendarEventStaffRow[];
+    },
+  });
+}
+
+/** Per-type accent colour, kept in sync with the seed data + CalendarPage. */
+export const CALENDAR_EVENT_COLORS: Record<CalendarEventType, string> = {
+  project: "#046BD2",
+  meeting: "#045CB4",
+  leave: "#94A3B8",
+  event: "#FCB900",
+};
+
+export type CreateCalendarEventArgs = {
+  title: string;
+  eventDate: string;               // YYYY-MM-DD (start day)
+  endDate?: string | null;         // YYYY-MM-DD — omit/equal for a single-day event
+  startTime?: string | null;       // HH:MM
+  endTime?: string | null;
+  eventType: CalendarEventType;
+  projectId?: string | null;
+  staffIds?: string[];             // zero or more staff members
+  notes?: string | null;
+  createdBy: string;               // current staff id — RLS requires created_by = current staff
+};
+
+/** Create a calendar event + its staff assignments in one atomic RPC — the
+ *  function generates the id, mirrors the first assignee into staff_id for
+ *  backward compatibility, and inserts the calendar_event_staff rows. */
+export function useCreateCalendarEvent() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: CreateCalendarEventArgs): Promise<CalendarEventRow> => {
+      const { data, error } = await supabase.rpc("create_calendar_event_with_staff", {
+        p_title: args.title.trim(),
+        p_event_date: args.eventDate,
+        p_event_type: args.eventType,
+        p_color: CALENDAR_EVENT_COLORS[args.eventType],
+        p_end_date: args.endDate && args.endDate > args.eventDate ? args.endDate : undefined,
+        p_start_time: args.startTime || undefined,
+        p_end_time: args.endTime || undefined,
+        p_project_id: args.projectId || undefined,
+        p_notes: args.notes?.trim() || undefined,
+        p_staff_ids: args.staffIds ?? [],
+      });
+      if (error) throw error;
+      return data as CalendarEventRow;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: qk.calendarEvents });
+      qc.invalidateQueries({ queryKey: qk.calendarEventStaff });
     },
   });
 }
@@ -1763,6 +2373,27 @@ export function useUploadSitePhoto() {
     onSuccess: (_row, args) => {
       qc.invalidateQueries({ queryKey: qk.sitePhotos });
       qc.invalidateQueries({ queryKey: qk.projectSitePhotos(args.projectId) });
+    },
+  });
+}
+
+/** Delete a site photo — removes the storage object (best-effort) then the row.
+ *  `photo_count` rolls up onto the project row via the 20260710000004 trigger. */
+export function useDeleteSitePhoto() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: { id: number; projectId: string; storagePath: string | null }): Promise<void> => {
+      if (args.storagePath) {
+        await supabase.storage.from("site-photos").remove([args.storagePath]);
+      }
+      const { data, error } = await supabase.from("site_photos").delete().eq("id", args.id).select();
+      if (error) throw error;
+      if (!data || data.length === 0) throw new Error("You don't have permission to delete photos.");
+    },
+    onSuccess: (_v, args) => {
+      qc.invalidateQueries({ queryKey: qk.sitePhotos });
+      qc.invalidateQueries({ queryKey: qk.projectSitePhotos(args.projectId) });
+      qc.invalidateQueries({ queryKey: qk.projects }); // photo_count rollup (20260710000004)
     },
   });
 }

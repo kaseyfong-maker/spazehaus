@@ -58,8 +58,11 @@ export type SitePhotoRow = Tables<"site_photos">;
 export type SalesTargetRow = Tables<"sales_targets">;
 export type AuditLogRow = Tables<"audit_log">;
 export type CalendarEventRow = Tables<"calendar_events">;
+export type CalendarEventStaffRow = Tables<"calendar_event_staff">;
 export type KpiRecordRow = Tables<"kpi_records">;
 export type LifecycleStageRow = Tables<"lifecycle_stages">;
+export type ProjectTaskRow = Tables<"project_tasks">;
+export type ProjectReviewRow = Tables<"project_reviews">;
 
 // ─── EMBEDDED JSON SHAPES ───────────────────────────────────────────────────
 // inquiry.contact_log is typed as JSON in the Database schema, but the app

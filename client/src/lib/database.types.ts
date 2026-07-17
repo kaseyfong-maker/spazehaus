@@ -85,11 +85,42 @@ export type Database = {
         }
         Relationships: []
       }
+      calendar_event_staff: {
+        Row: {
+          event_id: string
+          staff_id: string
+        }
+        Insert: {
+          event_id: string
+          staff_id: string
+        }
+        Update: {
+          event_id?: string
+          staff_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_event_staff_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "calendar_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "calendar_event_staff_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       calendar_events: {
         Row: {
           color: string
           created_at: string
           created_by: string | null
+          end_date: string | null
           end_time: string | null
           event_date: string
           event_type: Database["public"]["Enums"]["calendar_event_type"]
@@ -106,6 +137,7 @@ export type Database = {
           color: string
           created_at?: string
           created_by?: string | null
+          end_date?: string | null
           end_time?: string | null
           event_date: string
           event_type: Database["public"]["Enums"]["calendar_event_type"]
@@ -122,6 +154,7 @@ export type Database = {
           color?: string
           created_at?: string
           created_by?: string | null
+          end_date?: string | null
           end_time?: string | null
           event_date?: string
           event_type?: Database["public"]["Enums"]["calendar_event_type"]
@@ -456,6 +489,44 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_preferences: {
+        Row: {
+          announcements: boolean
+          notifications_enabled: boolean
+          payment_alerts: boolean
+          reminders: boolean
+          staff_id: string
+          task_updates: boolean
+          updated_at: string
+        }
+        Insert: {
+          announcements?: boolean
+          notifications_enabled?: boolean
+          payment_alerts?: boolean
+          reminders?: boolean
+          staff_id: string
+          task_updates?: boolean
+          updated_at?: string
+        }
+        Update: {
+          announcements?: boolean
+          notifications_enabled?: boolean
+          payment_alerts?: boolean
+          reminders?: boolean
+          staff_id?: string
+          task_updates?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notification_preferences_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: true
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payment_records: {
         Row: {
           amount: number
@@ -515,6 +586,115 @@ export type Database = {
           },
         ]
       }
+      project_reviews: {
+        Row: {
+          comment: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          project_id: string
+          rating: number
+          reviewer_name: string | null
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          created_by?: string | null
+          id: string
+          project_id: string
+          rating: number
+          reviewer_name?: string | null
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          project_id?: string
+          rating?: number
+          reviewer_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_reviews_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_reviews_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_tasks: {
+        Row: {
+          area: string | null
+          assignee_id: string | null
+          created_at: string
+          created_by: string | null
+          due_date: string | null
+          id: string
+          project_id: string
+          sort_order: number
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          area?: string | null
+          assignee_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_date?: string | null
+          id: string
+          project_id: string
+          sort_order?: number
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          area?: string | null
+          assignee_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          due_date?: string | null
+          id?: string
+          project_id?: string
+          sort_order?: number
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_tasks_assignee_id_fkey"
+            columns: ["assignee_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_tasks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       projects: {
         Row: {
           areas: string[]
@@ -530,6 +710,7 @@ export type Database = {
           description: string | null
           designer_id: string | null
           id: string
+          image_path: string | null
           lifecycle_started_at: string | null
           location: string
           name: string
@@ -562,6 +743,7 @@ export type Database = {
           description?: string | null
           designer_id?: string | null
           id: string
+          image_path?: string | null
           lifecycle_started_at?: string | null
           location: string
           name: string
@@ -594,6 +776,7 @@ export type Database = {
           description?: string | null
           designer_id?: string | null
           id?: string
+          image_path?: string | null
           lifecycle_started_at?: string | null
           location?: string
           name?: string
@@ -1056,6 +1239,43 @@ export type Database = {
         }
         Returns: string
       }
+      create_calendar_event_with_staff: {
+        Args: {
+          p_color: string
+          p_end_date?: string
+          p_end_time?: string
+          p_event_date: string
+          p_event_type: Database["public"]["Enums"]["calendar_event_type"]
+          p_notes?: string
+          p_project_id?: string
+          p_staff_ids?: string[]
+          p_start_time?: string
+          p_title: string
+        }
+        Returns: {
+          color: string
+          created_at: string
+          created_by: string | null
+          end_date: string | null
+          end_time: string | null
+          event_date: string
+          event_type: Database["public"]["Enums"]["calendar_event_type"]
+          id: string
+          leave_id: string | null
+          notes: string | null
+          project_id: string | null
+          staff_id: string | null
+          start_time: string | null
+          title: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "calendar_events"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       current_staff_avatar: { Args: never; Returns: string }
       current_staff_id: { Args: never; Returns: string }
       current_staff_role: {
@@ -1069,7 +1289,24 @@ export type Database = {
         Args: { p_project_id: string }
         Returns: string
       }
+      recalc_project_photo_rollup: {
+        Args: { p_project_id: string }
+        Returns: undefined
+      }
+      recalc_project_task_rollup: {
+        Args: { p_project_id: string }
+        Returns: undefined
+      }
       staff_email_exists: { Args: { p_email: string }; Returns: boolean }
+      submit_client_review: {
+        Args: {
+          p_comment?: string
+          p_rating: number
+          p_reviewer_name?: string
+          p_token: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       calendar_event_type: "project" | "meeting" | "leave" | "event"
